@@ -41,7 +41,7 @@ class Processor:
         self.classname = classname
         self.verbose_name = verbose_name
         self.stopper = stopper
-        self.method_name=method_name
+        self.method_name = method_name
 
     def run(self, object_to_process, *args, **kwargs):
         """
