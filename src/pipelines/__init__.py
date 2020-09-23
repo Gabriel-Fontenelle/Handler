@@ -51,12 +51,16 @@ class Processor:
         # Get method
         method = getattr(self.classname, self.methodname)
 
-        # Check if method of methodname has classmethod decorator.
+        # Check if method of method_name has `classmethod` decorator being bound to class
+        # If not, properly instantiate the class to run the method.
         if not ismethod(method):
-            raise ProcessLookupError(f"{self.classname.__name__}.{method} should be a classmethod.")
+            class_to_use = self.classname()
+            method = getattr(class_to_use, self.methodname)
+            return getattr(class_to_use, self.methodname)(object_to_process, *args, **kwargs)
 
-        # Run methodname passing args and kwargs to it and return boolean result from processor
-        return getattr(self.classname, self.methodname)(object_to_process, *args, **kwargs)
+        # Run method_name (`classmethod` or class function) passing args and kwargs to it
+        # and return boolean result from processor
+        return method(object_to_process, *args, **kwargs)
 
 
 class ProcessorMixin:
