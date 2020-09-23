@@ -45,8 +45,8 @@ class Processor:
 
     def run(self, object_to_process, *args, **kwargs):
         """
-        Method to run methodname from classname and return boolean.
-        For this method to work methodname should return boolean whether it as successful or not.
+        Method to run method_name from classname and return boolean.
+        For this method to work method_name should return boolean whether it as successful or not.
         """
         # Get method
         method = getattr(self.classname, self.methodname)
