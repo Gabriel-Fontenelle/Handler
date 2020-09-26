@@ -1,3 +1,7 @@
+"""
+Module with declaration of baseline class for the pipeline and its inherent class.
+This module should only keep the pipeline class for renaming Files.
+"""
 # Python internals
 import re
 from uuid import uuid4
@@ -7,6 +11,12 @@ from src.pipelines.__init__ import ProcessorMixin
 
 # modules
 from src.handler import FileSystem
+
+__all__ = [
+    'WindowsRenamer',
+    'LinuxRenamer',
+    'UniqueRenamer'
+]
 
 
 class Renamer(ProcessorMixin):
@@ -30,9 +40,18 @@ class Renamer(ProcessorMixin):
         return filename, extension
 
     @classmethod
+    def prepare_path(cls, path):
+        """
+        Method to convert / to separator specified by the file system
+        """
+        return path.replace('/', cls.file_system_handler.sep)
+
+    @classmethod
     def get_name(cls, directory_path, filename, extension):
         """
         Method to get the new generated name.
+        This class should raise BlockingIOError when a custom error should happen that will be
+        caught by `process` when using Pipeline.
         """
         raise NotImplementedError("Method get_name must be overwrite on child class.")
 
@@ -40,19 +59,52 @@ class Renamer(ProcessorMixin):
     def process(cls, *args, **kwargs):
         """
         Method used to run this class on Processor`s Pipeline for Files.
-        This method and to_processor() is not need to compare files outside a pipelines.
+        This method and to_processor() is not need to rename files outside a pipelines.
         This process method is created exclusively to pipeline for objects inherent from BaseFile.
+
+        The processor for renamer uses only one object that must be settled through first argument
+         or through key work object.
+
+        FUTURE CONSIDERATION: Making the pipeline multi thread or multi process only will required that
+        a lock be put between usage of get_name.
+        FUTURE CONSIDERATION: Multi thread will need to consider that the attribute `file_system_handler`
+        is shared between the reference of the class and all object of it and will have to be change the
+        code (multi process don't have this problem).
         """
+        object_to_process = kwargs['object'] if 'object' in kwargs else args[0]
 
         # Prepare filename from File's object
+        filename, extension = cls.prepare_filename(object_to_process.filename, object_to_process.extension)
 
         # Get directory from object to be processed.
+        path = cls.prepare_path(object_to_process.path)
+
+        # Save current file system handler
+        class_file_system_handler = cls.file_system_handler
 
         # Get new name
+        # When is not possible to get new name by some problem either with file or filesystem
+        # is expected BlockingIOError
+        try:
+            # Overwrite File System attribute with File System of File only when running in pipeline.
+            # This will alter the File System for the class, any other call to this class will use the altered
+            # file system.
+            cls.file_system_handler = object_to_process.file_system_handler
 
-        # Set new name at File's object
+            new_filename, extension = cls.get_name(path, filename, extension)
 
-        # Add old name to File's cache
+            # Restore File System attribute to original.
+            cls.file_system_handler = class_file_system_handler
+        except BlockingIOError:
+            return False
+
+        # Set new name at File's object.
+        # The File class should set the old name at File`s cache/history automatically,
+        # filename and extension should be property functions.
+        object_to_process.filename = new_filename
+        object_to_process.extension = extension
+
+        return True
 
 
 class WindowsRenamer(Renamer):
