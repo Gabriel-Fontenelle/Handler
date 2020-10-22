@@ -151,16 +151,20 @@ class Pipeline:
             processor
         )
 
-    def run(self, object_to_process, *args, **kwargs):
+    def run(self, *args, **kwargs):
         """
         Method to run the entire pipelines.
-        The processor will define if method will stop or not
-        the pipelines.
+        The processor will define if method will stop or not the pipelines.
+        Either args or kwargs must have the object to be processed.
+
+        :param args:
+        :param kwargs:
+
         """
         # For each processor
         ran = 0
         for processor in self.pipeline_processors:
-            result = processor.run(object_to_process, *args, **kwargs)
+            result = processor.run(*args, **kwargs)
             ran += 1
             if result and processor.stopper:
                 break
