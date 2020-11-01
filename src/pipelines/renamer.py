@@ -132,7 +132,7 @@ class WindowsRenamer(Renamer):
             i += 1
             filename = cls.enumeration_pattern.sub(f' ({i})', filename)
 
-        return filename + extension
+        return filename, extension
 
 
 class LinuxRenamer(Renamer):
@@ -160,7 +160,7 @@ class LinuxRenamer(Renamer):
             i += 1
             filename = cls.enumeration_pattern.sub(f' - {i}', filename)
 
-        return filename + extension
+        return filename, extension
 
 
 class UniqueRenamer(Renamer):
@@ -186,4 +186,4 @@ class UniqueRenamer(Renamer):
         if i == 100:
             raise BlockingIOError("Too many files being handler simultaneous")
 
-        return filename + extension
+        return filename, extension
