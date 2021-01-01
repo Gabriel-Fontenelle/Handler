@@ -7,7 +7,7 @@ import re
 from uuid import uuid4
 
 # core modules
-from handler.pipelines.__init__ import ProcessorMixin
+from handler.pipelines import ProcessorMixin
 
 # modules
 from handler.handler import FileSystem

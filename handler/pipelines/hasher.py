@@ -1,8 +1,20 @@
+"""
+Module with declaration of baseline class for the pipeline and its inherent class.
+This module should only keep the pipeline class for hashing Files.
+"""
+# Python internals
 import hashlib
 
+# core modules
+from handler.pipelines import ProcessorMixin
+
+# modules
 from handler.handler import FileSystem
 
-from handler.pipelines import ProcessorMixin
+__all__ = [
+    'MD5Hasher',
+    'SHA256Hasher'
+]
 
 
 class Hasher(ProcessorMixin):
