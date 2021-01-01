@@ -7,7 +7,7 @@ from os.path import (
 )
 
 # modules
-from src.pipelines.comparer import (
+from handler.pipelines.comparer import (
     DataCompare,
     HashCompare,
     SizeCompare
