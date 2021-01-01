@@ -7,10 +7,10 @@ import re
 from uuid import uuid4
 
 # core modules
-from src.pipelines.__init__ import ProcessorMixin
+from handler.pipelines.__init__ import ProcessorMixin
 
 # modules
-from src.handler import FileSystem
+from handler.handler import FileSystem
 
 __all__ = [
     'WindowsRenamer',
@@ -40,13 +40,6 @@ class Renamer(ProcessorMixin):
         return filename, extension
 
     @classmethod
-    def prepare_path(cls, path):
-        """
-        Method to convert / to separator specified by the file system
-        """
-        return path.replace('/', cls.file_system_handler.sep)
-
-    @classmethod
     def get_name(cls, directory_path, filename, extension):
         """
         Method to get the new generated name.
@@ -63,7 +56,7 @@ class Renamer(ProcessorMixin):
         This process method is created exclusively to pipeline for objects inherent from BaseFile.
 
         The processor for renamer uses only one object that must be settled through first argument
-         or through key work object.
+        or through key work object.
 
         FUTURE CONSIDERATION: Making the pipeline multi thread or multi process only will required that
         a lock be put between usage of get_name.
@@ -76,9 +69,6 @@ class Renamer(ProcessorMixin):
         # Prepare filename from File's object
         filename, extension = cls.prepare_filename(object_to_process.filename, object_to_process.extension)
 
-        # Get directory from object to be processed.
-        path = cls.prepare_path(object_to_process.path)
-
         # Save current file system handler
         class_file_system_handler = cls.file_system_handler
 
@@ -90,6 +80,9 @@ class Renamer(ProcessorMixin):
             # This will alter the File System for the class, any other call to this class will use the altered
             # file system.
             cls.file_system_handler = object_to_process.file_system_handler
+
+            # Get directory from object to be processed.
+            path = cls.file_system_handler.sanitize_path(object_to_process.path)
 
             new_filename, extension = cls.get_name(path, filename, extension)
 
