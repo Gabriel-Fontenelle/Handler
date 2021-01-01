@@ -279,6 +279,23 @@ class FileSystem:
         """
         raise NotImplementedError("Method get_path_id(path) should be accessed through inherent class.")
 
+    @classmethod
+    def read_lines(cls, path):
+        """
+        Method generator to get lines from file without loading all data in one step.
+        """
+        with open(path, 'r') as file:
+            line = file.readline()
+            if line:
+                yield line
+
+    @classmethod
+    def sanitize_path(cls, path: str) -> str:
+        """
+        Method to convert / in a path to a separator specified by the file system.
+        """
+        return path.replace('/', cls.sep)
+
 
 class WindowsFileSystem(FileSystem):
     """
