@@ -64,7 +64,11 @@ class BaseFile:
     """
 
     # Content data
-    content = None
+    _block_size = 256
+    """
+    Block size of file to be loaded in each step of iterator. 
+    """
+    _content = None
     """
     Loaded content of file
     """
@@ -72,7 +76,11 @@ class BaseFile:
     """
     Streamer pointer of content
     """
-    list_internal_content = None
+    _pointer_content = None
+    """
+    Filesystem pointer of content
+    """
+    _list_internal_content = None
     """
     list of items in compressed file
     """
@@ -82,11 +90,7 @@ class BaseFile:
     """
     size of file content
     """
-    list_internal_content_length = None
-    """
-    list of length for items in compressed file
-    """
-    mimetype = None
+    mime_type = None
     """
     File`s mime type
     """
@@ -114,6 +118,15 @@ class BaseFile:
     FileSystem currently in use for File. 
     It can be LinuxFileSystem, WindowsFileSystem or a custom one.
     """
+    mimetype_handler = LibraryMimeTyper()
+    """
+    Mimetype handler that defines the source of know Mimetypes.
+    This is used to identify mimetype from extension and vice-verse.
+    """
+
+
+
+
 
     filename_history = None
     """
@@ -122,46 +135,37 @@ class BaseFile:
     to_rename = None
 
 
-    # Meta data
 
-    hashes = None
-    """
-    file generated or loaded hashes
-    """
-
-    # Processors
-    file_system_handler = FileSystem
-    """
-    File system handler to be used for most of files.
-    """
-    mimetype_handler = FileMimeTypeGuesser
-    """
-    Mimetype handler that defines the source of know Mimetypes.
-    This is used to identify mimetype from extension and vice-verse.
-    """
-
-    # Pipeline to rename (Validate if class inherent from Renamer)
-    # Pipeline to comparer
-    # Pipeline for hashes (Generate hashes from content)
+    # Pipelines
     # Pipeline to extract data
     # Pipeline to compact or extract file
-    # Pipelines
-    extract_data_pipeline = Pipeline(
-
+    extract_data_pipeline = None
+    """
+    Pipeline to extract data from multiple sources. This should be override at child class.
+    """
+    compare_pipeline = Pipeline(
+        SizeCompare.to_processor(),
+        HashCompare.to_processor(stopper=True),
+        DataCompare.to_processor(stopper=True)
     )
+    """
+    Pipeline to compare two files.
+    """
+    hasher_pipeline = Pipeline(
+        MD5Hasher.to_processor(),
+        SHA256Hasher.to_processor()
+    )
+    """
+    Pipeline to generate hashes from content.
+    """
     rename_pipeline = Pipeline(
         WindowsRenamer.to_processor(stopper=True)
     )
-    compare_pipeline = Pipeline(
-        SizeCompare.to_processor(),
-        HashCompare.to_processor(),
-        DataCompare.to_processor()
-    )
-    hasher_pipeline = Pipeline(
+    """
+    Pipeline to rename file when saving. 
+    """
 
-    )
-
-    # Behavior controler for save
+    # Behavior controller for save
     move_file = False
     save_file = False
     save_hash = False
