@@ -18,7 +18,10 @@ from os.path import (
     exists,
     isdir,
     getsize,
-    dirname, getmtime, getctime, join
+    dirname,
+    getmtime,
+    getctime,
+    join
 )
 from io import open
 
