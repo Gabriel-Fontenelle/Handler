@@ -85,7 +85,7 @@ class BaseFile:
     """
     Additional metadata info that file can have
     """
-    _hashes = None
+    hashes = None
     """
     Checksum information for file.
     It can be multiples like MD5, SHA128, SHA256, SHA512.  

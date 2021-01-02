@@ -49,7 +49,7 @@ class Hasher(ProcessorMixin):
         cls.generate_hash(hash_instance=hash_instance, file_object=object_to_process.content)
         digested_hex_value = cls.digest_hex_hash(hash_instance=hash_instance)
 
-        return digested_hex_value == object_to_process._hashes[cls.hasher_name]
+        return digested_hex_value == object_to_process.hashes[cls.hasher_name]
 
     @classmethod
     def digest_hash(cls, hash_instance):
@@ -146,7 +146,7 @@ class Hasher(ProcessorMixin):
 
         # Check if there is already a hash previously loaded on file,
         # so that we don't try to digest it again.
-        if cls.hasher_name not in object_to_process._hashes:
+        if cls.hasher_name not in object_to_process.hashes:
 
             if try_loading_from_file:
                 # Check if hash loaded from file and if so exit with success.
@@ -170,7 +170,7 @@ class Hasher(ProcessorMixin):
             digested_hex_value = cls.digest_hex_hash(hash_instance=hash_instance)
 
             # Add hash to file
-            object_to_process._hashes[cls.hasher_name] = digested_hex_value
+            object_to_process.hashes[cls.hasher_name] = digested_hex_value
 
         return True
 
@@ -203,7 +203,7 @@ class Hasher(ProcessorMixin):
         if hex_value is None:
             return False
 
-        object_to_process._hashes[cls.hasher_name] = hex_value
+        object_to_process.hashes[cls.hasher_name] = hex_value
 
         return True
 
