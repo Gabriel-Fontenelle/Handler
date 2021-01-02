@@ -68,7 +68,7 @@ class BaseMimeTyper:
         """
         raise NotImplementedError("get_mimetype() method must be overwritten on child class.")
 
-    def guess_extension(self, mimetype):
+    def guess_extension_from_mimetype(self, mimetype):
         """
         Method to get the best extension for given mimetype in case there are more than one extension
         available.
@@ -76,9 +76,9 @@ class BaseMimeTyper:
         """
         raise NotImplementedError("guess_extension() method must be overwritten on child class.")
 
-    def guess_extension_and_mimetype(self, filename):
+    def guess_extension_from_filename(self, filename):
         """
-        Method to get the best extension for given mimetype in case there are more than one extension
+        Method to get the best extension for given filename in case there are more than one extension
         available using as base the filename that can or not have a registered extension in it.
         This method should be override in child class.
         """
@@ -319,7 +319,7 @@ class LibraryMimeTyper(BaseMimeTyper):
 
         return possible_type[0] if possible_type.intersection(known_types) else None
 
-    def guess_extension(self, mimetype):
+    def guess_extension_from_mimetype(self, mimetype):
         """
         Method to get the best extension for given mimetype in case there are more than one extension
         available.
@@ -335,16 +335,16 @@ class LibraryMimeTyper(BaseMimeTyper):
 
         return extensions[0]
 
-    def guess_extension_and_mimetype(self, filename):
+    def guess_extension_from_filename(self, filename):
         """
-        Method to get the best extension for given mimetype in case there are more than one extension
+        Method to get the best extension for given filename in case there are more than one extension
         available using as base the filename that can or not have a registered extension in it.
         """
         splitted = filename.rsplit('.', 1)
         maybe_extension = splitted[int(len(splitted) == 2)]
 
         if maybe_extension and self.is_extension_registered(maybe_extension):
-            return maybe_extension, self.get_mimetype(maybe_extension)
+            return maybe_extension
 
         return None
 
