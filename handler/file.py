@@ -223,18 +223,8 @@ class BaseFile:
     def filename(self):
         pass
 
-    @filename.setter
-    def set_filename(self, value):
-        # Check if filename was reserved before
-        pass
 
-    @property
-    def extension(self):
-        pass
 
-    @extension.setter
-    def set_extension(self, value):
-        pass
 
     def get_size(self):
         raise NotImplementedError()
@@ -466,18 +456,6 @@ class File2:
     def get_file_location(self):
         return self.path
 
-    def get_MD5(self):
-        return self.get_hash('md5')
-
-    def get_hashes(self):
-        return self.hashes
-
-    def get_hash(self, hash_type):
-        return self.hashes.get(hash_type, None)
-
-    def get_length(self):
-        return self.length
-
     def get_mime_type(self):
         return self.mimetype
 
@@ -519,9 +497,6 @@ class File2:
 
         return self.dir_drive_name_tuple
 
-    def get_filename(self):
-        return self.filename
-
     def get_filename_updated(self):
         if self.filename_renamed is None:
             return self.get_filename()
@@ -537,9 +512,6 @@ class File2:
     def get_hash_type_from_instance(self, hash_type):
         return self.hash_instance.get(has_key, None)
 
-    def get_separator(self):
-        return self.separator
-
     def get_relative_path(self):
         return self.relative_path
 
@@ -554,18 +526,6 @@ class File2:
 
     def set_hash(self, hash_type, value):
         self.hashes[hash_type] = value
-
-    def set_length(self, value):
-        self.length = value
-
-    def set_file_location(self, path):
-        self.path = path
-
-    def set_file_pointer(self, fp):
-        self.file_pointer = fp
-
-    def set_complete_path(self, path):
-        self.complete_path = path
 
     def set_use_relative_path(self, value):
         self.use_relative_path = value is True
@@ -591,32 +551,6 @@ class File2:
 
     def was_renamed(self):
         return self.filename_renamed is True
-
-    def process_path(self):
-        """ Path do not change even if filename change """
-        complete_path = self.path
-
-        #Fix absent sep
-        if complete_path[-1] != sep:
-            complete_path += sep
-
-        #Add relative path
-        if self.use_relative_path:
-            complete_path += self.relative_path
-            if self.relative_path[-1] != sep:
-                complete_path += sep
-
-        #Set variables
-        self.complete_basename = complete_path
-        self.dir_drive_name_tuple = splitdrive(complete_path)
-
-
-    def reset_path(self, use_relative_path = False):
-        self.complete_path = None
-        self.use_relative_path = use_relative_path
-        self.complete_path_renamed = None
-        self.dir_drive_name_tuple = None
-        self.complete_basename = None
 
 
 class CompactFile(File):
