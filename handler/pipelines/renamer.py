@@ -13,6 +13,7 @@ from handler.pipelines import ProcessorMixin
 from handler.handler import FileSystem
 
 __all__ = [
+    'Renamer',
     'WindowsRenamer',
     'LinuxRenamer',
     'UniqueRenamer'
@@ -21,7 +22,7 @@ __all__ = [
 
 class Renamer(ProcessorMixin):
     """
-    Base class to be inherent to define class to be used on Renamer pipelines.
+    Base class to be inherent to define class to be used on Renamer pipeline.
     """
 
     file_system_handler = FileSystem
@@ -64,7 +65,7 @@ class Renamer(ProcessorMixin):
         is shared between the reference of the class and all object of it and will have to be change the
         code (multi process don't have this problem).
         """
-        object_to_process = kwargs['object'] if 'object' in kwargs else args[0]
+        object_to_process = kwargs.pop('object', args[0])
 
         # Prepare filename from File's object
         filename, extension = cls.prepare_filename(object_to_process.filename, object_to_process.extension)
