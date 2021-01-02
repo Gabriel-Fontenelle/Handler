@@ -95,9 +95,13 @@ class BaseFile:
     """
     File`s mime type
     """
+    type = None
+    """
+    File's type (e.g. image, audio, video, application)
+    """
     _meta = None
     """
-    Additional metadata info that file can have
+    Additional metadata info that file can have. Those data not always will exist for all files.
     """
     hashes = None
     """
@@ -119,7 +123,7 @@ class BaseFile:
     FileSystem currently in use for File. 
     It can be LinuxFileSystem, WindowsFileSystem or a custom one.
     """
-    mimetype_handler = LibraryMimeTyper()
+    mime_type_handler = LibraryMimeTyper()
     """
     Mimetype handler that defines the source of know Mimetypes.
     This is used to identify mimetype from extension and vice-verse.
@@ -167,6 +171,7 @@ class BaseFile:
     """
 
     # Behavior controller for save
+    should_be_extracted = False # File inside another file should be extract and not saved.
     move_file = False
     save_file = False
     save_hash = False
@@ -179,41 +184,35 @@ class BaseFile:
     {<directory>:{<current_filename: old_filename>}}
     """
 
-    def __init__(self, file_system_handler=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         """
+        Method to instantiate BaseFile. This method can be used for any child class, ony needing
+        to change the extract_data_pipeline to be suited for each class.
 
+        Keyword argument `file_system_handler` allow to specified a custom file system handler.
         """
+        # Set-up current file system.
+        self.file_system_handler = kwargs.pop('file_system_handler')
 
-        if not file_system_handler:
-            # Choose file system from os.plataform
-            pass
-
-        # Set attributes from kwargs.
-
-            # If content is not a stream, convert to stream and add to _stream_content.
-
-            # If path provided user should use from_disk to load, else save will save with new name
-
-            # attributes will be in two list, hashes` list or __dict__
-
-        # Set behavior from attributes.
-
-    # TODO: Create magic method to set hashes
-
-    @classmethod
-    def from_content(cls):
+        # Set-up attributes from kwargs
         pass
 
-    @classmethod
-    def from_disk(cls):
-        pass
+        if not self.file_system_handler:
+            self.file_system_handler = (
+                self.windows_file_system_handler
+                if name == 'nt'
+                else self.linux_file_system_handler
+            )
+
+        # Process extractor pipeline
+        self.extract_data_pipeline.run(object=self, *args, **kwargs)
 
     @property
     def complete_filename(self):
         """
         Method to return as attribute the complete filename from file.
         """
-        return self.filename if self.extension is None else f"{self.filename}.{self.extension}"
+        return self.filename if not self.extension else f"{self.filename}.{self.extension}"
 
     @complete_filename.setter
     def set_complete_filename(self, value):
@@ -230,14 +229,36 @@ class BaseFile:
         """
         return join(self.path, self.complete_filename)
 
+    @property
+    def content(self):
+        """
+        Method to return as attribute the content that can be previous loaded from content,
+        or a stream_content or need to be load from file system.
+        This method should be override in child class.
+        """
+        raise NotImplementedError("Property content should be declared in child class.")
 
-
+    @content.setter
+    def set_content(self, value):
+        """
+        Method to set content attribute. This method should be override in child class.
+        """
+        raise NotImplementedError("Setter of property content should be declared in child class.")
 
     @property
-    def filename(self):
+    def is_packed(self):
+        # Check if extension is in compressed file list or there are items in _list_internal_content
         pass
 
+    def add_metadata(self, key, value):
+        """
+        Method to add a value to a key. It will replace existing key in metadata attribute `_meta`.
+        """
+        if self._meta is None:
+            self._meta = {key: value}
+            return
 
+        self._meta[key] = value
 
 
     def get_size(self):
@@ -318,7 +339,10 @@ class BaseFile:
 
         # Get id after saving.
 
+    def validate(self):
+        # Check if mimetype condiz with extension
 
+        # Check if hashers registered are really the same for file.
 
     def update(self):
         # Update content overwritten it, path must exist else raise error.
@@ -336,8 +360,9 @@ class ContentFile(BaseFile):
     # Changing between type of file should be made by controler.
 
     extract_data_pipeline = Pipeline(
-        ExtensionAndMimeTypeFromFilenameExtracter.to_processor(),
-        ExtensionAndMimeTypeFromContentExtracter.to_processor(),
+        FilenameFromMetadataExtracter.to_processor(),
+        MimeTypeFromFilenameExtracter.to_processor(),
+        MimeTypeFromContentExtracter.to_processor(),
         MetadataExtracter.to_processor()
     )
     """
@@ -357,14 +382,15 @@ class ContentFile(BaseFile):
         """
         Method to set content attribute from memory. `value` should be the content in memory or reference to it.
         """
-        pass
+        self._content = value
 
 
 class StreamFile(BaseFile):
 
     extract_data_pipeline = Pipeline(
-        ExtensionAndMimeTypeFromFilenameExtracter.to_processor(),
-        ExtensionAndMimeTypeFromContentExtracter.to_processor(),
+        FilenameFromMetadataExtracter.to_processor(),
+        MimeTypeFromFilenameExtracter.to_processor(),
+        MimeTypeFromContentExtracter.to_processor(),
         MetadataExtracter.to_processor()
     )
     """
@@ -390,7 +416,8 @@ class StreamFile(BaseFile):
 class File(BaseFile):
 
     extract_data_pipeline = Pipeline(
-        ExtensionAndMimeTypeFromFilenameExtracter.to_processor(),
+        FilenameAndExtensionFromPathExtracter.to_processor(),
+        MimeTypeFromFilenameExtracter.to_processor(),
         FileSystemDataExtracter.to_processor(),
         HashFileExtracter.to_processor(),
     )
@@ -477,7 +504,6 @@ class File2:
 
     #file_pointer
     #hash_instance = {}
-    separator = sep
 
     use_relative_path = False
 
@@ -549,7 +575,6 @@ class File2:
 
         self.use_relative_path = False
 
-        self.separator = sep
 
     def __extract_data_from_content(self, content, filename, extension):
         self.complete_filename = filename + '.' + extension
