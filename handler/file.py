@@ -1,25 +1,34 @@
 # first-party
-from os import sep
+from os import name
 from os.path import (
     basename,
     dirname,
-    splitdrive, join
+    join
 )
 
 # modules
+from handler.pipelines.extracter import (
+    ExtensionAndMimeTypeFromContentExtracter,
+    ExtensionAndMimeTypeFromFilenameExtracter,
+    FileSystemDataExtracter,
+    HashFileExtracter,
+    MetadataExtracter,
+)
+
+from handler.mimetype import LibraryMimeTyper
 from handler.pipelines.comparer import (
     DataCompare,
     HashCompare,
     SizeCompare
 )
+from handler.pipelines.hasher import (
+    MD5Hasher,
+    SHA256Hasher
+)
 from .exception import NoInternalContentError
 from .handler import LinuxFileSystem, WindowsFileSystem
 from .pipelines import Pipeline
-from .pipelines.guesser import FileMimeTypeGuesser
-#from ..handler.file import FileSystemHandler
 from .pipelines.renamer import WindowsRenamer
-from ..extractor.request import RequestExtractor
-from ..extractor.mimetype import MimetypeExtractor
 
 
 class BaseFile:
