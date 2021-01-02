@@ -327,12 +327,122 @@ class BaseFile:
         pass
 
 
+class ContentFile(BaseFile):
+    # Changing between type of file should be made by controler.
+
+    extract_data_pipeline = Pipeline(
+        ExtensionAndMimeTypeFromFilenameExtracter.to_processor(),
+        ExtensionAndMimeTypeFromContentExtracter.to_processor(),
+        MetadataExtracter.to_processor()
+    )
+    """
+    Pipeline to extract data from multiple sources.
+    """
+
+    @property
+    def content(self):
+        """
+        Method to return as attribute the content previously loaded from content.
+        """
+        if self._content is not None:
+            pass
+
+    @content.setter
+    def set_content(self, value):
+        """
+        Method to set content attribute from memory. `value` should be the content in memory or reference to it.
+        """
+        pass
 
 
+class StreamFile(BaseFile):
+
+    extract_data_pipeline = Pipeline(
+        ExtensionAndMimeTypeFromFilenameExtracter.to_processor(),
+        ExtensionAndMimeTypeFromContentExtracter.to_processor(),
+        MetadataExtracter.to_processor()
+    )
+    """
+    Pipeline to extract data from multiple sources.
+    """
+
+    @property
+    def content(self):
+        """
+        Method to return as attribute the content previously loaded from a stream_content.
+        """
+        if self._stream_content is not None:
+            pass
+
+    @content.setter
+    def set_content(self, value):
+        """
+        Method to set content attribute from stream. `value` should be stream buffer.
+        """
+        pass
 
 
 class File(BaseFile):
-    pass
+
+    extract_data_pipeline = Pipeline(
+        ExtensionAndMimeTypeFromFilenameExtracter.to_processor(),
+        FileSystemDataExtracter.to_processor(),
+        HashFileExtracter.to_processor(),
+    )
+    """
+    Pipeline to extract data from multiple sources.
+    """
+
+    def __init__(self, path):
+        # Init content from file system
+        """
+
+        """
+
+        # From path check if file exists
+
+        # populate file data as size, name, create_date, update_date
+
+        # Check if valid extension and has mimetype
+
+        # Populate _pointer_content
+
+        # Extract hash from hash files if there are any.
+
+
+
+
+
+        if not file_system_handler:
+            # Choose file system from os.plataform
+            pass
+
+        # Set attributes from kwargs.
+
+            # If content is not a stream, convert to stream and add to _stream_content.
+
+            # If path provided user should use from_disk to load, else save will save with new name
+
+            # attributes will be in two list, hashes` list or __dict__
+
+        pass
+
+    @property
+    def content(self):
+        """
+        Method to return as attribute the content previously loaded from file system.
+        """
+        if self._pointer_content is not None:
+            pass
+
+    @content.setter
+    def set_content(self, value):
+        """
+        Method to set content attribute from file system. `value` should be a file's pointer.
+        """
+        pass
+
+
 
 
 class File2:
