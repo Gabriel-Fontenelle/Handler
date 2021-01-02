@@ -52,7 +52,7 @@ class Renamer(ProcessorMixin):
     def process(cls, *args, **kwargs):
         """
         Method used to run this class on Processor`s Pipeline for Files.
-        This method and to_processor() is not need to rename files outside a pipelines.
+        This method and to_processor() is not need to rename files outside a pipeline.
         This process method is created exclusively to pipeline for objects inherent from BaseFile.
 
         The processor for renamer uses only one object that must be settled through first argument
