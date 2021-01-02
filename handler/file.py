@@ -6,20 +6,21 @@ from os.path import (
     join
 )
 
-# modules
-from handler.pipelines.extracter import (
-    ExtensionAndMimeTypeFromContentExtracter,
-    ExtensionAndMimeTypeFromFilenameExtracter,
-    FileSystemDataExtracter,
-    HashFileExtracter,
-    MetadataExtracter,
-)
-
 from handler.mimetype import LibraryMimeTyper
 from handler.pipelines.comparer import (
     DataCompare,
     HashCompare,
     SizeCompare
+)
+# modules
+from handler.pipelines.extracter import (
+    FileSystemDataExtracter,
+    FilenameAndExtensionFromPathExtracter,
+    FilenameFromMetadataExtracter,
+    HashFileExtracter,
+    MetadataExtracter,
+    MimeTypeFromContentExtracter,
+    MimeTypeFromFilenameExtracter,
 )
 from handler.pipelines.hasher import (
     MD5Hasher,
