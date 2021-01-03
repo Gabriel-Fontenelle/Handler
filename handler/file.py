@@ -405,13 +405,6 @@ class StreamFile(BaseFile):
         if self._stream_content is not None:
             pass
 
-    @content.setter
-    def set_content(self, value):
-        """
-        Method to set content attribute from stream. `value` should be stream buffer.
-        """
-        pass
-
 
 class File(BaseFile):
 
@@ -424,40 +417,6 @@ class File(BaseFile):
     """
     Pipeline to extract data from multiple sources.
     """
-
-    def __init__(self, path):
-        # Init content from file system
-        """
-
-        """
-
-        # From path check if file exists
-
-        # populate file data as size, name, create_date, update_date
-
-        # Check if valid extension and has mimetype
-
-        # Populate _pointer_content
-
-        # Extract hash from hash files if there are any.
-
-
-
-
-
-        if not file_system_handler:
-            # Choose file system from os.plataform
-            pass
-
-        # Set attributes from kwargs.
-
-            # If content is not a stream, convert to stream and add to _stream_content.
-
-            # If path provided user should use from_disk to load, else save will save with new name
-
-            # attributes will be in two list, hashes` list or __dict__
-
-        pass
 
     @property
     def content(self):
@@ -507,50 +466,6 @@ class File2:
 
     use_relative_path = False
 
-    def __init__(self, **kwargs):
-        
-
-        self.set_initial_data()
-
-        if request:
-            self.request = request #Request object, method __extract_data_from_request will test if request is instance of Request
-
-            #Get attributes of file from request
-            self.__extract_data_from_request()
-
-    @classmethod
-    def from_file(cls, file_path, load_hashes=[]):
-        """ Method to instancialize file object from file.
-            This method is a alternative init and must be used as follow:
-            File.from_file(file_path)
-
-        """
-        file_object = File()  # Create file object without request
-        file_object.set_complete_path(file_path)
-        file_object.__extract_data_from_file_path()
-
-        if load_hashes:
-            file_handler = FileHandler(overwrite=False, rename=False)
-            file_handler.load_hashes(file_object, load_hashes)
-
-        return file_object
-
-    @classmethod
-    def from_content(cls, content, filename, extension):
-        """ Method to instancialize file object from content.
-            This method is a alternative init and must be used as follow:
-            File.from_content(content, mime_type, extension)
-        """
-        file_object = File()  # Create file object without request
-        file_object.__extract_data_from_content(content, filename, extension)
-
-        return file_object
-
-    @classmethod
-    def from_request(cls, request):
-        pass
-
-
     def __extract_data_from_request(self):
         extractor = RequestExtractor(self.request)
 
@@ -562,110 +477,21 @@ class File2:
         self.set_hash('md5', self.request.get_MD5())
         self.length = self.request.get_length()
 
-    def __extract_data_from_file_path(self):
-        self.complete_filename = basename(self.complete_path)
-
-        filename = self.complete_filename.rsplit('.', 1)
-
-        self.filename = filename[0]
-        self.extension = filename[1]
-        self.mimetype = MimetypeExtractor.guess_mimetype_from_extension(self.extension)
-        self.path = dirname(self.complete_path)
-        self.length = FileSystemHandler.get_size(self.complete_path)
-
-        self.use_relative_path = False
-
-
-    def __extract_data_from_content(self, content, filename, extension):
-        self.complete_filename = filename + '.' + extension
-        self.filename = filename
-        self.extension = extension
-
-        self.length = len(content)
-        self.mimetype = MimetypeExtractor.guess_mimetype_from_extension(extension)
-        self.write_mode = 'w'
-
-
 
     def set_initial_data(self):
-        self.path = None
-        self.relative_path = None
-        self.complete_path = None
-        self.complete_path_renamed = None
-        self.filename_renamed = None
-        self.complete_filename_renamed = None
-        self.dir_drive_name_tuple = None
-        self.complete_basename = None
-        self.hashes = {}
-        self.hash_instance = {}
-        self.file_pointer = None
         self.request = None
         self.write_mode = 'wb'
 
-    def get_file_location(self):
-        return self.path
-
-    def get_mime_type(self):
-        return self.mimetype
-
-    def get_extension(self):
-        return self.extension
-
     def get_write_mode(self):
         return self.write_mode
-
-    def get_complete_path(self):
-        if self.complete_path is None:
-
-            if not self.complete_basename:
-                self.process_path()
-
-            #Add complete filename
-            self.complete_path = self.complete_basename + self.complete_filename
-
-        return self.complete_path
-
-    def get_complete_path_updated(self):
-        if self.complete_path_renamed is None:
-            return self.get_complete_path()
-
-        return self.complete_path_renamed
-
-    def get_complete_filename(self):
-        return self.complete_filename
-
-    def get_complete_filename_updated(self):
-        if self.complete_filename_renamed is None:
-            return self.get_complete_filename()
-
-        return self.complete_filename_renamed
-
-    def get_path_with_drive_splited(self):
-        if not self.dir_drive_name_tuple:
-            self.process_path()
-
-        return self.dir_drive_name_tuple
-
-    def get_filename_updated(self):
-        if self.filename_renamed is None:
-            return self.get_filename()
 
         return self.filename_renamed
 
     def get_file_pointer(self):
         return self.file_pointer
 
-    def get_hash_instance(self):
-        return self.hash_instance
-
-    def get_hash_type_from_instance(self, hash_type):
-        return self.hash_instance.get(has_key, None)
-
     def get_relative_path(self):
         return self.relative_path
-
-    def set_MD5(self, value):
-        self.set_hash('md5', value)
 
     def set_hashes(self, hashes):
         if not isinstance(hashes, dict):
