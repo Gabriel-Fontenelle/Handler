@@ -209,3 +209,57 @@ class MimeTypeFromFilenameExtracter(Extracter):
             file_object.mime_type_handler.is_extension_lossless(file_object.extension)
         )
 
+
+class InternalFilesExtracter(Extracter):
+
+    @classmethod
+    def extract(cls, file_object):
+        """
+        Method to extract the information necessary from a file_object.
+        """
+        pass
+
+
+class MimeTypeFromContentExtracter(Extracter):
+
+    @classmethod
+    def extract(cls, file_object):
+        """
+        Method to extract the information necessary from a file_object.
+        This method must be override in child class.
+        """
+        # Check if already is a extension and mimetype, if exists do nothing.
+
+        # Check if there is a content in file_object, else is not possible to extract the mimetype and extension from
+        # it.
+
+        # Check if there is a possible extension and mimetype from content
+
+        # Save in file_object extension and mimetype
+
+
+class FilenameFromMetadataExtracter(Extracter):
+
+    @classmethod
+    def extract(cls, file_object):
+        """
+        Method to extract the information necessary from a file_object.
+        """
+        pass
+
+
+class MetadataExtracter(Extracter):
+
+    @classmethod
+    def extract(cls, file_object):
+        """
+        Method to extract the information necessary from a file_object.
+        """
+        pass
+
+
+class ContentExtracter():
+    pass
+    # Guess extension from content
+    # Guess mimetype from content
+    # Get size from content

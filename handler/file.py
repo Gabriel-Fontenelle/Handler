@@ -282,8 +282,18 @@ class BaseFile:
 
     @property
     def is_packed(self):
-        # Check if extension is in compressed file list or there are items in _list_internal_content
-        pass
+        """
+        Method to return as attribute if file is compressed or is a package with other files within.
+        """
+        return self._meta.get('compressed', False) or bool(self._list_internal_content)
+
+    @property
+    def is_binary(self):
+        """
+        Method to return as attribute if file is binary or not. This information is obtain from `_binary_content`
+        that should be set-up when data is loaded to content.
+        """
+        return self._binary_content
 
     def add_metadata(self, key, value):
         """
@@ -296,17 +306,9 @@ class BaseFile:
         self._meta[key] = value
 
 
-    def get_size(self):
-        raise NotImplementedError()
 
-    def get_content(self):
-        raise NotImplementedError()
 
-    def get_iterable_content(self):
-        raise NotImplementedError()
 
-    def get_binary_content(self):
-        raise NotImplementedError()
 
     def get_internal_content(self):
         raise NoInternalContentError(f"This file {repr(self)} don't have a internal content.")
@@ -347,6 +349,7 @@ class BaseFile:
         pass
 
     def rename(self, filename, extension=None):
+        pass
         # Check if extension is being change, raise if its
 
         # Set to rename=True
@@ -357,6 +360,7 @@ class BaseFile:
 
 
     def save(self, hashes=None):
+        pass
         # Verify if there is name, path and content before saving.
         # Raise exception otherwise.
 
@@ -375,6 +379,7 @@ class BaseFile:
         # Get id after saving.
 
     def validate(self):
+        pass
         # Check if mimetype condiz with extension
 
         # Check if hashers registered are really the same for file.
@@ -433,102 +438,3 @@ class File(BaseFile):
     # This save must overwrite file.
 
     # Stream or content are for downloading files.
-
-
-class File2:
-    """
-        TODO:
-            [ ] Allow creation of file from remote file system?
-    """
-    #complete_filename
-    #filename
-    #extension
-    #mimetype
-
-    #filename_renamed
-    #complete_filename_renamed
-
-    # Compressed
-    # Lossless
-
-    #length
-    #hashes = {}
-    #request #Request object
-
-    #path
-    #relative_path
-    #complete_path
-    #complete_path_renamed
-
-    #file_pointer
-    #hash_instance = {}
-
-    use_relative_path = False
-
-    def __extract_data_from_request(self):
-        extractor = RequestExtractor(self.request)
-
-        self.complete_filename = extractor.get_complete_filename()
-        self.filename = extractor.get_filename()
-        self.extension = extractor.get_extension()
-        self.mimetype = extractor.get_mime_type()
-        self.relative_path = extractor.get_path()
-        self.set_hash('md5', self.request.get_MD5())
-        self.length = self.request.get_length()
-
-
-    def set_initial_data(self):
-        self.request = None
-        self.write_mode = 'wb'
-
-    def get_write_mode(self):
-        return self.write_mode
-
-        return self.filename_renamed
-
-    def get_file_pointer(self):
-        return self.file_pointer
-
-    def get_relative_path(self):
-        return self.relative_path
-
-    def set_hashes(self, hashes):
-        if not isinstance(hashes, dict):
-            raise ValueError("hashes must be a instance of dict on set_hashes()")
-
-        self.hashes = hashes
-
-    def set_hash(self, hash_type, value):
-        self.hashes[hash_type] = value
-
-    def set_use_relative_path(self, value):
-        self.use_relative_path = value is True
-
-    def set_new_filename(self, value):
-        self.filename_renamed = value
-
-        self.complete_filename_renamed = "{}.{}".format(value, self.extension)
-
-        if not self.complete_basename:
-            self.process_path()
-
-        self.complete_path_renamed = self.complete_basename + self.complete_filename_renamed
-
-    def set_hash_instance(self, hashes):
-        if not isinstance(hashes, dict):
-            raise ValueError("hashes in set_hash_instance must be a dict.")
-
-        self.hash_instance = hashes
-
-    def set_write_mode(self, mode):
-        self.write_mode = mode
-
-    def was_renamed(self):
-        return self.filename_renamed is True
-
-
-class CompactFile(File):
-    pass
-
-class Image(File):
-    pass
