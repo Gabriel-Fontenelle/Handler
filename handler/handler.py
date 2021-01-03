@@ -108,6 +108,14 @@ class FileSystem:
         return True
 
     @classmethod
+    def open_file(cls, file_path, mode='rb'):
+        """
+        Method to return a buffer to a file. This method don't automatically closes file buffer.
+        Override this method if that’s not appropriate for your storage.
+        """
+        return open(file_path, mode=mode)
+
+    @classmethod
     def save_file(cls, file_path, content, **kwargs):
         """
         Method to save content on file.
