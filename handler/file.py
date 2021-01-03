@@ -1,4 +1,5 @@
 # first-party
+from io import BufferedIOBase
 from os import name
 from os.path import (
     basename,
@@ -73,13 +74,13 @@ class BaseFile:
     """
     Loaded content of file
     """
-    _stream_content = None
+    _content_buffer = None
     """
-    Streamer pointer of content
+    Loaded buffer to content of file
     """
-    _pointer_content = None
+    _binary_content = False
     """
-    Filesystem pointer of content
+    Content's flag to indicate if is binary or not. 
     """
     _list_internal_content = None
     """
@@ -238,12 +239,46 @@ class BaseFile:
         """
         raise NotImplementedError("Property content should be declared in child class.")
 
+        if self._content and self._content_buffer:
+            raise ReferenceError("Couldn't determine which content to use, both `_content` and `_content_buffer` are "
+                                 "available.")
+
+        if not (self._content and self._content_buffer):
+            raise ValueError("There is no content to use, both `_content` and `_content_buffer` are empty.")
+
+        if self._content:
+
+            for block in iter(self._content):
+                yield block
+
+        elif self._content_buffer:
+
+            # Read content in blocks until end of file and return blocks as iterable elements
+            while True:
+                block = self._content_buffer.read(self._block_size)
+
+                if block is None or block is b'':
+                    break
+
+                yield block
+
     @content.setter
     def set_content(self, value):
         """
-        Method to set content attribute. This method should be override in child class.
+        Method to set content attribute. This method can be override in child class.
+        This method can receive value as string, bytes or buffer.
         """
-        raise NotImplementedError("Setter of property content should be declared in child class.")
+        if isinstance(value, (str, bytes)):
+            # Add content as whole value
+            self._content = value
+            self._binary_content = isinstance(value, bytes)
+
+        elif isinstance(value, BufferedIOBase):
+            # Add content as buffer
+            self._content_buffer = value
+
+        else:
+            raise ValueError(f"parameter `value` informed in property content is not a valid type {type(value)}")
 
     @property
     def is_packed(self):
@@ -369,21 +404,6 @@ class ContentFile(BaseFile):
     Pipeline to extract data from multiple sources.
     """
 
-    @property
-    def content(self):
-        """
-        Method to return as attribute the content previously loaded from content.
-        """
-        if self._content is not None:
-            pass
-
-    @content.setter
-    def set_content(self, value):
-        """
-        Method to set content attribute from memory. `value` should be the content in memory or reference to it.
-        """
-        self._content = value
-
 
 class StreamFile(BaseFile):
 
@@ -396,14 +416,6 @@ class StreamFile(BaseFile):
     """
     Pipeline to extract data from multiple sources.
     """
-
-    @property
-    def content(self):
-        """
-        Method to return as attribute the content previously loaded from a stream_content.
-        """
-        if self._stream_content is not None:
-            pass
 
 
 class File(BaseFile):
@@ -418,22 +430,9 @@ class File(BaseFile):
     Pipeline to extract data from multiple sources.
     """
 
-    @property
-    def content(self):
-        """
-        Method to return as attribute the content previously loaded from file system.
-        """
-        if self._pointer_content is not None:
-            pass
+    # This save must overwrite file.
 
-    @content.setter
-    def set_content(self, value):
-        """
-        Method to set content attribute from file system. `value` should be a file's pointer.
-        """
-        pass
-
-
+    # Stream or content are for downloading files.
 
 
 class File2:
