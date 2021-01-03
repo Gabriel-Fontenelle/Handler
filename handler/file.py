@@ -1,11 +1,6 @@
 # first-party
 from io import BufferedIOBase
 from os import name
-from os.path import (
-    basename,
-    dirname,
-    join
-)
 
 from handler.mimetype import LibraryMimeTyper
 from handler.pipelines.comparer import (
@@ -233,7 +228,7 @@ class BaseFile:
         """
         Method to return as attribute the complete path to file.
         """
-        return join(self.path, self.complete_filename)
+        return self.file_system_handler.join(self.path, self.complete_filename)
 
     @property
     def content(self):
