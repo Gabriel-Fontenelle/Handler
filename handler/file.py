@@ -195,8 +195,13 @@ class BaseFile:
         # Set-up current file system.
         self.file_system_handler = kwargs.pop('file_system_handler')
 
-        # Set-up attributes from kwargs
-        pass
+        new_kwargs = {}
+        # Set-up attributes from kwargs like `file_system_handler` or `path`
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                new_kwargs[key] = value
 
         if not self.file_system_handler:
             self.file_system_handler = (
@@ -206,7 +211,7 @@ class BaseFile:
             )
 
         # Process extractor pipeline
-        self.extract_data_pipeline.run(object=self, *args, **kwargs)
+        self.extract_data_pipeline.run(object=self, *args, **new_kwargs)
 
     @property
     def complete_filename(self):
