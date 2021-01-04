@@ -295,6 +295,13 @@ class BaseFile:
         """
         return self._binary_content
 
+    @is_binary.setter
+    def is_binary(self, value):
+        """
+        Method to set property attribute is_binary. This information is obtain should be set-up when data is loaded to content.
+        """
+        self._binary_content = value
+
     def add_metadata(self, key, value):
         """
         Method to add a value to a key. It will replace existing key in metadata attribute `_meta`.

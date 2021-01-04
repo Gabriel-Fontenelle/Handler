@@ -99,6 +99,7 @@ class FileSystemDataExtracter(Extracter):
 
         This method will required that the following attributes be set-up in `file_object`:
         - path
+        - type
 
         This method will save data in the following attributes of `file_object`:
         - id
@@ -109,6 +110,9 @@ class FileSystemDataExtracter(Extracter):
         """
         if not file_object.path:
             raise ValueError("Attribute `path` must be settled before calling `FileSystemDataExtracter.extract`.")
+
+        if not file_object.type:
+            raise ValueError("Attribute `type` must be settled before calling `FileSystemDataExtracter.extract`.")
 
         file_system_handler = file_object.file_system_handler
 
@@ -132,8 +136,16 @@ class FileSystemDataExtracter(Extracter):
         # Get last modified date
         file_object.update_date = file_system_handler.get_modified_date(file_object.path)
 
+        # Define mode from file type
+        mode = 'r'
+
+        if file_object.type != 'text':
+            mode +='b'
+
+        file_object.is_binary = file_object.type == 'text'
+
         # Get content buffer
-        file_object.content = file_system_handler.open_file(file_object.path)
+        file_object.content = file_system_handler.open_file(file_object.path, mode=mode)
 
 
 class HashFileExtracter(Extracter):
