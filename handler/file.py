@@ -247,9 +247,11 @@ class BaseFile:
             raise ValueError("There is no content to use, both `_content` and `_content_buffer` are empty.")
 
         if self._content:
+            i = 0
 
-            for block in iter(self._content):
-                yield block
+            while i < self.length:
+                yield self._content[i:i+self._block_size]
+                i+=self._block_size
 
         elif self._content_buffer:
 
