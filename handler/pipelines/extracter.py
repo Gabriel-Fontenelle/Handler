@@ -17,7 +17,7 @@ class Extracter(ProcessorMixin):
     """
 
     @classmethod
-    def extract(cls, file_object):
+    def extract(cls, file_object, *args, **kwargs):
         """
         Method to extract the information necessary from a file_object.
         This method must be override in child class.
@@ -32,10 +32,10 @@ class Extracter(ProcessorMixin):
         This process method is created exclusively to pipeline for objects inherent from BaseFile.
 
         """
-        object_to_process = kwargs.pop('object', args[0])
+        object_to_process = kwargs.pop('object', args.pop(0))
 
         try:
-            cls.extract(file_object=object_to_process)
+            cls.extract(file_object=object_to_process, *args, **kwargs)
         except (ValueError, IOError):
             return False
 
@@ -48,7 +48,7 @@ class FilenameAndExtensionFromPathExtracter(Extracter):
     """
 
     @classmethod
-    def extract(cls, file_object):
+    def extract(cls, file_object, *args, **kwargs):
         """
         Method to extract the filename and extension information from attribute `path` of file_object.
 
@@ -93,7 +93,7 @@ class FilenameAndExtensionFromPathExtracter(Extracter):
 class FileSystemDataExtracter(Extracter):
 
     @classmethod
-    def extract(cls, file_object):
+    def extract(cls, file_object, *args, **kwargs):
         """
         Method to extract the file system information related a file_object.
 
@@ -201,7 +201,7 @@ class MimeTypeFromFilenameExtracter(Extracter):
     """
 
     @classmethod
-    def extract(cls, file_object):
+    def extract(cls, file_object, *args, **kwargs):
         """
         Method to extract the mimetype information from a file_object.
 
@@ -241,7 +241,7 @@ class MimeTypeFromFilenameExtracter(Extracter):
 class InternalFilesExtracter(Extracter):
 
     @classmethod
-    def extract(cls, file_object):
+    def extract(cls, file_object, *args, **kwargs):
         """
         Method to extract the information necessary from a file_object.
         """
@@ -251,7 +251,7 @@ class InternalFilesExtracter(Extracter):
 class MimeTypeFromContentExtracter(Extracter):
 
     @classmethod
-    def extract(cls, file_object):
+    def extract(cls, file_object, *args, **kwargs):
         """
         Method to extract the information necessary from a file_object.
         This method must be override in child class.
@@ -269,7 +269,11 @@ class MimeTypeFromContentExtracter(Extracter):
 class FilenameFromMetadataExtracter(Extracter):
 
     @classmethod
-    def extract(cls, file_object):
+    def extract(cls, file_object, *args, **kwargs):
+        """
+        Method to extract the information necessary from a file_object.
+        """
+        pass
         """
         Method to extract the information necessary from a file_object.
         """

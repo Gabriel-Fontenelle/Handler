@@ -65,7 +65,7 @@ class Renamer(ProcessorMixin):
         is shared between the reference of the class and all object of it and will have to be change the
         code (multi process don't have this problem).
         """
-        object_to_process = kwargs.pop('object', args[0])
+        object_to_process = kwargs.pop('object', args.pop(0))
 
         # Prepare filename from File's object
         filename, extension = cls.prepare_filename(object_to_process.filename, object_to_process.extension)

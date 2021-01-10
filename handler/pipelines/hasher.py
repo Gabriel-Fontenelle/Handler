@@ -42,7 +42,7 @@ class Hasher(ProcessorMixin):
         that is generated from file content. File content can be from File System, Memory or Stream
         so it is susceptible to data corruption.
         """
-        object_to_process = kwargs.pop('object', args[0])
+        object_to_process = kwargs.pop('object', args.pop(0))
 
         hash_instance = cls.instantiate_hash()
 
@@ -183,7 +183,7 @@ class Hasher(ProcessorMixin):
         Specifying the keyword argument `full_check` as True will make the processor to verify the hash value in file
         CHECKSUM.<cls.hasher_name>, if there is any in the same directory as the file to be processed.
         """
-        object_to_process = kwargs.pop('object', args[0])
+        object_to_process = kwargs.pop('object', args.pop(0))
         full_check = kwargs.pop('full_check', False)
 
         # Save current file system handler
