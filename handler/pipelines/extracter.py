@@ -108,6 +108,21 @@ class FileSystemDataExtracter(Extracter):
         - update_date
         - content (_content_buffer)
         """
+
+        def generate_content(path, mode):
+            """
+            Internal function to return a generator for reading the file's content through the file system.
+            """
+            with file_object.file_system_handler.open_file(path, mode=mode) as f:
+
+                while True:
+                    block = f.read(file_object._block_size)
+
+                    if block is None or block is b'':
+                        break
+
+                    yield block
+
         if not file_object.path:
             raise ValueError("Attribute `path` must be settled before calling `FileSystemDataExtracter.extract`.")
 
@@ -144,8 +159,9 @@ class FileSystemDataExtracter(Extracter):
 
         file_object.is_binary = file_object.type == 'text'
 
-        # Get content buffer
-        file_object.content = file_system_handler.open_file(file_object.path, mode=mode)
+        # Get content generator, same as buffer but without needing to use
+        # `.read(),` just loop through chunks of content.
+        file_object.content = generate_content(file_object.path, mode)
 
 
 class HashFileExtracter(Extracter):
