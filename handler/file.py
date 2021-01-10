@@ -73,6 +73,10 @@ class BaseFile:
     """
     Loaded buffer to content of file
     """
+    _content_generator = None
+    """
+    Loaded generator to content of file
+    """
     _binary_content = False
     """
     Content's flag to indicate if is binary or not. 
@@ -237,16 +241,18 @@ class BaseFile:
         or a stream_content or need to be load from file system.
         This method should be override in child class.
         """
-        raise NotImplementedError("Property content should be declared in child class.")
+        if self._content and self._content_buffer and self._content_generator:
+            raise ReferenceError("Couldn't determine which content to use, both `_content`, `_content_generator` "
+                                 "and `_content_buffer` are available.")
 
-        if self._content and self._content_buffer:
-            raise ReferenceError("Couldn't determine which content to use, both `_content` and `_content_buffer` are "
-                                 "available.")
+        if not (self._content and self._content_buffer and self._content_generator):
+            raise ValueError("There is no content to use, both `_content`, `_content_generator` and `_content_buffer` are empty.")
 
-        if not (self._content and self._content_buffer):
-            raise ValueError("There is no content to use, both `_content` and `_content_buffer` are empty.")
+        # Check if content is generator, which we will loop through chunks of content.
+        if self._content_generator:
+            return self._content_generator
 
-        if self._content:
+        elif self._content:
             i = 0
 
             while i < self.length:
@@ -271,13 +277,19 @@ class BaseFile:
         This method can receive value as string, bytes or buffer.
         """
         if isinstance(value, (str, bytes)):
+            # This should be deprecated in favor of _content_generator
             # Add content as whole value
             self._content = value
-            self._binary_content = isinstance(value, bytes)
+            self._binary_content = isinstance(value, bytes) # Maybe remove it from here.
 
         elif isinstance(value, BufferedIOBase):
+            # This should be deprecated in favor of _content_generator
             # Add content as buffer
             self._content_buffer = value
+
+        elif inspect.isgenerator(value):
+            # Add content as generator
+            self._content_generator = value
 
         else:
             raise ValueError(f"parameter `value` informed in property content is not a valid type {type(value)}")
