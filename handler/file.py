@@ -1,5 +1,6 @@
 # first-party
-from io import BufferedIOBase
+import inspect
+from io import IOBase
 from os import name
 
 from handler.mimetype import LibraryMimeTyper
@@ -25,7 +26,7 @@ from handler.pipelines.hasher import (
 from .exception import NoInternalContentError
 from .handler import LinuxFileSystem, WindowsFileSystem
 from .pipelines import Pipeline
-from .pipelines.renamer import WindowsRenamer
+from .pipelines.renamer import WindowsRenamer, Renamer
 
 
 class BaseFile:
@@ -63,15 +64,7 @@ class BaseFile:
     # Content data
     _block_size = 256
     """
-    Block size of file to be loaded in each step of iterator. 
-    """
-    _content = None
-    """
-    Loaded content of file
-    """
-    _content_buffer = None
-    """
-    Loaded buffer to content of file
+    Block size of file to be loaded in each step of iterator.
     """
     _content_generator = None
     """
@@ -79,7 +72,7 @@ class BaseFile:
     """
     _binary_content = False
     """
-    Content's flag to indicate if is binary or not. 
+    Content's flag to indicate if is binary or not.
     """
     _list_internal_content = None
     """
@@ -106,7 +99,7 @@ class BaseFile:
     hashes = None
     """
     Checksum information for file.
-    It can be multiples like MD5, SHA128, SHA256, SHA512.  
+    It can be multiples like MD5, SHA128, SHA256, SHA512.
     """
 
     # Handler
@@ -120,7 +113,7 @@ class BaseFile:
     """
     file_system_handler = None
     """
-    FileSystem currently in use for File. 
+    FileSystem currently in use for File.
     It can be LinuxFileSystem, WindowsFileSystem or a custom one.
     """
     mime_type_handler = LibraryMimeTyper()
