@@ -299,7 +299,6 @@ class MimeTypeFromFilenameExtracter(Extracter):
         This method will save data in the following attributes of `file_object`:
         - mime_type
         - type
-        - _meta (compressed, lossless)
 
         This method make use of overrider.
         """
@@ -317,15 +316,6 @@ class MimeTypeFromFilenameExtracter(Extracter):
         file_object.mime_type = file_object.mime_type_handler.get_mimetype(file_object.extension)
         file_object.type = file_object.mime_type_handler.get_type(file_object.mime_type, file_object.extension)
 
-        # Save additional metadata to file.
-        file_object.add_metadata(
-            'compressed',
-            file_object.mime_type_handler.is_extension_compressed(file_object.extension)
-        )
-        file_object.add_metadata(
-            'lossless',
-            file_object.mime_type_handler.is_extension_lossless(file_object.extension)
-        )
 
 
 class InternalFilesExtracter(Extracter):
