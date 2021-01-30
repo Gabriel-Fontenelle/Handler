@@ -122,7 +122,7 @@ class BaseFile:
     This is used to identify mimetype from extension and vice-verse.
     """
 
-
+    _save_actions = None
 
 
 
@@ -201,6 +201,9 @@ class BaseFile:
                 if name == 'nt'
                 else self.linux_file_system_handler
             )
+
+        # Set-up resources used for `save` and `update` methods.
+        self._actions = []
 
         # Process extractor pipeline
         self.extract_data_pipeline.run(object=self, *args, **new_kwargs)
