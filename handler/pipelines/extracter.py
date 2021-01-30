@@ -317,6 +317,225 @@ class MimeTypeFromFilenameExtracter(Extracter):
         file_object.type = file_object.mime_type_handler.get_type(file_object.mime_type, file_object.extension)
 
 
+class MetadataExtracter(Extracter):
+    """
+    Class that define the extraction of multiple file's data from metadata passed to extract.
+    """
+
+    @staticmethod
+    def get_etag(metadata: dict) -> str:
+        """
+        Static method to extract ETag from metadata.
+        https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Etag
+        """
+        try:
+            etag = metadata['ETag']
+
+            begin = etag.index('"') + 1
+            end = etag[begin:].index('"')
+
+            return etag[begin:end]
+        except KeyError:
+            return ""
+
+    @staticmethod
+    def get_mime_type(metadata: dict):
+        """
+        Static method to extract mimetype from metadata.
+        https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
+        """
+        try:
+            return metadata['Content-Type'].split(';')[0].strip()
+
+        except (KeyError, IndexError):
+            return None
+
+    @staticmethod
+    def get_length(metadata: dict) -> int:
+        """
+        Static method to extract length from metadata.
+        https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Length
+        """
+        try:
+            return int(metadata['Content-Length'])
+        except KeyError:
+            return 0
+
+    @staticmethod
+    def get_last_modified(metadata: dict):
+        """
+        Static method to extract last modified date from metadata.
+        https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified
+        This method is not making use of time zone `%z`.
+        """
+        try:
+            return datetime.fromtimestamp(mktime(strptime(metadata['Last-Modified'], "%a, %d %b %Y %H:%M:%S %z")))
+        except KeyError:
+            return None
+
+    @staticmethod
+    def get_date(metadata: dict):
+        """
+        Static method to extract creation date from metadata.
+        https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Date
+        This method is not making use of time zone `%z`.
+        This method return the last modified date if no creation date is provided.
+        """
+        last_modified = MetadataExtracter.get_last_modified(metadata)
+
+        try:
+            date = datetime.fromtimestamp(mktime(strptime(metadata['Date'], "%a, %d %b %Y %H:%M:%S %z")))
+
+            # If Last-Modified is lower than Date return Last-Modified
+            if last_modified and last_modified < date:
+                return last_modified
+
+            return date
+        except KeyError:
+            return last_modified
+
+    @staticmethod
+    def get_content_disposition(metadata: dict) -> list:
+        """
+        Static method to extract attachment data from metadata.
+        https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
+        """
+        try:
+            return [
+                content.strip()
+                for content in metadata['Content-Disposition'].split(';')
+            ]
+        except KeyError:
+            return []
+
+    @staticmethod
+    def get_expire(metadata: dict):
+        """
+        Static method to extract the expiration date from metadata.
+        https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Expires
+        """
+        try:
+            return datetime.fromtimestamp(mktime(strptime(metadata['Last-Modified'], "%a, %d %b %Y %H:%M:%S %z")))
+        except KeyError:
+            return None
+
+    @staticmethod
+    def get_language(metadata: dict) -> list:
+        """
+        Method to extract the information of Language from metadata.
+        https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Language
+        """
+        try:
+            return [
+                content.strip()
+                for content in metadata['Content-Language'].split(',')
+            ]
+        except KeyError:
+            return []
+
+    @classmethod
+    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to extract the information necessary from a file_object.
+        Content-MD5 was deprecated from HTTP because it not allow partial testing.
+
+        This method will required that the following attributes be set-up as kwargs:
+        - metadata
+
+        This method not require any previously save data in `file_object`.
+
+        This method will save data in the following attributes of `file_object`:
+        - id
+        - mime_type
+        - extension
+        - type
+        - create_date
+        - update_date
+        - _meta (expire, language)
+
+        This method make use of overrider.
+        """
+        try:
+            meta = kwargs['metadata']
+
+            if not meta:
+                raise ValueError('Parameter `metadata` must be have value to be extract at '
+                                 '`MetadataExtracter.extract`.')
+
+            # Set-up id from Etag
+            etag = cls.get_etag(meta)
+
+            if etag and (not file_object.id or overrider):
+                file_object.id = etag
+
+            # Set-up mimetype from metadata
+            mimetype = cls.get_mime_type(meta)
+            if mimetype and (not file_object.mime_type or overrider):
+                # Get mimetype
+                file_object.mime_type = mimetype
+
+            # Set-up extension from mimetype
+            if mimetype and (not file_object.extension or overrider):
+                # Get extensions from mimetype, only if mimetype is not stream (because it don't have a extension
+                # associated with stream), and if there is no one valid don't register one.
+                # In order to avoid wrong extension being settled is recommend to use a Extractor of
+                # `FilenameFromURLExtracter` and `FilenameFromMetadataExtracter` before this processor.
+                if 'stream' not in mimetype:
+                    possible_extension = file_object.mime_type_handler.guess_extension_from_mimetype(mimetype)
+
+                    if possible_extension:
+                        file_object.extension = possible_extension
+
+                        # Save additional metadata to file.
+                        file_object.add_metadata(
+                            'compressed',
+                            file_object.mime_type_handler.is_extension_compressed(file_object.extension)
+                        )
+                        file_object.add_metadata(
+                            'lossless',
+                            file_object.mime_type_handler.is_extension_lossless(file_object.extension)
+                        )
+
+            # Set-up type from mimetype and extension
+            if file_object.mime_type and file_object.extension and (not file_object.type or overrider):
+                file_object.type = file_object.mime_type_handler.get_type(file_object.mime_type, file_object.extension)
+
+            # Atendimento claro/net: 003214758387298
+            # Set-up created date from metadata
+            create_date = cls.get_date(meta)
+            if create_date and (not file_object.create_date or overrider):
+                file_object.create_date = create_date
+
+            # Set-up updated date from metadata
+            update_date = cls.get_last_modified(meta)
+            if update_date and (not file_object.update_date or overrider):
+                file_object.update_date = update_date
+
+            # Set-up length from metadata
+            length = cls.get_length(meta)
+            if length and (not file_object.length or overrider):
+                file_object.length = length
+
+            # Set-up language metadata from metadata
+            language = cls.get_language(meta)
+            if language and (not file_object.has_metadata('language') or overrider):
+                file_object.add_metadata(
+                    'language',
+                    language
+                )
+
+            # Set-up expiration date
+            expire_date = cls.get_expire(meta)
+            if expire_date and (not file_object.has_metadata('expire') or overrider):
+                file_object.add_metadata(
+                    'expire',
+                    expire_date
+                )
+
+        except KeyError:
+            raise ValueError('Parameter `metadata` must be informed as key argument for '
+                             '`MetadataExtracter.extract`.')
+
 
 class InternalFilesExtracter(Extracter):
 
