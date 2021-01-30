@@ -208,6 +208,13 @@ class BaseFile:
         # Process extractor pipeline
         self.extract_data_pipeline.run(object=self, *args, **new_kwargs)
 
+    def __len__(self):
+        """
+        Method to inform function `len()` where to extract the information of length from.
+        When calling `len(BaseFile())` it will return the size of file in bytes.
+        """
+        return self.length
+
     @property
     def complete_filename(self):
         """
