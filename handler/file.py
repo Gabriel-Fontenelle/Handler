@@ -48,7 +48,7 @@ class BaseFile:
     """
     Extension of file
     """
-    path = None
+    _path = None
     """
     Full path to file including filename
     """
@@ -59,6 +59,15 @@ class BaseFile:
     update_date = None
     """
     Datetime when file was updated
+    """
+    save_to = None
+    """
+    Path of directory to save file. This path will be use for mixing relative paths.
+    """
+    relative_path = None
+    """
+    Relative path to save file. This path will be use for generating whole path together with save_to and 
+    complete_filename.
     """
 
     # Content data
@@ -135,8 +144,6 @@ class BaseFile:
 
 
     # Pipelines
-    # Pipeline to extract data
-    # Pipeline to compact or extract file
     extract_data_pipeline = None
     """
     Pipeline to extract data from multiple sources. This should be override at child class.
@@ -231,13 +238,6 @@ class BaseFile:
         self.filename, self.extension = value
 
     @property
-    def complete_file_path(self):
-        """
-        Method to return as attribute the complete path to file.
-        """
-        return self.file_system_handler.join(self.path, self.complete_filename)
-
-    @property
     def content(self):
         """
         Method to return as attribute the content that can be previous loaded from content,
@@ -319,6 +319,24 @@ class BaseFile:
         """
         self._binary_content = value
 
+    @property
+    def path(self):
+        """
+        Method to return as attribute full path of file.
+        """
+        return self._path
+
+    @path.setter
+    def path(self, value):
+        """
+        Method to set property attribute path. This method check whether path is a directory before setting, as we only
+        allow path to files to be set-up.
+        """
+        if self.file_system_handler.is_dir(value):
+            raise ValueError("path informed for File cannot be a directory.")
+
+        self._path = value
+
     def add_metadata(self, key, value):
         """
         Method to add a value to a key. It will replace existing key in metadata attribute `_meta`.
@@ -329,6 +347,45 @@ class BaseFile:
 
         self._meta[key] = value
 
+    def add_valid_filename(self, complete_filename) -> bool:
+        """
+        Method to add filename and extension to file only if it has a valid extension.
+        This method return boolean to indicate whether a filename and extension was added or not.
+
+        This method will set the complete filename overridden it if already exists.
+
+        The following attributes are set for file:
+        - complete_filename (filename, extension)
+        - _meta (compressed, lossless)
+        """
+        # Check if there is known extension in complete_filename
+        possible_extension = self.mime_type_handler.guess_extension_from_filename(complete_filename)
+
+        if possible_extension:
+            # Use base class Renamer because prepare_filename is a class method and we don't require any other
+            # specialized methods from Renamer children.
+            self.complete_filename = Renamer.prepare_filename(complete_filename, possible_extension)
+
+            # Save additional metadata to file.
+            self.add_metadata(
+                'compressed',
+                self.mime_type_handler.is_extension_compressed(self.extension)
+            )
+            self.add_metadata(
+                'lossless',
+                self.mime_type_handler.is_extension_lossless(self.extension)
+            )
+
+            return True
+
+        return False
+
+    def has_metadata(self, key):
+        """
+        Method to return if whether metadata has a valid value.
+        This method will considere 0 as valid, but None, or empty string as not valid.
+        """
+        return key in self._meta and (self._meta[key] or self._meta[key] == 0)
 
 
 
