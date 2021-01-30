@@ -28,7 +28,7 @@ class Hasher(ProcessorMixin):
     """
     hasher_name = None
     """
-    Name of hasher algorithm and also its extension abbreviation.  
+    Name of hasher algorithm and also its extension abbreviation.
     """
     hash_objects = {}
     """
@@ -135,11 +135,13 @@ class Hasher(ProcessorMixin):
         This process method is created exclusively to pipeline for objects inherent from BaseFile.
 
         The processor for hasher uses only one object that must be settled through first argument
-        or through key work object.
+        or through key work `object`.
 
         FUTURE CONSIDERATION: Making the pipeline multi thread or multi process will require that iterator of content
         be a isolated copy of content to avoid race condition when using content where its provenience came from file
         pointer.
+
+        This processors return boolean to indicate that process was ran successfully.
         """
         object_to_process = kwargs['object'] if 'object' in kwargs else args[0]
         try_loading_from_file = kwargs.get('try_loading_from_file', False)
@@ -215,7 +217,7 @@ class MD5Hasher(Hasher):
 
     hasher_name = 'md5'
     """
-    Name of hasher algorithm and also its extension abbreviation.  
+    Name of hasher algorithm and also its extension abbreviation.
     """
 
     @classmethod
@@ -233,7 +235,7 @@ class SHA256Hasher(Hasher):
 
     hasher_name = 'sha256'
     """
-    Name of hasher algorithm and also its extension abbreviation.  
+    Name of hasher algorithm and also its extension abbreviation.
     """
 
     @classmethod
