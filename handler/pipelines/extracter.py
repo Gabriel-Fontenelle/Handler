@@ -10,6 +10,7 @@ __all__ = [
     'FilenameAndExtensionFromPathExtracter',
     'FilenameFromMetadataExtracter',
     'HashFileExtracter',
+    'MetadataExtracter',
     'MimeTypeFromFilenameExtracter',
 ]
 
