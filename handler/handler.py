@@ -221,7 +221,7 @@ class FileSystem:
         """
         Method used to get the filename from a complete path.
         """
-        return path.basename(path)
+        return basename(path)
 
     @classmethod
     def get_relative_path(cls, path, relative_to):
