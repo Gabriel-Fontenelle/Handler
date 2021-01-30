@@ -38,27 +38,27 @@ class BaseFile:
     # Filesystem data
     id = None
     """
-    File`s id in the File System
+    File`s id in the File System.
     """
     filename = None
     """
-    Name of file without extension
+    Name of file without extension.
     """
     extension = None
     """
-    Extension of file
+    Extension of file.
     """
     _path = None
     """
-    Full path to file including filename
+    Full path to file including filename. BaseFile.path is available through property. 
     """
     create_date = None
     """
-    Datetime when file was created
+    Datetime when file was created.
     """
     update_date = None
     """
-    Datetime when file was updated
+    Datetime when file was updated.
     """
     save_to = None
     """
@@ -77,7 +77,7 @@ class BaseFile:
     """
     _content_generator = None
     """
-    Loaded generator to content of file
+    Loaded generator to content of file.
     """
     _binary_content = False
     """
@@ -85,21 +85,21 @@ class BaseFile:
     """
     _list_internal_content = None
     """
-    list of items in compressed file
+    list of items in compressed file.
     """
 
     # Metadata data
     length = 0
     """
-    size of file content
+    size of file content.
     """
     mime_type = None
     """
-    File`s mime type
+    File`s mime type.
     """
     type = None
     """
-    File's type (e.g. image, audio, video, application)
+    File's type (e.g. image, audio, video, application).
     """
     _meta = None
     """
@@ -114,11 +114,11 @@ class BaseFile:
     # Handler
     linux_file_system_handler = LinuxFileSystem
     """
-    FileSystem for Linux
+    FileSystem for Linux.
     """
     windows_file_system_handler = WindowsFileSystem
     """
-    FileSystem for Windows
+    FileSystem for Windows.
     """
     file_system_handler = None
     """
@@ -167,7 +167,7 @@ class BaseFile:
         WindowsRenamer.to_processor(stopper=True)
     )
     """
-    Pipeline to rename file when saving. 
+    Pipeline to rename file when saving.
     """
 
     # Behavior controller for save
