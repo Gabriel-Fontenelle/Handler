@@ -98,6 +98,11 @@ class FilenameAndExtensionFromPathExtracter(Extracter):
         file_object.filename = complete_filename
         file_object.extension = ''
 
+        # Set-up save_to and relative_path
+        file_object.save_to = file_system_handler.get_directory_from_path(file_object.path)
+        # Relative path is empty, because save_to is the whole directory
+        file_object.relative_path = ''
+
 
 class FilenameFromMetadataExtracter(Extracter):
     """
