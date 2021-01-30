@@ -4,6 +4,7 @@ This module should only keep the pipeline class for renaming Files.
 """
 # Python internals
 import re
+from typing import Union
 from uuid import uuid4
 
 # core modules
@@ -27,7 +28,8 @@ class Renamer(ProcessorMixin):
 
     file_system_handler = FileSystem
     enumeration_pattern = None
-    
+    reserved_names = []
+
     @classmethod
     def prepare_filename(cls, filename, extension=None):
         """
@@ -57,13 +59,15 @@ class Renamer(ProcessorMixin):
         This process method is created exclusively to pipeline for objects inherent from BaseFile.
 
         The processor for renamer uses only one object that must be settled through first argument
-        or through key work object.
+        or through key work `object`.
 
         FUTURE CONSIDERATION: Making the pipeline multi thread or multi process only will required that
         a lock be put between usage of get_name.
         FUTURE CONSIDERATION: Multi thread will need to consider that the attribute `file_system_handler`
         is shared between the reference of the class and all object of it and will have to be change the
         code (multi process don't have this problem).
+
+        This processors return boolean to indicate that process was ran successfully.
         """
         object_to_process = kwargs.pop('object', args.pop(0))
 
@@ -100,6 +104,26 @@ class Renamer(ProcessorMixin):
 
         return True
 
+    @classmethod
+    def is_name_reserved(cls, filename: str, extension: str) -> bool:
+        """
+        Method to check if filename in list of reserved names.
+        Those name should be set-up before rename pipeline being called.
+        """
+        return filename + extension in cls.reserved_names
+
+    @classmethod
+    def add_reserved_name(cls, value: Union[str, list]):
+        """
+        Method to update list of reserved names allowing append of multiple values with list.
+        This method accept string or list to be added to reserved_names.
+        """
+        if isinstance(value, str):
+            cls.reserved_names.append(value)
+
+        elif isinstance(value, list):
+            cls.reserved_names += value
+
 
 class WindowsRenamer(Renamer):
     """
@@ -122,7 +146,10 @@ class WindowsRenamer(Renamer):
         extension = f'.{extension}' if extension else ''
 
         i = 0
-        while cls.file_system_handler.exists(directory_path + filename + extension):
+        while (
+                cls.file_system_handler.exists(directory_path + filename + extension)
+                or cls.is_name_reserved(filename, extension)
+        ):
             i += 1
             filename = cls.enumeration_pattern.sub(f' ({i})', filename)
 
@@ -150,7 +177,10 @@ class LinuxRenamer(Renamer):
         extension = f'.{extension}' if extension else ''
 
         i = 0
-        while cls.file_system_handler.exists(directory_path + filename + extension):
+        while (
+                cls.file_system_handler.exists(directory_path + filename + extension)
+                or cls.is_name_reserved(filename, extension)
+        ):
             i += 1
             filename = cls.enumeration_pattern.sub(f' - {i}', filename)
 
@@ -172,7 +202,10 @@ class UniqueRenamer(Renamer):
         filename = uuid4()
 
         i = 0
-        while cls.file_system_handler.exists(directory_path + filename + extension) and i < 100:
+        while (
+                cls.file_system_handler.exists(directory_path + filename + extension)
+                or cls.is_name_reserved(filename, extension)
+        ) and i < 100:
             i += 1
             #Generate Unique filename
             filename = uuid4()
