@@ -224,6 +224,13 @@ class FileSystem:
         return basename(path)
 
     @classmethod
+    def get_directory_from_path(cls, path):
+        """
+        Method used to get the path without filename from a complete path.
+        """
+        return dirname(path)
+
+    @classmethod
     def get_relative_path(cls, path, relative_to):
         """
         Method used to get relative path given two paths. The relative path is based on the path in based_on.
