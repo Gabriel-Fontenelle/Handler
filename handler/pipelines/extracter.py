@@ -543,6 +543,34 @@ class MetadataExtracter(Extracter):
                              '`MetadataExtracter.extract`.')
 
 
+class RelativePathFromURLExtracter(Extracter):
+
+    @classmethod
+    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to extract the information necessary from a file_object.
+        """
+
+
+class FilenameFromURLExtracter(Extracter):
+
+    @classmethod
+    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to extract the information necessary from a file_object.
+        """
+
+        url = kwargs.pop('url')
+
+        if not url:
+            return
+
+        # Get filename from url
+
+        # Set filename from url
+        pass
+
+
 class InternalFilesExtracter(Extracter):
 
     @classmethod
@@ -569,24 +597,10 @@ class MimeTypeFromContentExtracter(Extracter):
         # Check if there is a possible extension and mimetype from content
 
         # Save in file_object extension and mimetype
+        pass
 
 
-class FilenameFromURLExtracter(Extracter):
 
-    @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
-        """
-        Method to extract the information necessary from a file_object.
-        """
-
-        url = kwargs.pop('url')
-
-        if not url:
-            return
-
-        # Get filename from url
-
-        # Set filename from url
 
 
 class ContentFromSourceExtracter(Extracter):
