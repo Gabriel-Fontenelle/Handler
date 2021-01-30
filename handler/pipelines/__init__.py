@@ -36,16 +36,23 @@ class Processor:
     """
     If this processor stops the pipelines or not.
     """
+    overrider = False
+    """
+    If this processor should be allow to overwritten data or not.
+    """
 
-    def __init__(self, classname, verbose_name, method_name, stopper):
-        self.classname = classname
-        self.verbose_name = verbose_name
-        self.stopper = stopper
-        self.method_name = method_name
+    def __init__(self, **kwargs):
+        """
+        Method to instantiate the Processor object.
+        """
+        # Set-up attributes from kwargs like `classname` or `verbose_name`
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
 
     def run(self, object_to_process, *args, **kwargs):
         """
-        Method to run method_name from classname and return boolean.
+        Method to run method_name from classname and return boolean. Thus running the processor logic.
         For this method to work method_name should return boolean whether it as successful or not.
         """
         # Get method
@@ -56,7 +63,7 @@ class Processor:
         if not ismethod(method):
             class_to_use = self.classname()
             method = getattr(class_to_use, self.methodname)
-            return getattr(class_to_use, self.methodname)(object_to_process, *args, **kwargs)
+            return getattr(class_to_use, self.methodname)(object_to_process, overrider=self.overrider, *args, **kwargs)
 
         # Run method_name (`classmethod` or class function) passing args and kwargs to it
         # and return boolean result from processor
@@ -70,7 +77,7 @@ class ProcessorMixin:
     method_name_to_process = "process"
 
     @classmethod
-    def to_processor(cls, stopper=True):
+    def to_processor(cls, stopper=True, overrider=False):
         """
         Method used to return a processor from class.
         This method can be overwritten in child class. Valid return are Processor object or
@@ -80,7 +87,8 @@ class ProcessorMixin:
             classname=cls.__class__,
             verbose_name=str(cls.__class__),
             stopper=stopper,
-            method_name=cls.method_name_to_process
+            overrider=overrider,
+            method_name=cls.method_name_to_process,
         )
 
     @classmethod
