@@ -329,9 +329,14 @@ class LibraryMimeTyper(BaseMimeTyper):
         """
         extensions = self.get_extensions(mimetype)
 
+        if not extensions:
+            return None
+
         # Fix for jpe being returned instead of jpg.
         if 'jpg' in extensions:
             return 'jpg'
+        if 'mp4' in extensions:
+            return 'mp4'
 
         return extensions[0]
 
