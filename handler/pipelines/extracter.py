@@ -565,28 +565,38 @@ class MimeTypeFromContentExtracter(Extracter):
         # Save in file_object extension and mimetype
 
 
-class FilenameFromMetadataExtracter(Extracter):
+class FilenameFromURLExtracter(Extracter):
 
     @classmethod
-    def extract(cls, file_object, *args, **kwargs):
+    def extract(cls, file_object, overrider: bool, **kwargs: dict):
         """
         Method to extract the information necessary from a file_object.
         """
-        pass
-        """
-        Method to extract the information necessary from a file_object.
-        """
-        pass
+
+        url = kwargs.pop('url')
+
+        if not url:
+            return
+
+        # Get filename from url
+
+        # Set filename from url
 
 
-class MetadataExtracter(Extracter):
+class ContentFromSourceExtracter(Extracter):
 
     @classmethod
-    def extract(cls, file_object):
+    def extract(cls, file_object, overrider: bool, **kwargs: dict):
         """
-        Method to extract the information necessary from a file_object.
+        Method to extract the information necessary from a source object.
         """
-        pass
+        source = kwargs.get('source')
+
+        # length
+
+        # content
+
+        # metadata
 
 
 class ContentExtracter():
