@@ -130,6 +130,10 @@ class BaseFile:
     Mimetype handler that defines the source of know Mimetypes.
     This is used to identify mimetype from extension and vice-verse.
     """
+    uri_handler = URI
+    """
+    URI handler that defines methods to parser the URL.
+    """
 
     _save_actions = None
 
