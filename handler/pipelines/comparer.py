@@ -2,9 +2,8 @@
 Module with declaration of baseline class for the pipeline and its inherent class.
 This module should only keep the pipeline class for comparing Files.
 """
-from filecmp import cmp
+from typing import Union
 
-from handler.handler import FileSystem
 from handler.pipelines.__init__ import ProcessorMixin
 
 
