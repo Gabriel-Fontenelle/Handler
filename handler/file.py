@@ -175,7 +175,7 @@ class BaseFile:
     """
 
     # Behavior controller for save
-    should_be_extracted = False # File inside another file should be extract and not saved.
+    should_be_extracted = False  # File inside another file should be extract and not saved.
     move_file = False
     save_file = False
     save_hash = False
@@ -247,7 +247,7 @@ class BaseFile:
         """
         Method to return as attribute the content that can be previous loaded from content,
         or a stream_content or need to be load from file system.
-        This method should be override in child class.
+        This method can be override in child class and it should always return a generator.
         """
         if not self._content_generator:
             raise ValueError(f"There is no content to use for file {self}.")
@@ -351,7 +351,7 @@ class BaseFile:
 
         self._meta[key] = value
 
-    def add_valid_filename(self, complete_filename) -> bool:
+    def add_valid_filename(self, complete_filename, enforce_mimetype=False) -> bool:
         """
         Method to add filename and extension to file only if it has a valid extension.
         This method return boolean to indicate whether a filename and extension was added or not.
@@ -361,8 +361,15 @@ class BaseFile:
         The following attributes are set for file:
         - complete_filename (filename, extension)
         - _meta (compressed, lossless)
+
+        TODO: we could change add_valid_filename to also search for extension
+         in mime_type of file, case there is any, for more efficient search
+         (currently the search in LibraryMimeTyper() regards of checking extension for mimetype or checking extension
+         in all extensions is similar in complexity).
         """
-        # Check if there is known extension in complete_filename
+        # Check if there is known extension in complete_filename.
+        # This method break extract extension from filename and get check if it is valid, returning
+        # extension only if it is registered.
         possible_extension = self.mime_type_handler.guess_extension_from_filename(complete_filename)
 
         if possible_extension:
