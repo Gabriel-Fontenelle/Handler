@@ -1,5 +1,5 @@
 """
-File for classes that abstract methods of file and opertational systems.
+File for classes that abstract methods of file and operational systems.
 This file can be accessed directly.
 """
 
