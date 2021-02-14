@@ -302,14 +302,7 @@ class BaseFile:
             raise ValueError(f"parameter `value` informed in property content is not a valid type {type(value)}")
 
     @property
-    def is_packed(self):
-        """
-        Method to return as attribute if file is compressed or is a package with other files within.
-        """
-        return self._meta.get('compressed', False) or bool(self._list_internal_content)
-
-    @property
-    def is_binary(self):
+    def is_binary(self) -> bool:
         """
         Method to return as attribute if file is binary or not. This information is obtain from `_binary_content`
         that should be set-up when data is loaded to content.
@@ -322,6 +315,13 @@ class BaseFile:
         Method to set property attribute is_binary. This information is obtain should be set-up when data is loaded to content.
         """
         self._binary_content = value
+
+    @property
+    def is_packed(self):
+        """
+        Method to return as attribute if file is compressed or is a package with other files within.
+        """
+        return self._meta.get('compressed', False) or bool(self._list_internal_content)
 
     @property
     def path(self):
