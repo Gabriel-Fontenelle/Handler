@@ -4,6 +4,8 @@ This file can be accessed directly.
 """
 
 # Python internals
+import re
+from collections import namedtuple
 from datetime import datetime
 from filecmp import cmp
 from shutil import copyfile
@@ -15,18 +17,21 @@ from os import (
     stat
 )
 from os.path import (
-    exists,
-    isdir,
-    getsize,
+    basename,
     dirname,
-    getmtime,
+    exists,
     getctime,
-    join
+    getmtime,
+    getsize,
+    isdir,
+    join, normpath, normcase,
 )
 from io import open
 
 # third-party
 from shutil import rmtree
+from urllib.parse import urlparse, parse_qsl, unquote, urlencode
+
 from send2trash import send2trash
 from psutil import (
     disk_usage,
