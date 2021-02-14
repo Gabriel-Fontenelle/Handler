@@ -51,6 +51,8 @@ class FileSystem:
     Class that standardized methods of different file systems.
     """
     sep = os_sep
+    folder_size_limit = 200
+    path_size_limit = 254
 
     @classmethod
     def is_dir(cls, path):
