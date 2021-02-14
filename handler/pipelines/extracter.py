@@ -6,12 +6,15 @@ from handler.pipelines import ProcessorMixin
 
 
 __all__ = [
+    'Extracter',
     'FileSystemDataExtracter',
     'FilenameAndExtensionFromPathExtracter',
     'FilenameFromMetadataExtracter',
     'HashFileExtracter',
     'MetadataExtracter',
     'MimeTypeFromFilenameExtracter',
+    'FilenameFromURLExtracter',
+    'PathFromURLExtracter'
 ]
 
 
@@ -244,9 +247,9 @@ class FileSystemDataExtracter(Extracter):
         mode = 'r'
 
         if file_object.type != 'text':
-            mode +='b'
+            mode += 'b'
 
-        file_object.is_binary = file_object.type == 'text'
+        file_object.is_binary = file_object.type != 'text'
 
         # Get content generator, same as buffer but without needing to use
         # `.read(),` just loop through chunks of content.
@@ -505,8 +508,8 @@ class MetadataExtracter(Extracter):
             # Set-up type from mimetype and extension
             if file_object.mime_type and file_object.extension and (not file_object.type or overrider):
                 file_object.type = file_object.mime_type_handler.get_type(file_object.mime_type, file_object.extension)
+                file_object.is_binary = file_object.type != 'text'
 
-            # Atendimento claro/net: 003214758387298
             # Set-up created date from metadata
             create_date = cls.get_date(meta)
             if create_date and (not file_object.create_date or overrider):
@@ -543,32 +546,123 @@ class MetadataExtracter(Extracter):
                              '`MetadataExtracter.extract`.')
 
 
-class RelativePathFromURLExtracter(Extracter):
-
-    @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
-        """
-        Method to extract the information necessary from a file_object.
-        """
-
-
 class FilenameFromURLExtracter(Extracter):
+    """
+    Class that define the extraction of complete_filename from URL passed to Extracter Pipeline.
+    """
 
     @classmethod
     def extract(cls, file_object, overrider: bool, **kwargs: dict):
         """
-        Method to extract the information necessary from a file_object.
+        Method to extract the filename from an URL. The priority will be finding a filename with a
+        registered extension, not founding it will use the last one available.
+
+        This method assumes that `url` is already unquoted.
+
+        This method not enforce limit of size for filename or path.
+
+        This method not require any previously save data in `file_object`.
+
+        This method will save data in the following attributes of `file_object`:
+        - complete_filename
+        - filename
+        - extension
+        - relative_path
+
+        This method make use of overrider.
         """
-
-        url = kwargs.pop('url')
-
-        if not url:
+        if file_object.filename and not overrider:
             return
 
-        # Get filename from url
+        try:
+            possible_urls = kwargs['url']
+            processed_uri = None
+            results = file_object.uri_handler.get_filenames(possible_urls, file_object.file_system_handler)
 
-        # Set filename from url
-        pass
+            if not results:
+                return
+
+            # Modify list to also include boolean value to enforce_mimetype or not.
+            results = [(result, True) for result in results] + [(result, False) for result in results]
+
+            # Loop through paths to use only the one with valid extension
+            # The first part of the loop enforce mimetype, second not enforce mimetype.
+            for result, enforce_mimetype in results:
+                # Check and set-up filename
+                if (result.filename and file_object.add_valid_filename(result.filename,
+                                                                       enforce_mimetype=enforce_mimetype)):
+                    processed_uri = result.processed_uri
+                    break
+
+            if not processed_uri:
+                # Filename without valid extension, so we
+                # set it as complete_filename the last one.
+                # There will be no additional metadata `compressed` and `lossless`.
+                file_object.complete_filename = results[-1].filename.rsplit('.', 1)
+                processed_uri = results[-1].processed_uri
+
+            # Set-up relative path
+            if not file_object.relative_path or overrider:
+                cache = file_object.uri_handler.get_processed_uri(processed_uri)
+                file_object.relative_path = cache.directory
+
+        except KeyError:
+            raise ValueError('Parameter `url` must be informed as key argument for '
+                             '`FilenameFromURLExtracter.extract`.')
+
+
+class PathFromURLExtracter(Extracter):
+    """
+    Class that define the extraction of relative_path and complete_filename from URL.
+    Its recommend to use this Processor after FilenameFromURLExtracter, else it will not be guarantee that
+    the path and filename has the same source or that filename is a valid one.
+    """
+
+    @classmethod
+    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to extract the information necessary from an URL.
+        This method will return the last relative_path found with a filename, regardless of having a valid extension
+        said filename.
+
+        This method not enforce limit of size for path.
+
+        This method not require any previously save data in `file_object`.
+
+        This method will save data in the following attributes of `file_object`:
+        - complete_filename
+        - relative_path
+
+        This method make use of overrider, but it don't override filename.
+        """
+        if file_object.relative_path and not overrider:
+            return
+
+        try:
+            possible_urls = kwargs['url']
+
+            paths = file_object.uri_handler.get_paths(possible_urls, file_object.file_system_handler)
+
+            if not paths:
+                return
+
+            for path in reversed(paths):
+                cache = file_object.uri_handler.get_processed_uri(path.processed_uri)
+                if cache and cache.filename:
+                    file_object.relative_path = path.directory
+
+                    if not file_object.filename:
+                        file_object.complete_filename = cache.filename.rsplit('.', 1)
+
+                    return
+
+            # One or multiple path (without valid filename), so we
+            # set it as relative_path the last one.
+            file_object.relative_path = paths[-1].directory
+
+        except KeyError:
+            raise ValueError('Parameter `url` must be informed as key argument for '
+                             '`PathFromURLExtracter.extract`.')
 
 
 class InternalFilesExtracter(Extracter):
