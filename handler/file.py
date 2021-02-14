@@ -249,34 +249,10 @@ class BaseFile:
         or a stream_content or need to be load from file system.
         This method should be override in child class.
         """
-        if self._content and self._content_buffer and self._content_generator:
-            raise ReferenceError("Couldn't determine which content to use, both `_content`, `_content_generator` "
-                                 "and `_content_buffer` are available.")
+        if not self._content_generator:
+            raise ValueError(f"There is no content to use for file {self}.")
 
-        if not (self._content and self._content_buffer and self._content_generator):
-            raise ValueError("There is no content to use, both `_content`, `_content_generator` and `_content_buffer` are empty.")
-
-        # Check if content is generator, which we will loop through chunks of content.
-        if self._content_generator:
-            return self._content_generator
-
-        elif self._content:
-            i = 0
-
-            while i < self.length:
-                yield self._content[i:i+self._block_size]
-                i+=self._block_size
-
-        elif self._content_buffer:
-
-            # Read content in blocks until end of file and return blocks as iterable elements
-            while True:
-                block = self._content_buffer.read(self._block_size)
-
-                if block is None or block is b'':
-                    break
-
-                yield block
+        return self._content_generator
 
     @content.setter
     def set_content(self, value):
@@ -284,16 +260,39 @@ class BaseFile:
         Method to set content attribute. This method can be override in child class.
         This method can receive value as string, bytes or buffer.
         """
-        if isinstance(value, (str, bytes)):
-            # This should be deprecated in favor of _content_generator
-            # Add content as whole value
-            self._content = value
-            self._binary_content = isinstance(value, bytes) # Maybe remove it from here.
+        def generator_string_or_bytes(raw_value):
+            """
+            """
+            i = 0
 
-        elif isinstance(value, BufferedIOBase):
+            while i < len(raw_value):
+                yield raw_value[i:i+self._block_size]
+                i += self._block_size
+
+        def generator_buffer_io(raw_value):
+            """
+            """
+            # Read content in blocks until end of file and return blocks as iterable elements
+            while True:
+                block = raw_value.read(self._block_size)
+
+                if block is None or block is b'':
+                    break
+
+                yield block
+
+            # Reset value
+            pass
+
+        if isinstance(value, (str, bytes)):
+            # Add content as whole value
+            self._content_generator = generator_string_or_bytes(value)
+            self._binary_content = isinstance(value, bytes)  # Maybe remove it from here.
+
+        elif isinstance(value, IOBase):
             # This should be deprecated in favor of _content_generator
             # Add content as buffer
-            self._content_buffer = value
+            self._content_generator = generator_buffer_io(value)
 
         elif inspect.isgenerator(value):
             # Add content as generator
