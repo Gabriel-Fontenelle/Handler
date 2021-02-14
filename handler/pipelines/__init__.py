@@ -63,7 +63,7 @@ class Processor:
         if not ismethod(method):
             class_to_use = self.classname()
             method = getattr(class_to_use, self.methodname)
-            return getattr(class_to_use, self.methodname)(object_to_process, overrider=self.overrider, *args, **kwargs)
+            return method(object_to_process, overrider=self.overrider, *args, **kwargs)
 
         # Run method_name (`classmethod` or class function) passing args and kwargs to it
         # and return boolean result from processor
