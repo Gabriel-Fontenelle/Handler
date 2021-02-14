@@ -143,7 +143,7 @@ class Hasher(ProcessorMixin):
 
         This processors return boolean to indicate that process was ran successfully.
         """
-        object_to_process = kwargs['object'] if 'object' in kwargs else args[0]
+        object_to_process = kwargs.get('object', args[0])
         try_loading_from_file = kwargs.get('try_loading_from_file', False)
 
         # Check if there is already a hash previously loaded on file,
