@@ -317,9 +317,11 @@ class FileSystem:
     @classmethod
     def sanitize_path(cls, path: str) -> str:
         """
-        Method to convert / in a path to a separator specified by the file system.
+        Method to normalize a path for use.
+        This method collapse redundant separators and up-level references so that A//B, A/B/, A/./B and A/foo/../B
+        all become A/B.
         """
-        return path.replace('/', cls.sep)
+        return normpath(path.replace('/', cls.sep))
 
 
 class WindowsFileSystem(FileSystem):
@@ -348,6 +350,15 @@ class WindowsFileSystem(FileSystem):
         time = getctime(path)
 
         return datetime.fromtimestamp(time)
+
+    @classmethod
+    def sanitize_path(cls, path: str) -> str:
+        """
+        Method to normalize a path for use.
+        This method collapse redundant separators and up-level references so that A//B, A/B/, A/./B and A/foo/../B
+        all become A/B. It will also convert uppercase character to lowecase and `/` to `\\`.
+        """
+        return normpath(normcase(path))
 
 
 class LinuxFileSystem(FileSystem):
