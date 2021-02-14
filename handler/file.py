@@ -240,6 +240,7 @@ class BaseFile:
         to work value must be a tuple of <filename, extension>.
         """
         self.filename, self.extension = value
+        self._save_actions.append('rename')
 
     @property
     def content(self):
