@@ -6,20 +6,21 @@ from typing import Union
 
 from handler.pipelines.__init__ import ProcessorMixin
 
+__all__ = [
+    'BinaryCompare',
+    'DataCompare',
+    'HashCompare',
+    'LousyNameCompare',
+    'MimeTypeCompare',
+    'NameCompare',
+    'SizeCompare',
+]
+
 
 class Comparer(ProcessorMixin):
-    
-    file_system_handler = FileSystem
-
-    @classmethod
-    def compare(cls, *args, **kwargs):
-        """
-        Method to compare if two items are the same. In this method the object to be compared can be
-        two files, two hashes or any other value that args and kwargs can assume.
-        This method is used internally in is_the_same, thus both must be overwrite on child class.
-        This method must be overwrite on child class to work correctly.
-        """
-        raise NotImplementedError("The method is_the_same needs to be overwrite on child class.")
+    """
+    Base class to be inherent to define classes for use on Comparer pipeline.
+    """
 
     @classmethod
     def is_the_same(cls, file_1, file_2):
