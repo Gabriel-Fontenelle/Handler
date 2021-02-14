@@ -165,6 +165,9 @@ class Pipeline:
         The processor will define if method will stop or not the pipelines.
         Either args or kwargs must have the object to be processed.
 
+        Not all pipelines are required to run this method, as example, Hasher Pipeline avoid
+        its use when loading hashes from files.
+
         :param args:
         :param kwargs:
 
