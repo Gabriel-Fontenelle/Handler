@@ -348,6 +348,18 @@ class BaseFile:
 
         self._path = value
 
+    @property
+    def was_saved(self):
+        """
+        Method to return as attribute if file was saved in filesystem or came from a filesystem.
+        """
+        try:
+            # Use `is True` to always return boolean
+            return self._meta['saved'] is True
+
+        except KeyError:
+            return False
+
     def add_metadata(self, key, value):
         """
         Method to add a value to a key. It will replace existing key in metadata attribute `_meta`.
