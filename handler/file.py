@@ -370,6 +370,13 @@ class BaseFile:
 
         self._meta[key] = value
 
+    def has_metadata(self, key):
+        """
+        Method to return if whether metadata has a valid value.
+        This method will consider 0 as valid, but None, or empty string as not valid.
+        """
+        return key in self._meta and (self._meta[key] or self._meta[key] == 0)
+
     def add_valid_filename(self, complete_filename, enforce_mimetype=False) -> bool:
         """
         Method to add filename and extension to file only if it has a valid extension.
@@ -392,6 +399,12 @@ class BaseFile:
         possible_extension = self.mime_type_handler.guess_extension_from_filename(complete_filename)
 
         if possible_extension:
+            # Enforce use of extension that match mimetype if `enforce_mimetype` is True.
+            # This will also override self.extension to use a new one still compatible with mimetype.
+            if enforce_mimetype and self.mime_type:
+                if possible_extension not in self.mime_type_handler.get_extensions(self.mime_type):
+                    return False
+
             # Use base class Renamer because prepare_filename is a class method and we don't require any other
             # specialized methods from Renamer children.
             self.complete_filename = Renamer.prepare_filename(complete_filename, possible_extension)
@@ -410,12 +423,28 @@ class BaseFile:
 
         return False
 
-    def has_metadata(self, key):
+    def compare_to(self, *files):
         """
-        Method to return if whether metadata has a valid value.
-        This method will considere 0 as valid, but None, or empty string as not valid.
+        Method to run the pipeline, to compare files, set-up for current file object.
         """
-        return key in self._meta and (self._meta[key] or self._meta[key] == 0)
+        # Add current object to be compared mixed with others in files
+        files.append(self)
+        # Pass objects to be compared in pipeline
+        self.compare_pipeline.run(objects=files)
+        result = self.compare_pipeline.last_result
+
+        if result is None:
+            raise ValueError("There is not enough data in files for comparison at `File.compare_to`.")
+
+        return result
+
+    def generate_hashes(self):
+        """
+        Method to run the pipeline, to generate hashes, set-up for the file.
+        """
+        self.hasher_pipeline.run(object=self, try_loading_from_file=self.was_saved)
+
+
 
 
 
@@ -424,40 +453,33 @@ class BaseFile:
     def get_internal_content(self):
         raise NoInternalContentError(f"This file {repr(self)} don't have a internal content.")
 
+
+
+
     def rename_file(self):
         # Set file to be rename, but don`t rename the actual file
         # until apply is
         pass
 
-
-
-    def generate_hashes(self):
-        pass
-
-    def compare_file_to(self, file_to_compare):
-        pass
-
-    def extract_file(self):
-        pass
-
-    def compact_file(self):
-        pass
-
-    def rename_file(self):
+    def _rename_file(self):
         pass
         # Rename file with new name
         # Set current_filename to renamed name
         # Add old filename to list of renamers.
 
-    def rename_hashes(self):
+        # Rename hashes.
+
+    def _rename_hashes(self):
         pass
 
-    def save_file(self):
+    def _save_file(self):
         pass
         # Save file using iterable content to avoid using too much memory.
 
-    def save_hashes(self):
+    def _save_hashes(self):
         pass
+
+
 
     def rename(self, filename, extension=None):
         pass
@@ -470,7 +492,9 @@ class BaseFile:
         # Add a lock and dict that reserves the name for all objects of BaseFile.
 
 
-    def save(self, hashes=None):
+    def save(self, options=[]):
+        # Options like `overwrite=bool` file, `save_hashes=False`.
+
         pass
         # Verify if there is name, path and content before saving.
         # Raise exception otherwise.
@@ -489,6 +513,10 @@ class BaseFile:
 
         # Get id after saving.
 
+        # Raise if not save_to provided.
+
+        # Raise if extension is None
+
     def validate(self):
         pass
         # Check if mimetype condiz with extension
@@ -503,6 +531,8 @@ class BaseFile:
     def refresh_from_disk(self):
         # Similar to refresh_from_db of Django.
         # it will reload content and metadata from disk.
+
+        # Process FileSystemExtracter
 
         pass
 
