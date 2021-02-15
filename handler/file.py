@@ -88,13 +88,13 @@ class BaseFile:
     """
     _list_internal_content = None
     """
-    list of items in compressed file.
+    List of items in compressed file.
     """
 
     # Metadata data
     length = 0
     """
-    size of file content.
+    Size of file content.
     """
     mime_type = None
     """
