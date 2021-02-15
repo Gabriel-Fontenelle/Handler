@@ -138,27 +138,17 @@ class BaseFile:
     URI handler that defines methods to parser the URL.
     """
 
-    _save_actions = None
-
-
-
-    filename_history = None
-    """
-    list of filename previously associated with file
-    """
-    to_rename = None
-
-
-
     # Pipelines
     extract_data_pipeline = None
     """
     Pipeline to extract data from multiple sources. This should be override at child class.
     """
     compare_pipeline = Pipeline(
-        SizeCompare.to_processor(),
-        HashCompare.to_processor(stopper=True),
-        DataCompare.to_processor(stopper=True)
+        TypeCompare.to_processor(stopper=True, stop_value=False),
+        SizeCompare.to_processor(stopper=True, stop_value=False),
+        BinaryCompare.to_processor(stopper=True, stop_value=False),
+        HashCompare.to_processor(stopper=True, stop_value=(True, False)),
+        DataCompare.to_processor(stopper=True, stop_value=(True, False))
     )
     """
     Pipeline to compare two files.
@@ -176,6 +166,20 @@ class BaseFile:
     """
     Pipeline to rename file when saving.
     """
+
+    _save_actions = None
+
+
+
+    filename_history = None
+    """
+    list of filename previously associated with file
+    """
+    to_rename = None
+
+
+
+
 
     # Behavior controller for save
     should_be_extracted = False  # File inside another file should be extract and not saved.
