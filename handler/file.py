@@ -5,9 +5,11 @@ from os import name
 
 from handler.mimetype import LibraryMimeTyper
 from handler.pipelines.comparer import (
+    BinaryCompare,
     DataCompare,
     HashCompare,
-    SizeCompare
+    SizeCompare,
+    TypeCompare
 )
 # modules
 from handler.pipelines.extracter import (
@@ -18,13 +20,14 @@ from handler.pipelines.extracter import (
     MetadataExtracter,
     MimeTypeFromContentExtracter,
     MimeTypeFromFilenameExtracter,
+    FilenameFromURLExtracter,
 )
 from handler.pipelines.hasher import (
     MD5Hasher,
     SHA256Hasher
 )
 from .exception import NoInternalContentError
-from .handler import LinuxFileSystem, WindowsFileSystem
+from .handler import LinuxFileSystem, WindowsFileSystem, URI
 from .pipelines import Pipeline
 from .pipelines.renamer import WindowsRenamer, Renamer
 
