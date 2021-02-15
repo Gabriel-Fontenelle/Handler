@@ -40,6 +40,10 @@ class Processor:
     """
     If this processor should be allow to overwritten data or not.
     """
+    stop_value = True
+    """
+    The value that should stop the processor when stopper is True.
+    """
 
     def __init__(self, **kwargs):
         """
@@ -77,16 +81,17 @@ class ProcessorMixin:
     method_name_to_process = "process"
 
     @classmethod
-    def to_processor(cls, stopper=True, overrider=False):
+    def to_processor(cls, stopper=True, stop_value=True, overrider=False):
         """
         Method used to return a processor from class.
         This method can be overwritten in child class. Valid return are Processor object or
-        dict containing classname, verbose_name, stopper.
+        dict containing classname, verbose_name, stopper, stop_value.
         """
         return Processor(
             classname=cls.__class__,
             verbose_name=str(cls.__class__),
             stopper=stopper,
+            stop_value=stop_value,
             overrider=overrider,
             method_name=cls.method_name_to_process,
         )
@@ -108,17 +113,21 @@ class Pipeline:
     Class to initiate a pipelines with given processors to be run.
     """
 
-    processors_ran = 0
-    """ 
-    Variable to register the amount of processors ran for this pipelines.
-    """
-
     def __init__(self, *processors):
         """
         This method can receive a single Processor object,
         or a list of Processor objects or a tuple with classname, verbose_name
         and stopper configuration.
         """
+        self.processors_ran = 0
+        """ 
+        Variable to register the amount of processors ran for this pipelines.
+        """
+        self.last_result = None
+        """
+        Variable to register the last result obtained from pipeline.
+        """
+
         for processor in processors:
             # Check if processor is a dict containing classname, verbose_name and stopper
             if isinstance(dict, processor):
@@ -174,11 +183,24 @@ class Pipeline:
         """
         # For each processor
         ran = 0
+        result = None
+
         for processor in self.pipeline_processors:
             result = processor.run(*args, **kwargs)
             ran += 1
-            if result and processor.stopper:
-                break
+
+            if processor.stopper:
+                # If processor is a step that should stop the whole pipeline
+                # we verify if we reach the condition to it stop. By default that
+                # condition is True, but can be any value set-up in stop_value and
+                # returned by processor.
+                if (
+                    result in processor.stop_value
+                    if isinstance(processor.stop_value, (list, tuple))
+                    else result is processor.stop_value
+                ):
+                    break
 
         # register statical data about pipelines.
         self.processors_ran = ran
+        self.last_result = result
