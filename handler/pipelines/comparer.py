@@ -14,6 +14,7 @@ __all__ = [
     'MimeTypeCompare',
     'NameCompare',
     'SizeCompare',
+    'TypeCompare'
 ]
 
 
@@ -243,3 +244,20 @@ class BinaryCompare(Comparer):
         This method check the if attribute binary are the same.
         """
         return file_1.is_binary == file_2.is_binary
+
+
+class TypeCompare(Comparer):
+    """
+    Class that define comparing of type between two Files for use in Comparer Pipeline.
+    """
+
+    @classmethod
+    def is_the_same(cls, file_1, file_2) -> Union[None, bool]:
+        """
+        Method used to check if two files are the same.
+        This method check the if attribute binary are the same.
+        """
+        if file_1.type is None or file_2.type is None:
+            return None
+
+        return file_1.type == file_2.type
