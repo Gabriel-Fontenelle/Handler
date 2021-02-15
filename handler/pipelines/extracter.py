@@ -255,6 +255,12 @@ class FileSystemDataExtracter(Extracter):
         # `.read(),` just loop through chunks of content.
         file_object.content = generate_content(file_object.path, mode)
 
+        # Set-up metadata saved
+        file_object.add_metadata(
+            'saved',
+            True
+        )
+
 
 class HashFileExtracter(Extracter):
     """
