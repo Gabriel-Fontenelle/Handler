@@ -61,6 +61,9 @@ class Comparer(ProcessorMixin):
 
 
 class DataCompare(Comparer):
+    """
+    Class that define comparing of data between two Files for use in Comparer Pipeline.
+    """
 
     @classmethod
     def is_the_same(cls, file_1, file_2) -> Union[None, bool]:
@@ -131,7 +134,10 @@ class DataCompare(Comparer):
 
 
 class SizeCompare(Comparer):
-    
+    """
+    Class that define comparing of size of content between two Files for use in Comparer Pipeline.
+    """
+
     @classmethod
     def is_the_same(cls, file_1, file_2) -> Union[None, bool]:
         """
@@ -145,6 +151,9 @@ class SizeCompare(Comparer):
 
 
 class HashCompare(Comparer):
+    """
+    Class that define comparing of hash between two Files for use in Comparer Pipeline.
+    """
 
     @classmethod
     def is_the_same(cls, file_1, file_2) -> Union[None, bool]:
@@ -163,6 +172,9 @@ class HashCompare(Comparer):
 
 
 class LousyNameCompare(Comparer):
+    """
+    Class that define comparing of filename between two Files for use in Comparer Pipeline.
+    """
 
     @classmethod
     def is_the_same(cls, file_1, file_2) -> Union[None, bool]:
@@ -186,6 +198,9 @@ class LousyNameCompare(Comparer):
 
 
 class NameCompare(Comparer):
+    """
+    Class that define comparing of filename between two Files for use in Comparer Pipeline.
+    """
 
     @classmethod
     def is_the_same(cls, file_1, file_2) -> Union[None, bool]:
@@ -200,6 +215,9 @@ class NameCompare(Comparer):
 
 
 class MimeTypeCompare(Comparer):
+    """
+    Class that define comparing of mimetype between two Files for use in Comparer Pipeline.
+    """
 
     @classmethod
     def is_the_same(cls, file_1, file_2) -> Union[None, bool]:
@@ -214,6 +232,9 @@ class MimeTypeCompare(Comparer):
 
 
 class BinaryCompare(Comparer):
+    """
+    Class that define comparing of binary attribute between two Files for use in Comparer Pipeline.
+    """
 
     @classmethod
     def is_the_same(cls, file_1, file_2) -> Union[None, bool]:
