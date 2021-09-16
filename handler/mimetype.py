@@ -132,8 +132,7 @@ class LibraryMimeTyper(BaseMimeTyper):
         Method that instantiate the mimetype library and load to it the file of known mimetypes.
         It will output a IOError, that must be caught in stack above, if file don't exists.
         """
-        mimetypes.init()
-        mimetypes.read(self._known_mimetypes_file, strict=True)
+        mimetypes.init(self._known_mimetypes_file)
 
     @property
     def lossless_mimetypes(self):
