@@ -72,6 +72,9 @@ class FilenameAndExtensionFromPathExtracter(Extracter):
         - _meta (compressed, lossless)
 
         This method make use of overrider.
+
+        # As this extractor don`t guarantee that the file actually exists we don`t mark it
+        as saved.
         """
         if not file_object.path:
             raise ValueError(
@@ -103,6 +106,7 @@ class FilenameAndExtensionFromPathExtracter(Extracter):
 
         # Set-up save_to and relative_path
         file_object.save_to = file_system_handler.get_directory_from_path(file_object.path)
+
         # Relative path is empty, because save_to is the whole directory
         file_object.relative_path = ''
 
@@ -210,7 +214,7 @@ class FileSystemDataExtracter(Extracter):
                 while True:
                     block = f.read(file_object._block_size)
 
-                    if block is None or block is b'':
+                    if block is None or block == b'':
                         break
 
                     yield block
@@ -225,7 +229,7 @@ class FileSystemDataExtracter(Extracter):
 
         # Check if path exists
         if not file_system_handler.exists(file_object.path):
-            raise IOError("There is no file following attribute `path` in the file system.")
+            raise FileNotFoundError("There is no file following attribute `path` in the file system.")
 
         # Check if path is directory, it should not be
         if file_system_handler.is_dir(file_object.path):
@@ -255,11 +259,9 @@ class FileSystemDataExtracter(Extracter):
         # `.read(),` just loop through chunks of content.
         file_object.content = generate_content(file_object.path, mode)
 
-        # Set-up metadata saved
-        file_object.add_metadata(
-            'saved',
-            True
-        )
+        # Set-up state for saved file.
+        file_object._state.adding = False
+        file_object._actions.saved()
 
 
 class HashFileExtracter(Extracter):
@@ -502,13 +504,12 @@ class MetadataExtracter(Extracter):
                         file_object.extension = possible_extension
 
                         # Save additional metadata to file.
-                        file_object.add_metadata(
-                            'compressed',
-                            file_object.mime_type_handler.is_extension_compressed(file_object.extension)
+                        file_object._meta.compressed = file_object.mime_type_handler.is_extension_compressed(
+                            file_object.extension
                         )
-                        file_object.add_metadata(
-                            'lossless',
-                            file_object.mime_type_handler.is_extension_lossless(file_object.extension)
+
+                        file_object._meta.lossless = file_object.mime_type_handler.is_extension_lossless(
+                            file_object.extension
                         )
 
             # Set-up type from mimetype and extension
@@ -533,19 +534,13 @@ class MetadataExtracter(Extracter):
 
             # Set-up language metadata from metadata
             language = cls.get_language(meta)
-            if language and (not file_object.has_metadata('language') or overrider):
-                file_object.add_metadata(
-                    'language',
-                    language
-                )
+            if language and (not hasattr(file_object, 'language') or overrider):
+                file_object._meta.language = language
 
             # Set-up expiration date
             expire_date = cls.get_expire(meta)
-            if expire_date and (not file_object.has_metadata('expire') or overrider):
-                file_object.add_metadata(
-                    'expire',
-                    expire_date
-                )
+            if expire_date and (not hasattr(file_object, 'expire') or overrider):
+                file_object._meta.expire = expire_date
 
         except KeyError:
             raise ValueError('Parameter `metadata` must be informed as key argument for '
@@ -679,6 +674,8 @@ class InternalFilesExtracter(Extracter):
         Method to extract the information necessary from a file_object.
         """
         pass
+
+        file_object._meta.packed = True
 
 
 class MimeTypeFromContentExtracter(Extracter):
