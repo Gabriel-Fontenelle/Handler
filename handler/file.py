@@ -13,23 +13,188 @@ from handler.pipelines.comparer import (
 )
 # modules
 from handler.pipelines.extracter import (
+    ContentFromSourceExtracter,
     FileSystemDataExtracter,
     FilenameAndExtensionFromPathExtracter,
     FilenameFromMetadataExtracter,
+    FilenameFromURLExtracter,
     HashFileExtracter,
     MetadataExtracter,
     MimeTypeFromContentExtracter,
     MimeTypeFromFilenameExtracter,
-    FilenameFromURLExtracter,
 )
 from handler.pipelines.hasher import (
     MD5Hasher,
     SHA256Hasher
 )
-from .exception import NoInternalContentError
+from .exception import NoInternalContentError, ImproperlyConfiguredFile
 from .handler import LinuxFileSystem, WindowsFileSystem, URI
 from .pipelines import Pipeline
 from .pipelines.renamer import WindowsRenamer, Renamer
+
+
+__all__ = [
+
+]
+
+
+class CacheDescriptor:
+    """
+    Descriptor class to storage data for instance`s cache.
+    This class is used for FileHashes._cache.
+    """
+
+    def __get__(self, instance, cls=None):
+        """
+        Method `get` to automatically set-up empty values in a instance.
+        """
+        if instance is None:
+            return self
+
+        res = instance.__dict__['_cache'] = {}
+        return res
+
+
+class FileState:
+    """
+    Class that store file instance state.
+    """
+
+    adding = True
+    """
+    Indicate whether an object was already saved or not. If true, we will consider this a new, unsaved
+    object in the current file`s filesystem.
+    """
+    renaming = False
+    """
+    Indicate whether an object is schedule to being renamed in the current file`s filesystem.
+    """
+    changing = False
+    """
+    Indicate whether an object has changed or not. If true, we will consider that the current content was
+    changed but not saved yet.  
+    """
+
+
+class FileMetadata:
+    """
+    Class that store file instance metadata.
+    """
+
+    packed = False
+    """
+    Indicate whether an object was packed in a container or not. As example: .rar, .epub, .tar. 
+    """
+    compressed = False
+    """
+    Indicate whether an object was compressed or not. Different from packed, an object can the packed and not 
+    compressed or it could be both packed and compressed.
+    """
+    lossless = False
+    """
+    Indicate whether an object was lossless compressed or not. 
+    """
+    hashable = True
+    """
+    Indicate whether an object can have its hash saved or not. Internal packed files cannot have hash saved to file, 
+    it can be generate just not saved in the package.
+    """
+
+
+class FileActions:
+    """
+    Class that store file instance actions to be performed.
+    """
+
+    save = False
+    """
+    Indicate whether an object should be saved or not.
+    """
+    extract = False
+    """
+    Indicate whether an object should be extracted or not.
+    """
+    rename = False
+    """
+    Indicate whether an object should be renamed or not.
+    """
+    hash = False
+    """
+    Indicate whether an object should be hashed or not.
+    """
+    was_saved = False
+    """
+    Indicate whether an object was successfully saved.
+    """
+    was_extracted = False
+    """
+    Indicate whether an object was successfully extracted.
+    """
+    was_renamed = False
+    """
+    Indicate whether an object was successfully renamed.
+    """
+    was_hashed = False
+    """
+    Indicate whether an object was successfully hashed.
+    """
+
+    def to_extract(self):
+        """
+        Method to set-up the action of save file.
+        """
+        self.extract = True
+        self.was_extracted = False
+
+    def extracted(self):
+        """
+        Method to change the status of `to extract` to `extracted` file.
+        """
+        self.extract = False
+        self.was_extracted = True
+
+    def to_save(self):
+        """
+        Method to set-up the action of save file.
+        """
+        self.save = True
+        self.was_saved = False
+
+    def saved(self):
+        """
+        Method to change the status of `to save` to `saved` file.
+        """
+        self.save = False
+        self.was_saved = True
+
+    def to_rename(self):
+        """
+        Method to set-up the action of rename file.
+        """
+        self.rename = True
+        self.was_renamed = False
+        pass
+
+    def renamed(self):
+        """
+        Method to change the status of `to rename` to `renamed` file.
+        """
+        self.rename = False
+        self.was_renamed = True
+
+    def to_hash(self):
+        """
+        Method to set-up the action of generate hash for file.
+        """
+        self.hash = True
+        self.was_hashed = False
+
+    def hashed(self):
+        """
+        Method to change the status of `to hash` to `hashed` file.
+        """
+        self.hash = False
+        self.was_hashed = True
 
 
 class BaseFile:
