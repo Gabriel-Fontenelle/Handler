@@ -87,17 +87,18 @@ class ProcessorMixin:
         This method can be overwritten in child class. Valid return are Processor object or
         dict containing classname, verbose_name, stopper, stop_value.
         """
-        return Processor(
-            classname=cls.__class__,
-            verbose_name=str(cls.__class__),
+        processor = Processor(
+            classname=cls,
+            verbose_name=cls.__name__,
             stopper=stopper,
             stop_value=stop_value,
             overrider=overrider,
             method_name=cls.method_name_to_process,
         )
+        return processor
 
     @classmethod
-    def process(self, *args, **kwargs):
+    def process(cls, *args, **kwargs):
         """
         Method used to run this class on Processor`s Pipeline.
         This method and to_processor() is not need to compare files
@@ -127,12 +128,16 @@ class Pipeline:
         """
         Variable to register the last result obtained from pipeline.
         """
+        self.pipeline_processors = []
+        """
+        Variable to register the available processors for the current pipeline object.
+        """
 
         for processor in processors:
             # Check if processor is a dict containing classname, verbose_name and stopper
-            if isinstance(dict, processor):
+            if isinstance(processor, dict):
                 if not ('classname' in processor or 'stopper' in processor):
-                    raise ValueError("Processor dict for pipelines need at least classname and stopper setted.")
+                    raise ValueError("Processor dict for pipelines need at least classname and stopper set.")
 
                 self.add_new_processor(
                     classname=processor.pop('classname'),
@@ -140,8 +145,10 @@ class Pipeline:
                     verbose_name=processor.pop('verbose_name', None),
                 )
 
-            # Check if processor is an object from processor
-            elif isinstance(processor, Processor):
+            # Check if processor is an object from Processor
+            # As the code `elif isinstance(processor, Processor):` was not working, we change it to
+            # be the class name.
+            elif type(processor).__name__ == Processor.__name__:
                 self.add_processor(processor)
 
             else:
