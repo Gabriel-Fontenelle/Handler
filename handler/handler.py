@@ -452,7 +452,7 @@ class URI:
     """
     Dictionary to cache paths and URIs to avoid calculating it again.
     """
-    Path = namedtuple('Relative path', ['directory', 'processed_uri'])
+    Path = namedtuple('RelativePath', ['directory', 'processed_uri'])
     Filename = namedtuple('Filename', ['filename', 'processed_uri'])
     Cache = namedtuple('Cache', ['filename', 'directory'])
 
