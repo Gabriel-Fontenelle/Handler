@@ -990,7 +990,7 @@ class BaseFile:
 
 
 class ContentFile(BaseFile):
-    # Changing between type of file should be made by controler.
+    # Changing between type of file should be made by controller.
 
     extract_data_pipeline = Pipeline(
         FilenameFromMetadataExtracter.to_processor(),
@@ -1007,9 +1007,25 @@ class StreamFile(BaseFile):
 
     extract_data_pipeline = Pipeline(
         FilenameFromMetadataExtracter.to_processor(),
+        FilenameFromURLExtracter.to_processor(),
         MimeTypeFromFilenameExtracter.to_processor(),
         MimeTypeFromContentExtracter.to_processor(),
         MetadataExtracter.to_processor()
+    )
+    """
+    Pipeline to extract data from multiple sources.
+    """
+
+
+class DownloadFile(BaseFile):
+
+    extract_data_pipeline = Pipeline(
+        FilenameFromMetadataExtracter.to_processor(),
+        FilenameFromURLExtracter.to_processor(),
+        MimeTypeFromFilenameExtracter.to_processor(),
+        MimeTypeFromContentExtracter.to_processor(),
+        MetadataExtracter.to_processor(),
+        ContentFromSourceExtracter.to_processor()
     )
     """
     Pipeline to extract data from multiple sources.
@@ -1027,6 +1043,7 @@ class File(BaseFile):
     """
     Pipeline to extract data from multiple sources.
     """
+
 
     # This save must overwrite file.
 
