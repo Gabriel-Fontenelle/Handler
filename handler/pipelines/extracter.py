@@ -87,18 +87,12 @@ class FilenameAndExtensionFromPathExtracter(Extracter):
 
         file_system_handler = file_object.file_system_handler
 
-        # Sanitize path
-        file_object.path = file_system_handler.sanitize_path(file_object.path)
-
         # Get complete filename from path
         complete_filename = file_system_handler.get_filename_from_path(file_object.path)
 
-        # Check if there is any extension in complete_filename
-        if '.' in complete_filename:
-            # Check if there is known extension in complete_filename
-
-            if file_object.add_valid_filename(complete_filename):
-                return
+        # Check if there is any extension in complete_filename and if there is known extension
+        if '.' in complete_filename and file_object.add_valid_filename(complete_filename):
+            return
 
         # No extension registered found, so we set extension as empty.
         file_object.filename = complete_filename
@@ -172,8 +166,7 @@ class FilenameFromMetadataExtracter(Extracter):
                 if complete_filename:
                     filenames.append(complete_filename)
 
-            file_object.filename = filenames[0]
-            file_object.extension = ""
+            file_object.complete_filename = (filenames[0], "")
 
         except KeyError:
             # kwargs has no parameter metadata
