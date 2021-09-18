@@ -54,6 +54,13 @@ class Processor:
             if hasattr(self, key):
                 setattr(self, key, value)
 
+    def __getattr__(self, item):
+        """
+        Method to return classname.<item> if no attribute is found in current object.
+        This method only work with attributes of classname, not attributes of classname object.
+        """
+        return getattr(self.classname, item)
+
     def run(self, object_to_process, *args, **kwargs):
         """
         Method to run method_name from classname and return boolean. Thus running the processor logic.
@@ -153,6 +160,12 @@ class Pipeline:
 
             else:
                 raise ValueError(f"{processor} is not a valid processor. Expecting a dict or Processor object.")
+
+    def __getitem__(self, item):
+        """
+        Method to allow extraction of processor from pipeline_processors directly from Pipeline object.
+        """
+        return self.pipeline_processors[item]
 
     def add_new_processor(self, classname, verbose_name, stopper):
         """
