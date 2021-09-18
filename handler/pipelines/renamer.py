@@ -61,6 +61,11 @@ class Renamer(ProcessorMixin):
         The processor for renamer uses only one object that must be settled through first argument
         or through key work `object`.
 
+        The keyword argument `path_attribute` allow using a different attribute for specify the file object path other
+        than the default `path`.
+        The keyword argument `reserved_names` allow for override of current list of reserved_names in pipeline. This
+        override will affect the class and thus all usage of `reserved_names`. It isn`t thread safe.
+
         FUTURE CONSIDERATION: Making the pipeline multi thread or multi process only will required that
         a lock be put between usage of get_name.
         FUTURE CONSIDERATION: Multi thread will need to consider that the attribute `file_system_handler`
@@ -69,7 +74,15 @@ class Renamer(ProcessorMixin):
 
         This processors return boolean to indicate that process was ran successfully.
         """
+        # Get default values from keywords arguments
         object_to_process = kwargs.pop('object', args.pop(0))
+        path_attribute = kwargs.pop('path_attribute', 'path')
+        reserved_names = kwargs.pop('reserved_names', None)
+
+        # Override current reserved names if list of new one provided.
+        if reserved_names:
+            cls.clean_reserved_names()
+            cls.add_reserved_name(reserved_names)
 
         # Prepare filename from File's object
         filename, extension = cls.prepare_filename(object_to_process.filename, object_to_process.extension)
@@ -87,7 +100,7 @@ class Renamer(ProcessorMixin):
             cls.file_system_handler = object_to_process.file_system_handler
 
             # Get directory from object to be processed.
-            path = cls.file_system_handler.sanitize_path(object_to_process.path)
+            path = cls.file_system_handler.sanitize_path(getattr(object_to_process, path_attribute))
 
             new_filename, extension = cls.get_name(path, filename, extension)
 
@@ -99,8 +112,7 @@ class Renamer(ProcessorMixin):
         # Set new name at File's object.
         # The File class should set the old name at File`s cache/history automatically,
         # filename and extension should be property functions.
-        object_to_process.filename = new_filename
-        object_to_process.extension = extension
+        object_to_process.complete_filename = (new_filename, extension)
 
         return True
 
