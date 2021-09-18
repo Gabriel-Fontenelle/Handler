@@ -27,7 +27,12 @@ from handler.pipelines.hasher import (
     MD5Hasher,
     SHA256Hasher
 )
-from .exception import NoInternalContentError, ImproperlyConfiguredFile
+from .exception import (
+    ImproperlyConfiguredFile,
+    NoInternalContentError,
+    OperationNotAllowed,
+    ValidationError
+)
 from .handler import LinuxFileSystem, WindowsFileSystem, URI
 from .pipelines import Pipeline
 from .pipelines.renamer import WindowsRenamer, Renamer
