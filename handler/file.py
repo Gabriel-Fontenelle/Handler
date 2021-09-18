@@ -735,13 +735,6 @@ class BaseFile:
         self._binary_content = value
 
     @property
-    def is_packed(self):
-        """
-        Method to return as attribute if file is compressed or is a package with other files within.
-        """
-        return self._meta.get('compressed', False) or bool(self._list_internal_content)
-
-    @property
     def path(self):
         """
         Method to return as attribute full path of file.
