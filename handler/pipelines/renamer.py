@@ -136,6 +136,13 @@ class Renamer(ProcessorMixin):
         elif isinstance(value, list):
             cls.reserved_names += value
 
+    @classmethod
+    def clean_reserved_names(cls):
+        """
+        Method to reset the `reserved_names` attribute to a empty list.
+        """
+        cls.reserved_names = []
+
 
 class WindowsRenamer(Renamer):
     """
