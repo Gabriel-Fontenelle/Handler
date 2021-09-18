@@ -630,8 +630,22 @@ class BaseFile:
         Method to set complete_filename attribute. For this method
         to work value must be a tuple of <filename, extension>.
         """
+        new_filename, new_extension = value
+
+        # Add current values to history
+        if self.filename or self.extension:
+            if new_filename == self.filename and new_extension == self.extension:
+                # Don`t change filename and extension
+                return
+
+            self._naming.history.append((self.filename_history, self.extension))
+
+        # Set-up new filename (only if it is different from previous one).
         self.filename, self.extension = value
-        self._save_actions.append('rename')
+
+        # Only set-up renaming of file if it was saved already.
+        if not self._state.adding:
+            self._actions.to_rename()
 
     @property
     def content(self):
