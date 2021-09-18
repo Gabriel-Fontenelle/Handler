@@ -6,7 +6,8 @@ __all__ = [
 	'ImproperlyConfiguredFile',
 	'NoInternalContentError',
 	'OperationNotAllowed',
-	'ValidationError'
+	'ValidationError',
+	'ReservedFilenameError'
 ]
 
 
@@ -23,13 +24,19 @@ class ImproperlyConfiguredFile(Exception):
 	"""
 
 
+class OperationNotAllowed(Exception):
+	"""
+	Exception that defines error for when a operation is not allowed for file.
+	"""
+
+
 class ValidationError(Exception):
 	"""
 	Exception that defines error for when a File was a missing attribute.
 	"""
 
 
-class OperationNotAllowed(Exception):
+class ReservedFilenameError(Exception):
 	"""
-	Exception that defines error for when a operation is not allowed for file.
+	Exception that defines error for when trying to rename a file to an already reserved one.
 	"""
