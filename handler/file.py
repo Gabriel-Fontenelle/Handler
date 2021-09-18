@@ -754,33 +754,29 @@ class BaseFile:
             raise ValueError("Attribute `path` informed for File cannot be a directory.")
 
     @property
-    def was_saved(self):
+    def save_to(self):
         """
-        Method to return as attribute if file was saved in filesystem or came from a filesystem.
+        Method to return as attribute directory where the file should be saved.
         """
-        try:
-            # Use `is True` to always return boolean
-            return self._meta['saved'] is True
+        return self._save_to
 
-        except KeyError:
-            return False
+    @save_to.setter
+    def set_save_to(self, value):
+        """
+        Method to set property all attributes related to path.
+        """
+        self._save_to = self.file_system_handler.sanitize_path(value)
 
-    def add_metadata(self, key, value):
-        """
-        Method to add a value to a key. It will replace existing key in metadata attribute `_meta`.
-        """
-        if self._meta is None:
-            self._meta = {key: value}
-            return
+        # Validate if path is really a directory.
+        if not self.file_system_handler.is_dir(self._save_to):
+            raise ValueError("Attribute `save_to` informed for File must be a directory.")
 
-        self._meta[key] = value
-
-    def has_metadata(self, key):
+    @property
+    def sanitize_path(self):
         """
-        Method to return if whether metadata has a valid value.
-        This method will consider 0 as valid, but None, or empty string as not valid.
+        Method to return as attribute full sanitized path of file.
         """
-        return key in self._meta and (self._meta[key] or self._meta[key] == 0)
+        return self.file_system_handler.sep.join((self.save_to, self.relative_path, self.complete_filename))
 
     def add_valid_filename(self, complete_filename, enforce_mimetype=False) -> bool:
         """
@@ -815,14 +811,8 @@ class BaseFile:
             self.complete_filename = Renamer.prepare_filename(complete_filename, possible_extension)
 
             # Save additional metadata to file.
-            self.add_metadata(
-                'compressed',
-                self.mime_type_handler.is_extension_compressed(self.extension)
-            )
-            self.add_metadata(
-                'lossless',
-                self.mime_type_handler.is_extension_lossless(self.extension)
-            )
+            self._meta.compressed = self.mime_type_handler.is_extension_compressed(self.extension)
+            self._meta.lossless = self.mime_type_handler.is_extension_lossless(self.extension)
 
             return True
 
