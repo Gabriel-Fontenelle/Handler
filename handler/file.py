@@ -573,6 +573,50 @@ class BaseFile:
         """
         return self.length
 
+    def __lt__(self, other_instance):
+        """
+        Method to allow comparison < to work between BaseFiles.
+        """
+        # Check if size is lower than. (or image resolution if Image file or video)
+        pass
+
+    def __le__(self, other_instance):
+        """
+        Method to allow comparison <= to work between BaseFiles.
+        """
+        return self.__lt__(other_instance) or self.__eq__(other_instance)
+
+    def __eq__(self, other_instance):
+        """
+        Method to allow comparison == to work between BaseFiles.
+        """
+        # Run compare pipeline
+        try:
+            return self.compare_to(other_instance)
+
+        except ValueError:
+            return False
+
+    def __ne__(self, other_instance):
+        """
+        Method to allow comparison not equal to work between BaseFiles.
+        """
+        return not self.__eq__(other_instance)
+
+    def __gt__(self, other_instance):
+        """
+        Method to allow comparison > to work between BaseFiles.
+        """
+        # Check if size is greater than. (or image resolution if Image file or video)
+        pass
+        #getattr(self._meta, self.type.compare)
+
+    def __ge__(self, other_instance):
+        """
+        Method to allow comparison >= to work between BaseFiles.
+        """
+        return self.__gt__(other_instance) or self.__eq__(other_instance)
+
     @property
     def complete_filename(self):
         """
