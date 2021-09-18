@@ -667,6 +667,7 @@ class BaseFile:
         """
         def generator_string_or_bytes(raw_value):
             """
+            Generator method to load from memory a string or byte data.
             """
             i = 0
 
@@ -681,13 +682,16 @@ class BaseFile:
             while True:
                 block = raw_value.read(self._block_size)
 
-                if block is None or block is b'':
+                if block is None or block == b'':
                     break
 
                 yield block
 
-            # Reset value
+            # Reset pointer to initial position in value
             pass
+
+        # Storage information if content is being loaded to generator for the first time
+        loading_content = self._content_generator is None
 
         if isinstance(value, (str, bytes)):
             # Add content as whole value
@@ -695,7 +699,6 @@ class BaseFile:
             self._binary_content = isinstance(value, bytes)  # Maybe remove it from here.
 
         elif isinstance(value, IOBase):
-            # This should be deprecated in favor of _content_generator
             # Add content as buffer
             self._content_generator = generator_buffer_io(value)
 
@@ -705,6 +708,16 @@ class BaseFile:
 
         else:
             raise ValueError(f"parameter `value` informed in property content is not a valid type {type(value)}")
+
+        # Update file state to changing only if not adding.
+        # Because new content can be changed multiple times, and we not care about
+        # how many times it was changed before saving.
+        if not self._state.adding and not loading_content:
+            self._state.changing = True
+
+        # Update file actions to be saved and hashed.
+        self._actions.to_save()
+        self._actions.to_hash()
 
     @property
     def is_binary(self) -> bool:
