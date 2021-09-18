@@ -4,7 +4,9 @@ Module with custom exceptions in use at package.
 
 __all__ = [
 	'ImproperlyConfiguredFile',
-	'NoInternalContentError'
+	'NoInternalContentError',
+	'OperationNotAllowed',
+	'ValidationError'
 ]
 
 
@@ -18,4 +20,16 @@ class NoInternalContentError(Exception):
 class ImproperlyConfiguredFile(Exception):
 	"""
 	Exception that defines error for when a File was a missing configuration.
+	"""
+
+
+class ValidationError(Exception):
+	"""
+	Exception that defines error for when a File was a missing attribute.
+	"""
+
+
+class OperationNotAllowed(Exception):
+	"""
+	Exception that defines error for when a operation is not allowed for file.
 	"""
