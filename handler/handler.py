@@ -54,6 +54,11 @@ class FileSystem:
     folder_size_limit = 200
     path_size_limit = 254
 
+    backup_extension = re.compile(r'\.bak(\.[0-9]*)?$')
+    """
+    Define what is identifiable as a backup`s extension.
+    """
+
     @classmethod
     def is_dir(cls, path):
         """
@@ -142,6 +147,28 @@ class FileSystem:
                 file_pointer.write(chunk)
                 file_pointer.flush()
                 fsync(file_pointer.fileno())
+
+    @classmethod
+    def backup(cls, file_path_origin, force=False):
+        """
+        Method used to copy a file in the same path with .bak append to its name.
+        This method only try to copy if file exists.
+        This method not check if there is a error and maybe can
+        produce a OSError exception if not enough space in destination.
+
+        This method will overwrite destination file if force is True. If force is False
+        it will append a number from a counter to `.bak` until there is existing file.
+
+        Override this method if that’s not appropriate for your storage.
+        """
+        file_path_destination = file_path_origin + '.bak'
+
+        i = 1
+        while not force and cls.exists(file_path_destination):
+            file_path_destination = re.sub(cls.backup_extension, f'.bak.{i}')
+            i += 1
+
+        return cls.copy(file_path_origin, file_path_destination, force=True)
 
     @classmethod
     def copy(cls, file_path_origin, file_path_destination, force=False):
