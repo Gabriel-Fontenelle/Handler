@@ -715,3 +715,30 @@ class ContentExtracter:
     # Guess extension from content
     # Guess mimetype from content
     # Get size from content
+
+
+class VideoMetadataFromContentExtracter(Extracter):
+
+    @classmethod
+    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to extract additional metadata information from content.
+        """
+
+
+class ImageMetadataFromContentExtracter(Extracter):
+
+    @classmethod
+    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to extract additional metadata information from content.
+        """
+
+
+class AudioMetadataFromContentExtracter(Extracter):
+
+    @classmethod
+    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to extract additional metadata information from content.
+        """
