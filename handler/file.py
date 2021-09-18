@@ -121,6 +121,7 @@ class FileActions:
     extract = False
     """
     Indicate whether an object should be extracted or not.
+    File inside another file should be extract and not saved.
     """
     rename = False
     """
