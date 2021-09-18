@@ -8,3 +8,5 @@
 /httpRequests/
 .venv
 .idea
+__pycache__
+dist
