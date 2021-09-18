@@ -24,7 +24,9 @@ from os.path import (
     getmtime,
     getsize,
     isdir,
-    join, normpath, normcase,
+    join,
+    normcase,
+    normpath,
 )
 from io import open
 
