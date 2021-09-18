@@ -742,15 +742,16 @@ class BaseFile:
         return self._path
 
     @path.setter
-    def path(self, value):
+    def set_path(self, value):
         """
         Method to set property attribute path. This method check whether path is a directory before setting, as we only
         allow path to files to be set-up.
         """
-        if self.file_system_handler.is_dir(value):
-            raise ValueError("path informed for File cannot be a directory.")
+        self._path = self.file_system_handler.sanitize_path(value)
 
-        self._path = value
+        # Validate if path is really a file.
+        if self.file_system_handler.is_dir(self._path):
+            raise ValueError("Attribute `path` informed for File cannot be a directory.")
 
     @property
     def was_saved(self):
