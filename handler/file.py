@@ -39,7 +39,10 @@ from .pipelines.renamer import WindowsRenamer, Renamer
 
 
 __all__ = [
-
+    'ContentFile',
+    'DownloadFile',
+    'File',
+    'StreamFile'
 ]
 
 
