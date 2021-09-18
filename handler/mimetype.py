@@ -291,22 +291,9 @@ class LibraryMimeTyper(BaseMimeTyper):
             raise ValueError("mimetype or extension must be informed at LibraryMimeTyper.get_type.")
 
         # Set-up list of types available from file `mime.types` as a set.
-        known_types = set(
-            [
-                'application',
-                'audio',
-                'binary',
-                'chemical',
-                'image',
-                'interface',
-                'message',
-                'model',
-                'multipart',
-                'text',
-                'video',
-                'x-conference',
-            ]
-        )
+        known_types = {'application', 'audio', 'binary', 'chemical', 'image', 'interface', 'message', 'model',
+                       'multipart', 'text', 'video', 'x-conference'}
+
         if extension and not mimetype:
             mimetype = self.get_mimetype(extension)
 
@@ -314,9 +301,10 @@ class LibraryMimeTyper(BaseMimeTyper):
             return None
 
         # Get set from mimetype using a list of first element before `/` in mimetype.
-        possible_type = set(mimetype.split('/', 1)[:1])
+        possible_type = mimetype.split('/', 1)[:1]
+        possible_type_set = set(possible_type)
 
-        return possible_type[0] if possible_type.intersection(known_types) else None
+        return possible_type[0] if possible_type_set.intersection(known_types) else None
 
     def guess_extension_from_mimetype(self, mimetype):
         """

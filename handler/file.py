@@ -576,9 +576,11 @@ class BaseFile:
     def __lt__(self, other_instance):
         """
         Method to allow comparison < to work between BaseFiles.
+        TODO: Compare metadata resolution for when type is image, video and bitrate when type
+        is audio and sequence when type is chemical.
         """
-        # Check if size is lower than. (or image resolution if Image file or video)
-        pass
+        # Check if size is lower than.
+        return len(self) < len(other_instance)
 
     def __le__(self, other_instance):
         """
@@ -592,7 +594,7 @@ class BaseFile:
         """
         # Run compare pipeline
         try:
-            return self.compare_to(other_instance)
+            return self.compare_to(other_instance) or False
 
         except ValueError:
             return False
@@ -606,10 +608,11 @@ class BaseFile:
     def __gt__(self, other_instance):
         """
         Method to allow comparison > to work between BaseFiles.
+        TODO: Compare metadata resolution for when type is image, video and bitrate when type
+        is audio and sequence when type is chemical.
         """
-        # Check if size is greater than. (or image resolution if Image file or video)
-        pass
-        #getattr(self._meta, self.type.compare)
+        # Check if size is greater than.
+        return len(self) > len(other_instance)
 
     def __ge__(self, other_instance):
         """
@@ -625,7 +628,7 @@ class BaseFile:
         return self.filename if not self.extension else f"{self.filename}.{self.extension}"
 
     @complete_filename.setter
-    def set_complete_filename(self, value):
+    def complete_filename(self, value):
         """
         Method to set complete_filename attribute. For this method
         to work value must be a tuple of <filename, extension>.
@@ -660,7 +663,7 @@ class BaseFile:
         return self._content_generator
 
     @content.setter
-    def set_content(self, value):
+    def content(self, value):
         """
         Method to set content attribute. This method can be override in child class.
         This method can receive value as string, bytes or buffer.
@@ -742,7 +745,7 @@ class BaseFile:
         return self._path
 
     @path.setter
-    def set_path(self, value):
+    def path(self, value):
         """
         Method to set property attribute path. This method check whether path is a directory before setting, as we only
         allow path to files to be set-up.
@@ -761,7 +764,7 @@ class BaseFile:
         return self._save_to
 
     @save_to.setter
-    def set_save_to(self, value):
+    def save_to(self, value):
         """
         Method to set property all attributes related to path.
         """

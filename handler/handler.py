@@ -40,9 +40,11 @@ from psutil import (
 )
 
 __all__ = [
+    'FileSystem',
     'WindowsFileSystem',
     'LinuxFileSystem',
     'System',
+    'URI'
 ]
 
 
@@ -383,7 +385,7 @@ class WindowsFileSystem(FileSystem):
         """
         Method to normalize a path for use.
         This method collapse redundant separators and up-level references so that A//B, A/B/, A/./B and A/foo/../B
-        all become A/B. It will also convert uppercase character to lowecase and `/` to `\\`.
+        all become A/B. It will also convert uppercase character to lowercase and `/` to `\\`.
         """
         return normpath(normcase(path))
 
@@ -499,7 +501,7 @@ class URI:
         return parse_qsl(value)
 
     @classmethod
-    def unparse_query(cls, value):
+    def unparser_query(cls, value):
         """
         Method to undo a parse resulted from using `cls.parse_query`.
         """
@@ -544,7 +546,7 @@ class URI:
                 filename = queries.pop(filename_index)
 
                 # Remove filename index from from url
-                value = value.replace(parsed_url.query, cls.unparse_query(queries))
+                value = value.replace(parsed_url.query, cls.unparser_query(queries))
 
         # Remove separator from URI converting it to path
         path = cls.uri_separator.sub(file_system.sep, value)

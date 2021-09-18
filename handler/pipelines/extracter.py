@@ -1,4 +1,3 @@
-from calendar import timegm
 from datetime import datetime
 from time import strptime, mktime
 
@@ -6,12 +5,14 @@ from handler.pipelines import ProcessorMixin
 
 
 __all__ = [
+    'ContentFromSourceExtracter',
     'Extracter',
     'FileSystemDataExtracter',
     'FilenameAndExtensionFromPathExtracter',
     'FilenameFromMetadataExtracter',
     'HashFileExtracter',
     'MetadataExtracter',
+    'MimeTypeFromContentExtracter',
     'MimeTypeFromFilenameExtracter',
     'FilenameFromURLExtracter',
     'PathFromURLExtracter'
@@ -198,11 +199,11 @@ class FileSystemDataExtracter(Extracter):
         This method not make use of overrider. It always override data.
         """
 
-        def generate_content(path, mode):
+        def generate_content(path, file_mode):
             """
             Internal function to return a generator for reading the file's content through the file system.
             """
-            with file_object.file_system_handler.open_file(path, mode=mode) as f:
+            with file_object.file_system_handler.open_file(path, mode=file_mode) as f:
 
                 while True:
                     block = f.read(file_object._block_size)
@@ -709,7 +710,7 @@ class ContentFromSourceExtracter(Extracter):
         # metadata
 
 
-class ContentExtracter():
+class ContentExtracter:
     pass
     # Guess extension from content
     # Guess mimetype from content
