@@ -820,11 +820,16 @@ class BaseFile:
 
     def compare_to(self, *files):
         """
-        Method to run the pipeline, to compare files, set-up for current file object.
+        Method to run the pipeline, for comparing files.
+        This method set-up for current file object with others.
         """
-        # Add current object to be compared mixed with others in files
-        files.append(self)
-        # Pass objects to be compared in pipeline
+        if not files:
+            raise ValueError("There must be at least one file to be compared in `BaseFile.compare_to` method.")
+
+        # Add current object to be compared mixed with others in files before any other
+        files.insert(0, self)
+
+        # Run pipeline passing objects to be compared
         self.compare_pipeline.run(objects=files)
         result = self.compare_pipeline.last_result
 
@@ -833,15 +838,147 @@ class BaseFile:
 
         return result
 
-    def generate_hashes(self):
+    def generate_hashes(self, force=False):
         """
         Method to run the pipeline, to generate hashes, set-up for the file.
+        The parameter `force` will make the pipeline always generate hash from content instead of trying to
+        load it from a file when there is one.
         """
-        self.hasher_pipeline.run(object=self, try_loading_from_file=self.was_saved)
+        if self._actions.hash:
+            # If content is being changed a new hash need to be generated instead of load from hash files.
+            try_loading_from_file = False if self._state.changing or force else self._actions.was_saved
 
+            self.hasher_pipeline.run(object=self, try_loading_from_file=try_loading_from_file)
 
+            self._actions.hashed()
 
+    def refresh_from_disk(self):
+        """
+        This method will reset all attributes, calling the pipeline to extract data again from disk.
+        Both the content and metadata will be reload from disk.
+        """
+        # Set-up pipeline to extract data from.
+        pipeline = Pipeline(
+            FilenameAndExtensionFromPathExtracter.to_processor(),
+            MimeTypeFromFilenameExtracter.to_processor(),
+            FileSystemDataExtracter.to_processor(),
+            HashFileExtracter.to_processor(),
+        )
 
+        # Run the pipeline.
+        pipeline.run(object=self, **self._keyword_arguments)
+
+    def save(self, **options):
+        """
+        Method to save file to file system. In this method we do some validation and verify if file can be saved
+        following some options informed through parameter `options`.
+
+        Options available:
+        - overwrite (bool) - If file with same filename exists it will be overwritten.
+        - save_hashes (bool) - If hash generate for file should also be saved.
+        - allow_search_hashes (bool) - Allow hashes to be obtained from hash`s files already saved.
+        - allow_update (bool) - If file exists its content will be overwritten.
+        - allow_rename (bool) - If renaming a file and a file with the same name exists a new one will be create
+        instead of overwriting it.
+        - create_backup (bool) - If file exists and its content is being updated the old content will be backup
+        before saving.
+
+        This method basically do three things:
+        1. Create file and its hashes files (if exists option `overwrite` must be `True`).
+        2. Update content if was changed (`allow_update` or `create_backup` must be `True` for this method
+        to overwritten the content).
+        3. Rename filename and its hashes filenames (if new filename already exists in filesystem, `allow_rename`
+        must be `True` for this method to change the renaming state).
+        """
+        # Validate if file has the correct attributes to be saved, because incomplete BaseFile will not be
+        # able to be saved. This should verify if there is name, path and content before saving.
+        self.validate()
+
+        # Extract options like `overwrite=bool` file, `save_hashes=False`.
+        overwrite = options.pop('overwrite', False)
+        save_hashes = options.pop('save_hashes', False)
+        allow_search_hashes = options.pop('allow_search_hashes', True)
+        allow_update = options.pop('allow_update', True)
+        allow_rename = options.pop('allow_rename', False)
+        create_backup = options.pop('create_backup', False)
+
+        # If overwrite is False and file exists a new filename must be created before renaming.
+        file_exists = self.file_system_handler.exists(self.sanitize_path)
+
+        # Verify which actions are allowed to perform while saving.
+        if self._state.adding and file_exists and not overwrite:
+            raise self.OperationNotAllowed("Saving a new file is not allowed when there is a existing one in path "
+                                           "and `overwrite` is set to `False`!")
+
+        if not self._state.adding and self._state.changing and not (allow_update or create_backup):
+            raise self.OperationNotAllowed("Update a file content is not allowed when there is a existing one in path "
+                                           "and `allow_update` and `create_backup` are set to `False`!")
+
+        if self._state.renaming and file_exists and not (allow_rename or overwrite):
+            raise self.OperationNotAllowed("Renaming a file is not allowed when there is a existing one in path "
+                                           "and `allow_rename` and `overwrite` is set to `False`!")
+
+        # Create new filename to avoid overwrite if allow_rename is set to `True`.
+        if self._state.renaming:
+            self._naming.on_conflict_rename=allow_rename
+            self._naming.rename()
+
+        # Copy current file to be .bak before updating content.
+        if self._state.changing and create_backup:
+            self.file_system_handler.backup(self.sanitize_path)
+
+        # Save file using iterable content if there is content to be saved
+        if self._state.adding or self._state.changing:
+            self.write_content(self.sanitize_path)
+
+        if save_hashes:
+            # Generate hashes, this will only generate hashes if there is a change in content
+            # or if it is a new file. If the file was saved before,
+            # we will try to find it in a `.<hasher_name>` file instead of generating one.
+            self.generate_hashes(force=not allow_search_hashes)
+            self.hashes.save(overwrite=True)
+
+        # Get id after saving.
+        if not self.id:
+            self.id = self.file_system_handler.get_path_id(self.sanitize_path)
+
+        # Update BaseFile internal status and controllers.
+        self._actions.saved()
+        self._actions.renamed()
+        self._state.adding = False
+        self._state.changing = False
+        self._state.renaming = False
+
+    def validate(self):
+        """
+        Method to validate if minimum attributes of file were set to allow saving.
+        TODO: This method should be changed to allow more easy override similar to how Django do with `clean`.
+        """
+        # Check if there is a filename or extension
+        if not self.filename and not self.extension:
+            raise self.ValidationError("The attribute `filename` or `extension` must be set for the file!")
+
+        # Raise if not save_to provided.
+        if not self.save_to:
+            raise self.ValidationError("The attribute `save_to` must be set for the file!")
+
+        # Raise if not content provided.
+        if self.content is None:
+            raise self.ValidationError("The attribute `content` must be set for the file!")
+
+        # Check if mimetype is compatible with extension
+        if self.extension and self.extension not in self.mime_type_handler.get_extensions(self.mime_type):
+            raise self.ValidationError("The attribute `extension` is not compatible with the set-up mimetype for the "
+                                       "file!")
+
+    def write_content(self, path):
+        """
+        Method to write content to a given path.
+        This method will truncate the file before saving content to it.
+        """
+        write_mode = 'b' if self.is_binary else 't'
+
+        self.file_system_handler.save_file(path, self.content, file_mode='w', write_mode=write_mode)
 
 
 
@@ -850,86 +987,6 @@ class BaseFile:
 
 
 
-
-    def rename_file(self):
-        # Set file to be rename, but don`t rename the actual file
-        # until apply is
-        pass
-
-    def _rename_file(self):
-        pass
-        # Rename file with new name
-        # Set current_filename to renamed name
-        # Add old filename to list of renamers.
-
-        # Rename hashes.
-
-    def _rename_hashes(self):
-        pass
-
-    def _save_file(self):
-        pass
-        # Save file using iterable content to avoid using too much memory.
-
-    def _save_hashes(self):
-        pass
-
-
-
-    def rename(self, filename, extension=None):
-        pass
-        # Check if extension is being change, raise if its
-
-        # Set to rename=True
-
-        # Use property to set and get filename, this logic of rename should
-        # be inside the set filename and get filename should return the last name.
-        # Add a lock and dict that reserves the name for all objects of BaseFile.
-
-
-    def save(self, options=[]):
-        # Options like `overwrite=bool` file, `save_hashes=False`.
-
-        pass
-        # Verify if there is name, path and content before saving.
-        # Raise exception otherwise.
-
-
-        # Don`t try to save if file already save (has id) and content not changed.
-        # If content changed raise exception to indicate to use update instead of saving.
-
-        # Apply rename if there is a rename to be made (not saved and file exists on path).
-
-        # Save file using iterable content if there is content to be saved
-
-        # Generate hashes from pipeline if hashes are None, else uses hash from hashes.
-        # Save hash if there is one and it wasn`t save before
-        # Remove from pipeline hashes already settled for file.
-
-        # Get id after saving.
-
-        # Raise if not save_to provided.
-
-        # Raise if extension is None
-
-    def validate(self):
-        pass
-        # Check if mimetype condiz with extension
-
-        # Check if hashers registered are really the same for file.
-
-    def update(self):
-        # Update content overwritten it, path must exist else raise error.
-        # Before updating rename file to .bak and create new file with new content.s
-        pass
-
-    def refresh_from_disk(self):
-        # Similar to refresh_from_db of Django.
-        # it will reload content and metadata from disk.
-
-        # Process FileSystemExtracter
-
-        pass
 
 
 class ContentFile(BaseFile):
