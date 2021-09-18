@@ -206,6 +206,134 @@ class FileActions:
         self.was_hashed = True
 
 
+class FileHashes:
+    """
+    Class that store file instance digested hashes.
+    """
+
+    _cache = CacheDescriptor()
+    """
+    Descriptor to storage the digested hashes for the file instance.
+    """
+    related_file_object = None
+    """
+    Variable to work as shortcut for the current related object for the hashes.
+    """
+
+    def __setitem__(self, hasher_name, value):
+        """
+        Method to set-up values for file hash as dict item.
+        This method expects a tuple as value to set-up the hash hexadecimal value and hash file related
+        to the hasher.
+        """
+        hex_value, hash_file = value
+
+        if not isinstance(hash_file, File):
+            raise ImproperlyConfiguredFile("Tuple for hashes must be the Hexadecimal value and a File Object for the "
+                                           "hash.")
+
+        self._cache[hasher_name] = hex_value, hash_file
+
+    def __getitem__(self, hasher_name):
+        """
+        Method to get the hasher value and file associated saved in self._cache.
+        """
+        return self._cache[hasher_name]
+
+    def rename(self, new_filename):
+        """
+        This method will rename file for each hash file existing in _caches.
+        This method don`t save files, ony prepare the filename and content to be correct before saving it.
+        """
+        for hasher_name, value in self._cache.items():
+            hex_value, hash_file = value
+
+            if not hash_file._meta.checksum:
+                # Rename filename if is not `checksum.hasher_name`
+                # complete_filename is a property that will set-up additional action to rename the file`s filename if
+                # it was already saved before.
+                hash_file.complete_filename = new_filename, hasher_name
+
+            # Load content from generator.
+            # First we set-up content of type binary or string.
+            content = b"" if hash_file.is_binary else ""
+
+            # Then we load content from generator using a loop.
+            for block in hash_file.content:
+                content += block
+
+            # Change file`s filename inside content of hash file.
+            content = content.replace(f"{hash_file.filename}.{hasher_name}", f"{new_filename}.{hasher_name}")
+
+            # Set-up new content after renaming and specify that hash_file was not saved yet.
+            hash_file.content = content
+            hash_file._actions.to_save()
+
+    def save(self, overwrite=False):
+        """
+        Method to save all hashes files if it was not saved already.
+        """
+        if not self.related_file_object:
+            raise ImproperlyConfiguredFile("A related file object must be specified for hashes before saving.")
+
+        for hex_value, hash_file in self._cache.values():
+            if hash_file._actions.save:
+                if hash_file._meta.checksum:
+                    # If file is CHECKSUM.<hasher_name> we not allow overwrite.
+                    hash_file.save(overwrite=False, allow_update=overwrite)
+                else:
+                    hash_file.save(overwrite=overwrite, allow_update=overwrite)
+
+
+class FileNaming:
+
+    reserved_filenames = {}
+    """
+    Dict of reserved filenames so that the correct file can be renamed
+    avoiding overwriting a new file that has the same name as the current file.
+    {<directory>:{<current_filename: old_filename>}}
+    """
+
+    history = None
+
+    previous_saved_path = None
+
+    _cache = CacheDescriptor()
+
+    on_conflict_rename = False
+
+    related_file_object = None
+    """
+    Variable to work as shortcut for the current related object for the hashes.
+    """
+
+    def rename(self, generate_new_name=False):
+        # Get last saved path
+
+        # Check if reserved name. Reserved names cannot be renamed even if overwrite is used in save.
+
+        pass
+        # Check if extension is being change, raise if its
+
+        # Set to rename=True
+
+        # Use property to set and get filename, this logic of rename should
+        # be inside the set filename and get filename should return the last name.
+        # Add a lock and dict that reserves the name for all objects of BaseFile.
+
+        # Rename hash_files if there is any.
+
+        # Apply rename if there is a rename to be made (not saved and file exists on path).
+        # Rename also in hashes.
+
+        # Update path of file to reflect new one.
+
+
+class FileInternalContent:
+    _content_list = None
+    pass
+
+
 class BaseFile:
     """
     Base class for handle File. This class will be used in Files of type Image, Rar, etc.
