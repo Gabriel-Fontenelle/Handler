@@ -353,10 +353,6 @@ class BaseFile:
     """
     Extension of file.
     """
-    _path = None
-    """
-    Full path to file including filename. BaseFile.path is available through property. 
-    """
     create_date = None
     """
     Datetime when file was created.
@@ -365,14 +361,20 @@ class BaseFile:
     """
     Datetime when file was updated.
     """
-    save_to = None
+    _path = None
+    """
+    Full path to file including filename. This is the raw path partially sanitized.
+    BaseFile.sanitize_path is available through property.
+    """
+    _save_to = None
     """
     Path of directory to save file. This path will be use for mixing relative paths.
+    This path should be accessible through property `save_to`.
     """
     relative_path = None
     """
     Relative path to save file. This path will be use for generating whole path together with save_to and 
-    complete_filename.
+    complete_filename (e.g save_to + relative_path + complete_filename). 
     """
 
     # Content data
@@ -388,9 +390,9 @@ class BaseFile:
     """
     Content's flag to indicate if is binary or not.
     """
-    _list_internal_content = None
+    _internal_content = None
     """
-    List of items in compressed file.
+    Descriptor for items in compressed files.
     """
 
     # Metadata data
@@ -414,6 +416,13 @@ class BaseFile:
     """
     Checksum information for file.
     It can be multiples like MD5, SHA128, SHA256, SHA512.
+    """
+
+    # Initializer data
+    _keyword_arguments = None
+    """
+    Additional attributes data passed to `__init__` method. This information is important to be able to 
+    reload data from disk correctly.
     """
 
     # Handler
@@ -469,32 +478,33 @@ class BaseFile:
     Pipeline to rename file when saving.
     """
 
-    _save_actions = None
-
-
-
-    filename_history = None
+    # Behavior controller for file
+    _state = None
     """
-    list of filename previously associated with file
+    Controller for state of file. The file will be set-up with default state before being loaded or create from stream.
     """
-    to_rename = None
-
-
-
-
-
-    # Behavior controller for save
-    should_be_extracted = False  # File inside another file should be extract and not saved.
-    move_file = False
-    save_file = False
-    save_hash = False
-    rename_file = False
-    rename_hash = False
-    name_reserves = {}
+    _actions = None
     """
-    Dict of reserved filenames so that the correct file can be renamed
-    avoiding overwriting a new file that has the same name as the current file.
-    {<directory>:{<current_filename: old_filename>}}
+    Controller for pending actions that file must run. The file will be set-up with default (empty) actions.
+    """
+    _naming = None
+    """
+    Controller for renaming restrictions that file must adopt.
+    """
+
+    # Common Exceptions shortcut
+    ImproperlyConfiguredFile = ImproperlyConfiguredFile
+    """
+    Exception to throw when a required configuration is missing or misplaced.
+    """
+    ValidationError = ValidationError
+    """
+    Exception to throw when a required attribute to be save is missing or improperly configured.
+    """
+    OperationNotAllowed = OperationNotAllowed
+    """
+    Exception to throw when a operation is no allowed to be performed due to how the options are set-up in `save` 
+    method.
     """
 
     def __init__(self, *args, **kwargs):
