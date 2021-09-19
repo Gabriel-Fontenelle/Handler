@@ -396,6 +396,8 @@ class BaseFile:
     """
     Base class for handle File. This class will be used in Files of type Image, Rar, etc.
     This class will behave like Django Model with methods save(), delete(), etc.
+
+    TODO: Add support to moving and copying file avoiding conflict on moving or copying.
     """
 
     # Filesystem data
@@ -699,10 +701,14 @@ class BaseFile:
                 # Don`t change filename and extension
                 return
 
-            self._naming.history.append((self.filename_history, self.extension))
+            # Remove old filename from reserved filenames
+            self._naming.remove_reserved_filename(self.complete_filename)
+
+            # Add old filename to history
+            self._naming.history.append((self.filename, self.extension))
 
         # Set-up new filename (only if it is different from previous one).
-        self.filename, self.extension = value
+        self.filename, self.extension = new_filename, new_extension
 
         # Only set-up renaming of file if it was saved already.
         if not self._state.adding:
@@ -837,7 +843,7 @@ class BaseFile:
         """
         Method to return as attribute full sanitized path of file.
         """
-        return self.file_system_handler.sep.join((self.save_to, self.relative_path, self.complete_filename))
+        return self.file_system_handler.join(self.save_to, self.relative_path, self.complete_filename)
 
     def add_valid_filename(self, complete_filename, enforce_mimetype=False) -> bool:
         """
@@ -867,9 +873,9 @@ class BaseFile:
                 if possible_extension not in self.mime_type_handler.get_extensions(self.mime_type):
                     return False
 
-            # Use base class Renamer because prepare_filename is a class method and we don't require any other
-            # specialized methods from Renamer children.
-            self.complete_filename = Renamer.prepare_filename(complete_filename, possible_extension)
+            # Use first class Renamer declared in pipeline because `prepare_filename` is a class method from base
+            # Renamer class and we don't require any other specialized methods from Renamer children.
+            self.complete_filename = self.rename_pipeline[0].prepare_filename(complete_filename, possible_extension)
 
             # Save additional metadata to file.
             self._meta.compressed = self.mime_type_handler.is_extension_compressed(self.extension)
@@ -879,7 +885,7 @@ class BaseFile:
 
         return False
 
-    def compare_to(self, *files):
+    def compare_to(self, *files: tuple):
         """
         Method to run the pipeline, for comparing files.
         This method set-up for current file object with others.
@@ -961,6 +967,7 @@ class BaseFile:
         allow_search_hashes = options.pop('allow_search_hashes', True)
         allow_update = options.pop('allow_update', True)
         allow_rename = options.pop('allow_rename', False)
+        allow_extension_change = options.pop('allow_extension_change', True)
         create_backup = options.pop('create_backup', False)
 
         # If overwrite is False and file exists a new filename must be created before renaming.
@@ -978,6 +985,16 @@ class BaseFile:
         if self._state.renaming and file_exists and not (allow_rename or overwrite):
             raise self.OperationNotAllowed("Renaming a file is not allowed when there is a existing one in path "
                                            "and `allow_rename` and `overwrite` is set to `False`!")
+
+        # Check if extension is being change, raise exception if it is.
+        if (
+                self._state.renaming
+                and self._naming.previous_saved_extension is not None
+                and self._naming.previous_saved_extension != self.extension
+                and not allow_extension_change
+        ):
+            raise self.OperationNotAllowed("Changing a file extension is not allowed when `allow_extension_change` is "
+                                           "set to `False`!")
 
         # Create new filename to avoid overwrite if allow_rename is set to `True`.
         if self._state.renaming:
@@ -1009,6 +1026,7 @@ class BaseFile:
         self._state.adding = False
         self._state.changing = False
         self._state.renaming = False
+        self._naming.previous_saved_extension = self.extension
 
     def validate(self):
         """
