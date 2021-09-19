@@ -92,7 +92,7 @@ class ProcessorMixin:
     method_name_to_process = "process"
 
     @classmethod
-    def to_processor(cls, stopper=True, stop_value=True, overrider=False):
+    def to_processor(cls, stopper=False, stop_value=True, overrider=False):
         """
         Method used to return a processor from class.
         This method can be overwritten in child class. Valid return are Processor object or
