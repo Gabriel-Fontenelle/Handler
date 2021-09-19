@@ -202,20 +202,6 @@ class FileSystemDataExtracter(Extracter):
         This method not make use of overrider. It always override data.
         """
 
-        def generate_content(path, file_mode):
-            """
-            Internal function to return a generator for reading the file's content through the file system.
-            """
-            with file_object.file_system_handler.open_file(path, mode=file_mode) as f:
-
-                while True:
-                    block = f.read(file_object._block_size)
-
-                    if block is None or block == b'':
-                        break
-
-                    yield block
-
         if not file_object.path:
             raise ValueError("Attribute `path` must be settled before calling `FileSystemDataExtracter.extract`.")
 
@@ -252,9 +238,12 @@ class FileSystemDataExtracter(Extracter):
 
         file_object.is_binary = file_object.type != 'text'
 
-        # Get content generator, same as buffer but without needing to use
-        # `.read(),` just loop through chunks of content.
-        file_object.content = generate_content(file_object.path, mode)
+        # Get buffer io
+        buffer = file_object.file_system_handler.open_file(file_object.path, mode=mode)
+
+        # Set content with buffer, as content is a property it will validate the buffer and
+        # add it as a generator allowing to just loop through chunks of content.
+        file_object.content = buffer
 
         # Set-up state for saved file.
         file_object._state.adding = False
