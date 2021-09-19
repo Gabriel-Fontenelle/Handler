@@ -1,6 +1,6 @@
 # first-party
 import inspect
-from io import IOBase
+from io import IOBase, StringIO, BytesIO
 from os import name
 
 from handler.mimetype import LibraryMimeTyper
@@ -566,6 +566,15 @@ class BaseFile:
     Exception to throw when a operation is no allowed to be performed due to how the options are set-up in `save` 
     method.
     """
+    NoInternalContentError = NoInternalContentError
+    """
+    Exception to throw when file was no internal content or being of wrong type to have internal content.
+    """
+    ReservedFilenameError = ReservedFilenameError
+    """
+    Exception to throw when a file is trying to be renamed, but there is already another file with the filename 
+    reserved. 
+    """
 
     def __init__(self, **kwargs):
         """
@@ -733,42 +742,47 @@ class BaseFile:
         Method to set content attribute. This method can be override in child class.
         This method can receive value as string, bytes or buffer.
         """
-        def generator_string_or_bytes(raw_value):
-            """
-            Generator method to load from memory a string or byte data.
-            """
-            i = 0
-
-            while i < len(raw_value):
-                yield raw_value[i:i+self._block_size]
-                i += self._block_size
 
         def generator_buffer_io(raw_value):
             """
+            Generator method to load from buffer IO.
             """
+            # Get end_content for case is byte or string
+            end_content = b'' if self.is_binary else ''
+
             # Read content in blocks until end of file and return blocks as iterable elements
-            while True:
-                block = raw_value.read(self._block_size)
+            try:
+                while True:
+                    block = raw_value.read(self._block_size)
 
-                if block is None or block == b'':
-                    break
+                    if block is None or block == end_content:
+                        break
 
-                yield block
+                    yield block
 
-            # Reset pointer to initial position in value
-            pass
+            except StopIteration as e:
+                # Reset pointer to initial position in value
+                if raw_value.seekable():
+                    raw_value.seek(0)
+
+                raise e
 
         # Storage information if content is being loaded to generator for the first time
         loading_content = self._content_generator is None
 
-        if isinstance(value, (str, bytes)):
-            # Add content as whole value
-            self._content_generator = generator_string_or_bytes(value)
-            self._binary_content = isinstance(value, bytes)  # Maybe remove it from here.
-
-        elif isinstance(value, IOBase):
+        if isinstance(value, IOBase):
             # Add content as buffer
             self._content_generator = generator_buffer_io(value)
+
+        elif isinstance(value, str):
+            # Add content as whole value
+            self._content_generator = generator_buffer_io(StringIO(value))
+            self._binary_content = False
+
+        elif isinstance(value, bytes):
+            # Add content as whole value
+            self._content_generator = generator_buffer_io(BytesIO(value))
+            self._binary_content = True
 
         elif inspect.isgenerator(value):
             # Add content as generator
