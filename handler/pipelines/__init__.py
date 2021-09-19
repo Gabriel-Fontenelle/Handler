@@ -67,7 +67,7 @@ class Processor:
         For this method to work method_name should return boolean whether it as successful or not.
         """
         list_args = list(args)
-        object_to_process = kwargs.pop('object', list_args.pop(0))
+        object_to_process = kwargs.pop('object', None) or list_args.pop(0)
         args = tuple(list_args)
 
         # Get method
