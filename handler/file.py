@@ -241,10 +241,16 @@ class FileHashes:
         """
         return self._cache[hasher_name]
 
+    def __iter__(self):
+        """
+        Method to return iterable from self._cache instead of current class.
+        """
+        return iter(self._cache)
+
     def rename(self, new_filename):
         """
         This method will rename file for each hash file existing in _caches.
-        This method don`t save files, ony prepare the filename and content to be correct before saving it.
+        This method don`t save files, only prepare the filename and content to be correct before saving it.
         """
         for hasher_name, value in self._cache.items():
             hex_value, hash_file = value
