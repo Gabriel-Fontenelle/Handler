@@ -31,11 +31,12 @@ from .exception import (
     ImproperlyConfiguredFile,
     NoInternalContentError,
     OperationNotAllowed,
+    ReservedFilenameError,
     ValidationError
 )
 from .handler import LinuxFileSystem, WindowsFileSystem, URI
 from .pipelines import Pipeline
-from .pipelines.renamer import WindowsRenamer, Renamer
+from .pipelines.renamer import WindowsRenamer
 
 
 __all__ = [
