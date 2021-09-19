@@ -1,7 +1,7 @@
 # first-party
-import inspect
 from io import IOBase, StringIO, BytesIO
 from os import name
+from types import NoneType
 
 from handler.mimetype import LibraryMimeTyper
 from handler.pipelines.comparer import (
@@ -293,6 +293,9 @@ class FileHashes:
 
 
 class FileNaming:
+    """
+    Class that store file instance filenames and related names content.
+    """
 
     reserved_filenames = {}
     """
@@ -387,9 +390,140 @@ class FileNaming:
             self.reserved_index[complete_filename][self] = self.reserved_filenames[save_to]
 
 
-class FileInternalContent:
+class FileContent:
+    """
+    Class that store file instance content.
+    """
+    # Properties
+    is_binary = False
+    """
+    """
+    is_internal_content = False
+    """
+    """
+
+    # Buffer handles
+    buffer = None
+    """
+    """
+    generator = None
+    """
+    """
+    related_file_object = None
+    """
+    """
+    _block_size = 256
+    """
+    Block size of file to be loaded in each step of iterator.
+    """
+
+    # Cache handles
+    cache_content = False
+    """
+    """
+    cache_in_memory = True
+    """
+    """
+    cache_in_file = False
+    """
+    """
+    cached = False
+    """
+    """
+    _cached_buffer = None
+    """
+    """
+
+    def __init__(self, raw_value, force=False):
+        """
+        Initial method that set-up the buffer to be used.
+        The parameter `force` when True will force usage of cache even if is IO is seekable.
+        """
+        if not raw_value:
+            raise ValueError(f"Value pass to FileContent must not be empty!")
+
+        if isinstance(raw_value, (str, bytes)):
+            try:
+                raw_value = StringIO(raw_value)
+            except TypeError:
+                raw_value = BytesIO(raw_value)
+
+        elif not isinstance(raw_value, IOBase):
+            raise ValueError(f"parameter `value` informed in FileContent is not a valid type"
+                             f" {type(raw_value)}! We were expecting str, bytes or IOBase.")
+
+        # Set attribute is_binary based on instance type.
+        self.is_binary = isinstance(raw_value, BytesIO)
+
+        # Add content (or content converted to Stream) as buffer
+        self.buffer = raw_value
+
+        # Set content to be cached.
+        if not self.buffer.seekable() or force:
+            self.cache_content = True
+            self.cached = False
+
+    def __iter__(self):
+        """
+
+        """
+        return iter(self.generator)
+
+    def __next__(self):
+        """
+
+        """
+        try:
+            content = next(self.__iter__())
+
+            # Cache content
+            if self.cache_content:
+                # Cache content in memory only
+                if self.cache_in_memory:
+                    if self._cached_buffer is None:
+                        self._cached_buffer = content
+                    else:
+                        self._cached_buffer += content
+                # Cache content in temporary file
+                elif self.cache_in_file:
+                    pass
+
+            return content
+
+        except StopIteration as e:
+            # Change buffer to be cached content
+            if self.cache_content and not self.cached:
+                class_name = BytesIO if self.is_binary else StringIO
+                self.buffer = class_name(self._cached_buffer)
+
+            # Reset buffer to begin from first position
+            if self.buffer.seekable():
+                self.buffer.seek(0)
+
+            # Create a new generator to use
+            self.generator = self.set_generator()
+            raise e
+
+    def set_generator(self):
+        """
+        Generator method to load from buffer IO.
+        """
+        # Read content in blocks until end of file and return blocks as iterable elements
+        while True:
+            block = self.buffer.read(self._block_size)
+
+            # This end the loop if block is None, b'' or ''.
+            if not block and block != 0:
+                break
+
+            yield block
+
+
+class FileInternalContent(FileContent):
     _content_list = None
-    pass
+
+    def get_internal_content(self):
+        raise NoInternalContentError(f"This file {repr(self)} don't have a internal content.")
 
 
 class BaseFile:
@@ -398,6 +532,7 @@ class BaseFile:
     This class will behave like Django Model with methods save(), delete(), etc.
 
     TODO: Add support to moving and copying file avoiding conflict on moving or copying.
+    TODO: Add support to packed files and its internal content.
     """
 
     # Filesystem data
@@ -435,24 +570,6 @@ class BaseFile:
     """
     Relative path to save file. This path will be use for generating whole path together with save_to and 
     complete_filename (e.g save_to + relative_path + complete_filename). 
-    """
-
-    # Content data
-    _block_size = 256
-    """
-    Block size of file to be loaded in each step of iterator.
-    """
-    _content_generator = None
-    """
-    Loaded generator to content of file.
-    """
-    _binary_content = False
-    """
-    Content's flag to indicate if is binary or not.
-    """
-    _internal_content = None
-    """
-    Descriptor for items in compressed files.
     """
 
     # Metadata data
@@ -551,6 +668,10 @@ class BaseFile:
     """
     Controller for renaming restrictions that file must adopt.
     """
+    _content = None
+    """
+    Controller for how the content of file will be handled. 
+    """
 
     # Common Exceptions shortcut
     ImproperlyConfiguredFile = ImproperlyConfiguredFile
@@ -625,9 +746,6 @@ class BaseFile:
         self._naming = FileNaming()
         self._naming.history = []
         self._naming.related_file_object = self
-
-        # Set-up resources used for handling internal content.
-        self._internal_content = FileInternalContent()
 
         # Process extractor pipeline
         extract_data_pipeline = kwargs.pop('extract_data_pipeline', None)
@@ -731,10 +849,10 @@ class BaseFile:
         or a stream_content or need to be load from file system.
         This method can be override in child class and it should always return a generator.
         """
-        if not self._content_generator:
+        if not self._content:
             raise ValueError(f"There is no content to use for file {self}.")
 
-        return self._content_generator
+        return iter(self._content)
 
     @content.setter
     def content(self, value):
@@ -743,53 +861,14 @@ class BaseFile:
         This method can receive value as string, bytes or buffer.
         """
 
-        def generator_buffer_io(raw_value):
-            """
-            Generator method to load from buffer IO.
-            """
-            # Get end_content for case is byte or string
-            end_content = b'' if self.is_binary else ''
-
-            # Read content in blocks until end of file and return blocks as iterable elements
-            try:
-                while True:
-                    block = raw_value.read(self._block_size)
-
-                    if block is None or block == end_content:
-                        break
-
-                    yield block
-
-            except StopIteration as e:
-                # Reset pointer to initial position in value
-                if raw_value.seekable():
-                    raw_value.seek(0)
-
-                raise e
-
         # Storage information if content is being loaded to generator for the first time
-        loading_content = self._content_generator is None
+        loading_content = self._content is None
 
-        if isinstance(value, IOBase):
-            # Add content as buffer
-            self._content_generator = generator_buffer_io(value)
+        try:
+            self._content = FileContent(value)
 
-        elif isinstance(value, str):
-            # Add content as whole value
-            self._content_generator = generator_buffer_io(StringIO(value))
-            self._binary_content = False
-
-        elif isinstance(value, bytes):
-            # Add content as whole value
-            self._content_generator = generator_buffer_io(BytesIO(value))
-            self._binary_content = True
-
-        elif inspect.isgenerator(value):
-            # Add content as generator
-            self._content_generator = value
-
-        else:
-            raise ValueError(f"parameter `value` informed in property content is not a valid type {type(value)}")
+        except ValueError:
+            return
 
         # Update file state to changing only if not adding.
         # Because new content can be changed multiple times, and we not care about
@@ -802,19 +881,18 @@ class BaseFile:
         self._actions.to_hash()
 
     @property
-    def is_binary(self) -> bool:
+    def is_binary(self) -> [bool, NoneType]:
         """
-        Method to return as attribute if file is binary or not. This information is obtain from `_binary_content`
-        that should be set-up when data is loaded to content.
-        """
-        return self._binary_content
+        Method to return as attribute if file is binary or not. This information is obtain from `is_binary` from
+        `FileContent` that should be set-up when data is loaded to content.
 
-    @is_binary.setter
-    def is_binary(self, value):
+        There is no setter method, because the 'binarility' of file is determined by its content.
         """
-        Method to set property attribute is_binary. This information is obtain should be set-up when data is loaded to content.
-        """
-        self._binary_content = value
+        try:
+            return self._content.is_binary
+
+        except ValueError:
+            return None
 
     @property
     def path(self):
@@ -1073,14 +1151,6 @@ class BaseFile:
         write_mode = 'b' if self.is_binary else 't'
 
         self.file_system_handler.save_file(path, self.content, file_mode='w', write_mode=write_mode)
-
-
-
-    def get_internal_content(self):
-        raise NoInternalContentError(f"This file {repr(self)} don't have a internal content.")
-
-
-
 
 
 class ContentFile(BaseFile):
