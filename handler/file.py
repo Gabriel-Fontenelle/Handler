@@ -297,43 +297,94 @@ class FileNaming:
     reserved_filenames = {}
     """
     Dict of reserved filenames so that the correct file can be renamed
-    avoiding overwriting a new file that has the same name as the current file.
-    {<directory>:{<current_filename: old_filename>}}
+    avoiding overwriting a new file that has the same name as the current file in given directory.
+    {<directory>: {<current_filename>: <base_file_object>}}
+    """
+    reserved_index = {}
+    """
+    Dict of reference of reserved filenames so that a filename can be easly removed from `reserved_filenames` dict.
+    {<filename>: {<base_file_object>: <reference to reserved_index[filename][base_file_object]>}}}
     """
 
     history = None
-
-    previous_saved_path = None
-
-    _cache = CacheDescriptor()
-
+    """
+    Storage filenames to allow browsing old ones for current BaseFile.
+    """
     on_conflict_rename = False
-
+    """
+    Option that control behavior of renaming filename.  
+    """
     related_file_object = None
     """
     Variable to work as shortcut for the current related object for the hashes.
     """
+    previous_saved_extension = None
+    """
+    Storage the previous saved extension to allow `save` method of file to verify if its changing its `extension`. 
+    """
 
-    def rename(self, generate_new_name=False):
-        # Get last saved path
+    def remove_reserved_filename(self, old_filename):
+        """
+        This method remove old filename from list of reserved filenames.
+        """
 
-        # Check if reserved name. Reserved names cannot be renamed even if overwrite is used in save.
+        files = self.reserved_index.get(old_filename, {})
+        reference = files.get(self.related_file_object, None)
 
-        pass
-        # Check if extension is being change, raise if its
+        # Remove from `reserved_filename` and current `reserved_index`.
+        if reference:
+            del reference[old_filename]
+            del files[self.related_file_object]
 
-        # Set to rename=True
+    def rename(self):
+        """
+        Method to rename `related_file_object` according to its own rename pipeline.
+        TODO: Change how this method used `reserved_filenames` to allow moving or copying of file.
+        """
+        save_to = self.related_file_object.save_to
+        complete_filename = self.related_file_object.complete_filename
 
-        # Use property to set and get filename, this logic of rename should
-        # be inside the set filename and get filename should return the last name.
-        # Add a lock and dict that reserves the name for all objects of BaseFile.
+        reserved_folder = self.reserved_filenames.get(save_to, None)
+        object_reserved = reserved_folder.get(complete_filename, None) if reserved_folder else None
 
-        # Rename hash_files if there is any.
+        # Check if filename already reserved name. Reserved names cannot be renamed even if overwrite is used in save,
+        # so the only option is the have a new filename created, but only if `on_conflict_rename` is `True`.
+        if reserved_folder and object_reserved and object_reserved is not self.related_file_object:
+            if not self.on_conflict_rename:
+                raise ReservedFilenameError(f"Rename cannot be made, because the filename {complete_filename} is "
+                                            f"already reserved for object {object_reserved} and not for "
+                                            f"{self.related_file_object}!")
+            else:
+                # Prepare reserved names to be set-up in `rename_pipeline`
+                reserved_names = [filename for filename in reserved_folder.keys()]
 
-        # Apply rename if there is a rename to be made (not saved and file exists on path).
-        # Rename also in hashes.
+                # Generate new name based on file_system and reserved names calling the rename_pipeline.
+                # The pipeline will update `complete_filename` of file to reflect new one. We shouldn`t change `path`
+                # of file; `complete_filename` will add the new filename to `history` and remove the old one from
+                # `reserved_filenames`.
+                self.related_file_object.rename_pipeline.run(
+                    object=self.related_file_object,
+                    path_attribute='save_to',
+                    reserved_names=reserved_names
+                )
 
-        # Update path of file to reflect new one.
+                # Rename hash_files if there is any. This method not save the hash files giving the responsibility to
+                # `save` method.
+                self.related_file_object.hashes.rename(self.related_file_object.complete_filename)
+
+        # Update reserved dictionary to reserve current filename.
+        if not reserved_folder:
+            self.reserved_filenames[save_to] = {complete_filename: self.related_file_object}
+        elif not object_reserved:
+            self.reserved_filenames[save_to][complete_filename] = self.related_file_object
+
+        # Update reserved index to current filename. This allow for easy finding of filename and object at
+        # `self.reserved_filenames`.
+        if complete_filename not in self.reserved_index:
+            # Pass reference of dict `save_to` to index of reserved names.
+            self.reserved_index[complete_filename] = {self: self.reserved_filenames[save_to]}
+        else:
+            self.reserved_index[complete_filename][self] = self.reserved_filenames[save_to]
 
 
 class FileInternalContent:
