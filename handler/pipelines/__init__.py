@@ -61,24 +61,28 @@ class Processor:
         """
         return getattr(self.classname, item)
 
-    def run(self, object_to_process, *args, **kwargs):
+    def run(self, *args, **kwargs):
         """
         Method to run method_name from classname and return boolean. Thus running the processor logic.
         For this method to work method_name should return boolean whether it as successful or not.
         """
+        list_args = list(args)
+        object_to_process = kwargs.pop('object', list_args.pop(0))
+        args = tuple(list_args)
+
         # Get method
-        method = getattr(self.classname, self.methodname)
+        method = getattr(self.classname, self.method_name)
 
         # Check if method of method_name has `classmethod` decorator being bound to class
         # If not, properly instantiate the class to run the method.
         if not ismethod(method):
             class_to_use = self.classname()
-            method = getattr(class_to_use, self.methodname)
-            return method(object_to_process, overrider=self.overrider, *args, **kwargs)
+            method = getattr(class_to_use, self.method_name)
+            return method(object_to_process, *args, overrider=self.overrider, **kwargs)
 
         # Run method_name (`classmethod` or class function) passing args and kwargs to it
         # and return boolean result from processor
-        return method(object_to_process, *args, **kwargs)
+        return method(object_to_process, *args, overrider=self.overrider, **kwargs)
 
 
 class ProcessorMixin:

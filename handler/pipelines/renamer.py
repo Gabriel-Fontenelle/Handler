@@ -75,7 +75,7 @@ class Renamer(ProcessorMixin):
         This processors return boolean to indicate that process was ran successfully.
         """
         # Get default values from keywords arguments
-        object_to_process = kwargs.pop('object', args.pop(0))
+        object_to_process = kwargs.pop('object', args[0])
         path_attribute = kwargs.pop('path_attribute', 'path')
         reserved_names = kwargs.pop('reserved_names', None)
 

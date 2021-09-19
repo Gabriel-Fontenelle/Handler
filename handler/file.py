@@ -580,7 +580,7 @@ class BaseFile:
             raise self.ImproperlyConfiguredFile("File object must set-up a pipeline for data`s extraction.")
 
         # Set-up current file system.
-        self.file_system_handler = kwargs.pop('file_system_handler')
+        self.file_system_handler = kwargs.pop('file_system_handler', None)
 
         if not self.file_system_handler:
             self.file_system_handler = (
@@ -596,6 +596,7 @@ class BaseFile:
                 setattr(self, key, value)
             else:
                 new_kwargs[key] = value
+
         self._keyword_arguments = new_kwargs
 
         # Set-up resources used for `save` and `update` methods.
@@ -620,11 +621,11 @@ class BaseFile:
         self._internal_content = FileInternalContent()
 
         # Process extractor pipeline
-        extract_data_pipeline = kwargs.pop('extract_data_pipeline')
+        extract_data_pipeline = kwargs.pop('extract_data_pipeline', None)
         if extract_data_pipeline:
             self.extract_data_pipeline = extract_data_pipeline
 
-        self.extract_data_pipeline.run(object=self, **new_kwargs)
+        self.extract_data_pipeline.run(self, **new_kwargs)
 
     def __len__(self):
         """

@@ -1,3 +1,4 @@
+import pdb
 from datetime import datetime
 from time import strptime, mktime
 
@@ -43,10 +44,10 @@ class Extracter(ProcessorMixin):
         or through key work `object`.
 
         """
-        object_to_process = kwargs.pop('object', args.pop(0))
+        object_to_process = kwargs.pop('object', args[0])
 
         try:
-            cls.extract(file_object=object_to_process, *args, **kwargs)
+            cls.extract(file_object=object_to_process, **kwargs)
         except (ValueError, IOError):
             return False
 
