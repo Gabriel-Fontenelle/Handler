@@ -459,7 +459,7 @@ class FileContent:
                              f" {type(raw_value)}! We were expecting str, bytes or IOBase.")
 
         # Set attribute is_binary based on instance type.
-        self.is_binary = isinstance(raw_value, BytesIO)
+        self.is_binary = isinstance(raw_value, BytesIO) or 'b' in getattr(raw_value, 'mode', '')
 
         # Add content (or content converted to Stream) as buffer
         self.buffer = raw_value
@@ -469,60 +469,50 @@ class FileContent:
             self.cache_content = True
             self.cached = False
 
+        # Default buffer for cache
+        self._cached_buffer = None
+
     def __iter__(self):
         """
-
+        Method to return current object as iterator.
         """
-        return iter(self.generator)
+        yield self.__next__()
 
     def __next__(self):
         """
-
+        Method that defines the behavior of iterable blocks of current object.
+        This method has the potential to double the memory size of current object storaging
+        the whole buffer in memory.
         """
-        try:
-            content = next(self.__iter__())
+        block = self.buffer.read(self._block_size)
 
-            # Cache content
-            if self.cache_content:
-                # Cache content in memory only
-                if self.cache_in_memory:
-                    if self._cached_buffer is None:
-                        self._cached_buffer = content
-                    else:
-                        self._cached_buffer += content
-                # Cache content in temporary file
-                elif self.cache_in_file:
-                    pass
-
-            return content
-
-        except StopIteration as e:
+        # This end the loop if block is None, b'' or ''.
+        if not block and block != 0:
             # Change buffer to be cached content
             if self.cache_content and not self.cached:
                 class_name = BytesIO if self.is_binary else StringIO
                 self.buffer = class_name(self._cached_buffer)
+                self.cached = True
 
             # Reset buffer to begin from first position
             if self.buffer.seekable():
                 self.buffer.seek(0)
 
-            # Create a new generator to use
-            self.generator = self.set_generator()
-            raise e
+            raise StopIteration()
 
-    def set_generator(self):
-        """
-        Generator method to load from buffer IO.
-        """
-        # Read content in blocks until end of file and return blocks as iterable elements
-        while True:
-            block = self.buffer.read(self._block_size)
+        # Cache content
+        if self.cache_content and not self.cached:
+            # Cache content in memory only
+            if self.cache_in_memory:
+                if self._cached_buffer is None:
+                    self._cached_buffer = block
+                else:
+                    self._cached_buffer += block
+            # Cache content in temporary file
+            elif self.cache_in_file:
+                pass
 
-            # This end the loop if block is None, b'' or ''.
-            if not block and block != 0:
-                break
-
-            yield block
+        return block
 
 
 class FileInternalContent(FileContent):
