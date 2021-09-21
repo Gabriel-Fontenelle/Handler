@@ -877,7 +877,7 @@ class BaseFile:
         self._actions.to_hash()
 
     @property
-    def is_binary(self) -> [bool, NoneType]:
+    def is_binary(self) -> [bool, None]:
         """
         Method to return as attribute if file is binary or not. This information is obtain from `is_binary` from
         `FileContent` that should be set-up when data is loaded to content.
