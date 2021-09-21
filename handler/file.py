@@ -1,7 +1,6 @@
 # first-party
 from io import IOBase, StringIO, BytesIO
 from os import name
-from types import NoneType
 
 from handler.mimetype import LibraryMimeTyper
 from handler.pipelines.comparer import (
@@ -397,20 +396,21 @@ class FileContent:
     # Properties
     is_binary = False
     """
+    Type of stream used in buffer for content. 
     """
     is_internal_content = False
     """
+    
     """
 
     # Buffer handles
     buffer = None
     """
-    """
-    generator = None
-    """
+    Stream for file`s content.
     """
     related_file_object = None
     """
+    Variable to work as shortcut for the current related object for the hashes.
     """
     _block_size = 256
     """
@@ -420,18 +420,24 @@ class FileContent:
     # Cache handles
     cache_content = False
     """
+    Whether the content should be cached.
     """
     cache_in_memory = True
     """
+    Whether the cache will be made in memory.
     """
     cache_in_file = False
     """
+    Whether the cache will be made in filesystem.
     """
     cached = False
     """
+    Whether the content as whole was cached. Being True the current buffer will point to a stream
+    of `_cached_buffer`.
     """
     _cached_buffer = None
     """
+    Stream for file`s content cached.
     """
 
     def __init__(self, raw_value, force=False):
