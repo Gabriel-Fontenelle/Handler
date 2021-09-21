@@ -32,7 +32,7 @@ class Comparer(ProcessorMixin):
         raise NotImplementedError("The method is_the_same needs to be overwrite on child class.")
 
     @classmethod
-    def process(cls, *args, **kwargs) -> Union[None, bool]:
+    def process(cls, *args: tuple, **kwargs: dict) -> Union[None, bool]:
         """
         Method used to run this class on Processor`s Pipeline for Files.
         This method and to_processor() is not need to compare files outside a pipeline.
@@ -44,7 +44,7 @@ class Comparer(ProcessorMixin):
         This processor return boolean whether files are the same, different of others processors that return boolean
         to indicate that process was ran successfully.
         """
-        objects_to_process = kwargs.pop('objects', args.pop(0))
+        objects_to_process = kwargs.pop('objects', args.get(0))
 
         if not objects_to_process or len(objects_to_process) < 2:
             raise ValueError("There must be at least two objects to compare at `objects`s kwargs for "
@@ -91,47 +91,61 @@ class DataCompare(Comparer):
             # Normalize buffer returning modified buffer (after comparing above)
             return buffer_1[buffer_size:], buffer_2[buffer_size:]
 
-        # Don't compare empty content
-        if not file_1.content and not file_2.content:
-            return None
+        try:
+            # Check if there is a content so we don't compare empty content. It is checked by property content of
+            # BaseFile when calling .content
+            content_1 = file_1.content
+            content_2 = file_2.content
 
-        # Set-up initial data for additional buffer
-        buffer_1, buffer_2 = b'', b'' if file_1.is_binary else '', ''
-
-        # Get buffer to verify
-        buffer_size = min(file_1._block_size, file_2._block_size)
-
-        value_1 = buffer_1
-        value_2 = buffer_2
-
-        while not (value_1 is None and value_2 is None):
-            value_1 = next(file_1.content, None)
-            value_2 = next(file_2.content, None)
-
-            if value_1 is not None:
-                # Add data to buffer
-                buffer_1 += value_1
-
-            if value_2 is not None:
-                # Add data to buffer
-                buffer_2 += value_2
-
-            if len(buffer_1) >= buffer_size and len(buffer_2) >= buffer_size:
-                try:
-                    # Normalize buffer (after comparing above)
-                    buffer_1, buffer_2 = compare_buffer()
-                except StopIteration:
-                    return False
-
-        # If there is still buffer to verify, check buffer data
-        while max(len(buffer_1), len(buffer_2)) >= buffer_size:
-            try:
-                # Normalize buffer (after comparing above)
-                buffer_1, buffer_2 = compare_buffer()
-            except StopIteration:
+            # Comparing data between binary and string should return False, they are not the same anyway.
+            if file_1.is_binary != file_2.is_binary:
                 return False
 
-        return True
+            # Set-up initial data for additional buffer
+            if file_1.is_binary:
+                value_1 = buffer_1 = b''
+                value_2 = buffer_2 = b''
+            else:
+                value_1 = buffer_1 = ''
+                value_2 = buffer_2 = ''
+
+            # Normalize buffer size to be the minimum denominator between buffers
+            buffer_size = min(file_1._content._block_size, file_2._content._block_size)
+
+        except ValueError:
+            return None
+
+        try:
+            # Loop through content adding to new buffer to allow comparison between normalized sizes.
+            while not (value_1 is None and value_2 is None):
+                # We should avoid raising StopIteration so we define a default value to return instead.
+                value_1 = next(content_1, None)
+                value_2 = next(content_2, None)
+
+                if value_1 is not None:
+                    # Add data to buffer
+                    buffer_1 += value_1
+
+                if value_2 is not None:
+                    # Add data to buffer
+                    buffer_2 += value_2
+
+                if len(buffer_1) >= buffer_size and len(buffer_2) >= buffer_size:
+                    # Normalize buffer (after comparing above)
+                    # compare_buffer will raise StopIterator case the comparison is False.
+                    buffer_1, buffer_2 = compare_buffer()
+
+            # If there is still buffer to verify, check buffer data
+            while max(len(buffer_1), len(buffer_2)) >= buffer_size:
+                # Normalize buffer (after comparing above)
+                # compare_buffer will raise StopIterator case the comparison is False.
+                buffer_1, buffer_2 = compare_buffer()
+
+            return True
+
+        except StopIteration:
+            # Case StopIteration as raised the comparison is false.
+            return False
 
 
 class SizeCompare(Comparer):
@@ -226,7 +240,7 @@ class MimeTypeCompare(Comparer):
         Method used to check if two files are the same.
         This method check the if mimetypes are the same.
         """
-        if not file_1.mime_type or not file_2.mime_type:
+        if file_1.mime_type is None or file_2.mime_type is None:
             return None
 
         return file_1.mime_type == file_2.mime_type
@@ -243,7 +257,13 @@ class BinaryCompare(Comparer):
         Method used to check if two files are the same.
         This method check the if attribute binary are the same.
         """
-        return file_1.is_binary == file_2.is_binary
+        file_1_is_binary = file_1.is_binary
+        file_2_is_binary = file_2.is_binary
+
+        if file_1_is_binary is None or file_2_is_binary is None:
+            return None
+
+        return file_1_is_binary == file_2_is_binary
 
 
 class TypeCompare(Comparer):
