@@ -236,8 +236,6 @@ class FileSystemDataExtracter(Extracter):
         if file_object.type != 'text':
             mode += 'b'
 
-        file_object.is_binary = file_object.type != 'text'
-
         # Get buffer io
         buffer = file_object.file_system_handler.open_file(file_object.path, mode=mode)
 
