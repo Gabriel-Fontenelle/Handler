@@ -157,8 +157,6 @@ class WindowsRenamer(Renamer):
         If there is a duplicated name the new name will follow
         the style of Windows: `new name (1).ext`
         """
-        old_filename = filename
-
         # Prepare filename and extension removing enumeration from filename
         # and setting up a empty string is extension is None
         filename = cls.enumeration_pattern.sub('', filename)
@@ -188,8 +186,6 @@ class LinuxRenamer(Renamer):
         If there is a duplicated name the new name will follow
         the style of Linux: `new name - 1.ext`
         """
-        old_filename = filename
-
         # Prepare filename and extension removing enumeration from filename
         # and setting up a empty string is extension is None
         filename = cls.enumeration_pattern.sub('', filename)
@@ -218,7 +214,7 @@ class UniqueRenamer(Renamer):
         extension = f'.{extension}' if extension else ''
 
         #Generate Unique filename
-        filename = uuid4()
+        filename = str(uuid4())
 
         i = 0
         while (
@@ -227,7 +223,7 @@ class UniqueRenamer(Renamer):
         ) and i < 100:
             i += 1
             #Generate Unique filename
-            filename = uuid4()
+            filename = str(uuid4())
 
         if i == 100:
             raise BlockingIOError("Too many files being handler simultaneous")
