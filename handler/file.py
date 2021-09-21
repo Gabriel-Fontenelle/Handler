@@ -182,7 +182,6 @@ class FileActions:
         """
         self.rename = True
         self.was_renamed = False
-        pass
 
     def renamed(self):
         """
@@ -254,7 +253,7 @@ class FileHashes:
         for hasher_name, value in self._cache.items():
             hex_value, hash_file = value
 
-            if not hash_file._meta.checksum:
+            if not hash_file.meta.checksum:
                 # Rename filename if is not `checksum.hasher_name`
                 # complete_filename is a property that will set-up additional action to rename the file`s filename if
                 # it was already saved before.
@@ -284,7 +283,7 @@ class FileHashes:
 
         for hex_value, hash_file in self._cache.values():
             if hash_file._actions.save:
-                if hash_file._meta.checksum:
+                if hash_file.meta.checksum:
                     # If file is CHECKSUM.<hasher_name> we not allow overwrite.
                     hash_file.save(overwrite=False, allow_update=overwrite)
                 else:
@@ -510,6 +509,7 @@ class FileContent:
                     self._cached_buffer += block
             # Cache content in temporary file
             elif self.cache_in_file:
+                # TODO: Save cache content in temporary file.
                 pass
 
         return block
@@ -887,8 +887,15 @@ class BaseFile:
         try:
             return self._content.is_binary
 
-        except ValueError:
+        except AttributeError:
             return None
+
+    @property
+    def meta(self):
+        """
+        Method to return as attribute the file`s metadata class.
+        """
+        return self._meta
 
     @property
     def path(self):

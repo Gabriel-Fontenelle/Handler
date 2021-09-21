@@ -1,4 +1,3 @@
-import pdb
 from datetime import datetime
 from time import strptime, mktime
 
@@ -488,11 +487,11 @@ class MetadataExtracter(Extracter):
                         file_object.extension = possible_extension
 
                         # Save additional metadata to file.
-                        file_object._meta.compressed = file_object.mime_type_handler.is_extension_compressed(
+                        file_object.meta.compressed = file_object.mime_type_handler.is_extension_compressed(
                             file_object.extension
                         )
 
-                        file_object._meta.lossless = file_object.mime_type_handler.is_extension_lossless(
+                        file_object.meta.lossless = file_object.mime_type_handler.is_extension_lossless(
                             file_object.extension
                         )
 
@@ -519,12 +518,12 @@ class MetadataExtracter(Extracter):
             # Set-up language metadata from metadata
             language = cls.get_language(meta)
             if language and (not hasattr(file_object, 'language') or overrider):
-                file_object._meta.language = language
+                file_object.meta.language = language
 
             # Set-up expiration date
             expire_date = cls.get_expire(meta)
             if expire_date and (not hasattr(file_object, 'expire') or overrider):
-                file_object._meta.expire = expire_date
+                file_object.meta.expire = expire_date
 
         except KeyError:
             raise ValueError('Parameter `metadata` must be informed as key argument for '
@@ -659,7 +658,7 @@ class InternalFilesExtracter(Extracter):
         """
         pass
 
-        file_object._meta.packed = True
+        file_object.meta.packed = True
 
 
 class MimeTypeFromContentExtracter(Extracter):
