@@ -21,7 +21,7 @@ Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
 
-from .file import File, ContentFile, StreamFile, DownloadFile
+from .file import BaseFile, File, ContentFile, StreamFile, DownloadFile
 from .exception import (
     ImproperlyConfiguredFile,
     NoInternalContentError,
@@ -70,7 +70,7 @@ from .pipelines.renamer import Renamer, WindowsRenamer, LinuxRenamer, UniqueRena
 
 
 __all__ = [
-    'APIMimeTyper', 'BinaryCompare', 'Comparer', 'ContentFile',
+    'APIMimeTyper', 'BaseFile', 'BinaryCompare', 'Comparer', 'ContentFile',
     'ContentFromSourceExtracter', 'DataCompare', 'DownloadFile',
     'Extracter', 'File', 'FileSystem', 'FileSystemDataExtracter',
     'FilenameAndExtensionFromPathExtracter', 'FilenameFromMetadataExtracter',
