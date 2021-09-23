@@ -220,8 +220,6 @@ class FileSystemDataExtracter(Extracter):
         - create_date
         - update_date
         - content
-
-        This method not make use of overrider. It always override data.
         """
 
         if not file_object.path:
@@ -241,16 +239,19 @@ class FileSystemDataExtracter(Extracter):
             raise ValueError("Attribute `path` in `file_object` must be a file not directory.")
 
         # Get path id
-        file_object.id = file_system_handler.get_path_id(file_object.path)
+        if not file_object.id or overrider:
+            file_object.id = file_system_handler.get_path_id(file_object.path)
 
         # Get path size
         file_object.length = file_system_handler.get_size(file_object.path)
 
         # Get created date
-        file_object.create_date = file_system_handler.get_created_date(file_object.path)
+        if not file_object.create_date or overrider:
+            file_object.create_date = file_system_handler.get_created_date(file_object.path)
 
         # Get last modified date
-        file_object.update_date = file_system_handler.get_modified_date(file_object.path)
+        if not file_object.update_date or overrider:
+            file_object.update_date = file_system_handler.get_modified_date(file_object.path)
 
         # Define mode from file type
         mode = 'r'
