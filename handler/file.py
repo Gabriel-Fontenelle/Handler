@@ -859,11 +859,11 @@ class BaseFile(Serializer):
         # Set-up attributes that are classes to inform to init method.
         for key, value in class_dict.items():
             if key in encoded_dict:
-                try:
-                    options[key] = value.from_dict(encoded_dict[key])
-                except AttributeError:
-                    options[key] = value(**encoded_dict[key])
+                # Remove related file`s object from dict to be provided to `from_dict`.
+                if 'related_file_object' in encoded_dict[key]:
+                    del encoded_dict[key]['related_file_object']
 
+                options[key] = value.from_dict(encoded_dict[key])
                 del encoded_dict[key]
 
         # Convert attributes that should not be string before informing the init method.
@@ -891,6 +891,11 @@ class BaseFile(Serializer):
         for key in pipeline_list:
             if key in encoded_dict:
                 setattr(object_init, key, Pipeline.from_dict(encoded_dict[key]))
+
+        # Set-up related_file_object for classes that support it.
+        for attribute in vars(object_init):
+            if hasattr(attribute, 'related_file_object'):
+                attribute.related_file_object = object_init
 
         return object_init
 
