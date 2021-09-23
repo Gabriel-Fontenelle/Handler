@@ -64,6 +64,7 @@ from .pipelines.renamer import WindowsRenamer
 
 
 __all__ = [
+    'BaseFile',
     'ContentFile',
     'DownloadFile',
     'File',
@@ -401,7 +402,7 @@ class FileNaming(Serializer):
     """
     reserved_index = {}
     """
-    Dict of reference of reserved filenames so that a filename can be easly removed from `reserved_filenames` dict.
+    Dict of reference of reserved filenames so that a filename can be easily removed from `reserved_filenames` dict.
     {<filename>: {<base_file_object>: <reference to reserved_index[filename][base_file_object]>}}}
     """
 
