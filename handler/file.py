@@ -90,7 +90,7 @@ class CacheDescriptor:
         return res
 
 
-class FileState:
+class FileState(Serializer):
     """
     Class that store file instance state.
     """
@@ -110,8 +110,23 @@ class FileState:
     changed but not saved yet.  
     """
 
+    @classmethod
+    def from_dict(cls, encoded_dict):
+        """
+        Method to deserialize a given dictionary to a instance of current child class.
+        """
+        initiated_object = cls()
+        for key, value in encoded_dict.items():
+            if hasattr(initiated_object, key):
+                if isinstance(value, bool):
+                    setattr(initiated_object, key, value)
+                else:
+                    raise ValueError("In `FileState` only are accepted attributes of type boolean.")
 
-class FileMetadata:
+        return initiated_object
+
+
+class FileMetadata(Serializer):
     """
     Class that store file instance metadata.
     """
@@ -135,8 +150,23 @@ class FileMetadata:
     it can be generate just not saved in the package.
     """
 
+    @classmethod
+    def from_dict(cls, encoded_dict):
+        """
+        Method to deserialize a given dictionary to a instance of current child class.
+        """
+        initiated_object = cls()
+        for key, value in encoded_dict.items():
+            if hasattr(initiated_object, key):
+                if isinstance(value, bool):
+                    setattr(initiated_object, key, value)
+                else:
+                    raise ValueError("In `FileMetadata` only are accepted attributes of type boolean.")
 
-class FileActions:
+        return initiated_object
+
+
+class FileActions(Serializer):
     """
     Class that store file instance actions to be performed.
     """
@@ -231,8 +261,23 @@ class FileActions:
         self.hash = False
         self.was_hashed = True
 
+    @classmethod
+    def from_dict(cls, encoded_dict):
+        """
+        Method to deserialize a given dictionary to a instance of current child class.
+        """
+        initiated_object = cls()
+        for key, value in encoded_dict.items():
+            if hasattr(initiated_object, key):
+                if isinstance(value, bool):
+                    setattr(initiated_object, key, value)
+                else:
+                    raise ValueError("In `FileActions` only are accepted attributes of type boolean.")
 
-class FileHashes:
+        return initiated_object
+
+
+class FileHashes(Serializer):
     """
     Class that store file instance digested hashes.
     """
@@ -316,8 +361,34 @@ class FileHashes:
                 else:
                     hash_file.save(overwrite=overwrite, allow_update=overwrite)
 
+    @classmethod
+    def from_dict(cls, encoded_dict):
+        """
+        Method to deserialize a given dictionary to a instance of current child class.
+        """
+        initiated_object = cls()
 
-class FileNaming:
+        # Set-up hash`s file from dict in case of _cache
+        if '_cache' in encoded_dict:
+            encoded_cache = encoded_dict.pop('_cache')
+            cached_objects = {}
+            for hash_name, cache_values in encoded_cache:
+                hex_value, dict_file_object = cache_values
+                cached_objects[hash_name] = hex_value, File.from_dict(dict_file_object)
+
+            initiated_object._cache = cached_objects
+
+        for key, value in encoded_dict.items():
+            if hasattr(initiated_object, key):
+                if isinstance(value, dict):
+                    setattr(initiated_object, key, value)
+                else:
+                    raise ValueError("In `FileActions` only are accepted attributes of type dict.")
+
+        return initiated_object
+
+
+class FileNaming(Serializer):
     """
     Class that store file instance filenames and related names content.
     """
