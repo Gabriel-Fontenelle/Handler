@@ -47,14 +47,19 @@ class Serializer:
         """
         raise NotImplementedError("This method `from_dict` should be overwrite in inherent classes!")
 
-    def to_dict(self):
+    def to_dict(self, ignore_keys=[]):
         """
         Method that serialize the current class object to a dictionary.
+        The parameter `ignore_keys` will be used to ignore attributes in a recursive way.
         """
         encoded_dict = {}
+
         for key, value in vars(self).items():
+            if key in ignore_keys:
+                continue
+
             if hasattr(value, 'to_dict'):
-                encoded_dict[key] = value.to_dict()
+                encoded_dict[key] = value.to_dict(ignore_keys=ignore_keys)
 
             elif isinstance(value, (str, int, bool)):
                 encoded_dict[key] = value
@@ -85,12 +90,13 @@ class Serializer:
 
         return encoded_dict
 
-    def to_json(self):
+    def to_json(self, ignore_keys=[]):
         """
         Method that serialize the current class object to JSON string.
+        The parameter `ignore_keys` will be used to ignore attributes in a recursive way.
         """
         return json.dumps(
-            self.to_dict()
+            self.to_dict(ignore_keys=ignore_keys)
         )
 
     for_json = to_json

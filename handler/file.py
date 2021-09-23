@@ -362,6 +362,13 @@ class FileHashes(Serializer):
                 else:
                     hash_file.save(overwrite=overwrite, allow_update=overwrite)
 
+    def to_dict(self, ignore_keys=[]):
+        """
+        Overwritten of method that serialize the current class object to a dictionary to avoid recursive serialization.
+        """
+        ignore_keys.append('related_file_object')
+        return super(FileHashes, self).to_dict(ignore_keys=ignore_keys)
+
     @classmethod
     def from_dict(cls, encoded_dict):
         """
@@ -486,12 +493,13 @@ class FileNaming(Serializer):
         else:
             self.reserved_index[complete_filename][self] = self.reserved_filenames[save_to]
 
-    def to_dict(self):
+    def to_dict(self, ignore_keys=[]):
         """
         Overwritten of method that serialize the current class object to a dictionary to avoid serializing
         `reserved_filenames` and `reserved_index`.
         """
-        encoded_dict = super(FileNaming, self).to_dict()
+        ignore_keys.append('related_file_object')
+        encoded_dict = super(FileNaming, self).to_dict(ignore_keys=ignore_keys)
 
         for not_allow_key in ('reserved_filenames', 'reserved_index'):
             if not_allow_key in encoded_dict:
@@ -651,12 +659,12 @@ class FileContent:
 
         return block
 
-    def to_dict(self):
+    def to_dict(self, ignore_keys=[]):
         """
         Overwritten method that serialize the current class object to a dictionary.
         This method should not serialize the buffers.
         """
-        return {
+        encoded_dict = {
             '_block_size': self._block_size,
             'cache_content': self.cache_content,
             'cache_in_file': self.cache_in_file,
@@ -666,6 +674,12 @@ class FileContent:
             'is_internal_content': self.is_internal_content,
             '_cached_path': None if not self.cached or not self.cache_in_file else self._cached_path
         }
+
+        for key in ignore_keys:
+            if key in encoded_dict:
+                del encoded_dict[key]
+
+        return encoded_dict
 
     @classmethod
     def from_dict(cls, encoded_dict):
