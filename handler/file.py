@@ -22,6 +22,8 @@ Should there be a need for contact the electronic mail
 """
 
 # first-party
+import datetime
+from importlib import import_module
 from io import IOBase, StringIO, BytesIO
 from os import name
 
@@ -67,6 +69,8 @@ __all__ = [
     'File',
     'StreamFile'
 ]
+
+from .serializer import Serializer
 
 
 class CacheDescriptor:
@@ -545,7 +549,7 @@ class FileInternalContent(FileContent):
         raise NoInternalContentError(f"This file {repr(self)} don't have a internal content.")
 
 
-class BaseFile:
+class BaseFile(Serializer):
     """
     Base class for handle File. This class will be used in Files of type Image, Rar, etc.
     This class will behave like Django Model with methods save(), delete(), etc.
@@ -715,6 +719,74 @@ class BaseFile:
     Exception to throw when a file is trying to be renamed, but there is already another file with the filename 
     reserved. 
     """
+
+    @classmethod
+    def from_dict(cls, encoded_dict):
+        """
+        Class method that allow the creation of a BaseFile instance from a dictionary.
+        This method is useful for creating BaseFile`s objects from JSON files.
+        """
+
+        class_dict = {
+            '_actions': FileActions,
+            '_state': FileState,
+            '_meta': FileMetadata,
+            '_naming': FileNaming,
+            'hashes': FileHashes,
+            '_content': FileContent
+        }
+        pipeline_list = [
+            'extract_data_pipeline',
+            'compare_pipeline',
+            'hasher_pipeline',
+            'rename_pipeline'
+        ]
+        handler_class_list = [
+            'linux_file_system_handler',
+            'windows_file_system_handler',
+            'file_system_handler',
+            'mime_type_handler',
+            'uri_handler'
+        ]
+        options = {}
+
+        # Set-up attributes that are classes to inform to init method.
+        for key, value in class_dict.items():
+            if key in encoded_dict:
+                try:
+                    options[key] = value.from_dict(encoded_dict[key])
+                except AttributeError:
+                    options[key] = value(**encoded_dict[key])
+
+                del encoded_dict[key]
+
+        # Convert attributes that should not be string before informing the init method.
+        if 'create_date' in encoded_dict:
+            options['create_date'] = datetime.datetime.fromisoformat(encoded_dict['create_date'], "%m-%d-%Y %H:%M:%S")
+            del encoded_dict['create_date']
+
+        if 'update_date' in encoded_dict:
+            options['update_date'] = datetime.datetime.fromisoformat(encoded_dict['update_date'], "%m-%d-%Y %H:%M:%S")
+            del encoded_dict['update_date']
+
+        # Set-up class methods that can be external from library. Those class must be installed
+        # in project environment else a ImportError will be throw by `import_module`.
+        for key in handler_class_list:
+            if key in encoded_dict:
+                # Import module before using its class.
+                module = import_module(encoded_dict[key]['import_path'])
+                # Set class without initializing it.
+                classname = getattr(module, encoded_dict[key]['classname'])
+                options[key] = classname() if encoded_dict[key]['object'] else classname
+
+        object_init = cls(**options, run_extractor=False)
+
+        # Set-up pipelines for the object instead of class.
+        for key in pipeline_list:
+            if key in encoded_dict:
+                setattr(object_init, key, Pipeline.from_dict(encoded_dict[key]))
+
+        return object_init
 
     def __init__(self, **kwargs):
         """
