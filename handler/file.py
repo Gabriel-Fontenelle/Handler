@@ -378,9 +378,9 @@ class FileHashes(Serializer):
 
         # Set-up hash`s file from dict in case of _cache
         if '_cache' in encoded_dict:
-            encoded_cache = encoded_dict.pop('_cache')
+            encoded_cache = encoded_dict.pop('_cache', {})
             cached_objects = {}
-            for hash_name, cache_values in encoded_cache:
+            for hash_name, cache_values in encoded_cache.items():
                 hex_value, dict_file_object = cache_values
                 cached_objects[hash_name] = hex_value, File.from_dict(dict_file_object)
 
@@ -521,10 +521,11 @@ class FileNaming(Serializer):
 
         for key, value in encoded_dict.items():
             if hasattr(initiated_object, key):
-                if isinstance(value, (type(None), str, bool)):
+                if isinstance(value, (type(None), str, bool, list, dict)):
                     setattr(initiated_object, key, value)
                 else:
-                    raise ValueError("In `FileNaming` only are accepted attributes of type None, string and boolean.")
+                    raise ValueError(f"In `FileNaming` only are accepted attributes of type None, list, "
+                                     f"dict, string and boolean. Not of type {type(value)}!")
 
         return initiated_object
 
@@ -690,8 +691,8 @@ class FileContent:
 
         For initialization of FileContent a stream, str or byte must be provided in `encoded_dict['stream']`.
         """
-        content = encoded_dict.pop('stream')
-        initiated_object = encoded_dict.pop('initiated_object')
+        content = encoded_dict.pop('stream', None)
+        initiated_object = encoded_dict.pop('initiated_object', None)
         cache_content = encoded_dict.pop('cache_content', False)
 
         if not (content or initiated_object):
@@ -707,11 +708,11 @@ class FileContent:
 
         for key, value in encoded_dict.items():
             if hasattr(initiated_object, key):
-                if isinstance(value, (str, bool, int, float)):
+                if isinstance(value, (type(None), str, bool, int, float)):
                     setattr(initiated_object, key, value)
                 else:
-                    raise ValueError("In `FileContent` only are accepted attributes of type string, int, "
-                                     "float and boolean.")
+                    raise ValueError("In `FileContent` only are accepted attributes of type None, string, int, "
+                                     f"float and boolean. Not of type {type(value)}!")
 
         return initiated_object
 
@@ -938,11 +939,11 @@ class BaseFile(Serializer):
 
         # Convert attributes that should not be string before informing the init method.
         if 'create_date' in encoded_dict:
-            options['create_date'] = datetime.datetime.fromisoformat(encoded_dict['create_date'], "%m-%d-%Y %H:%M:%S")
+            options['create_date'] = datetime.datetime.strptime(encoded_dict['create_date'], "%m-%d-%Y %H:%M:%S")
             del encoded_dict['create_date']
 
         if 'update_date' in encoded_dict:
-            options['update_date'] = datetime.datetime.fromisoformat(encoded_dict['update_date'], "%m-%d-%Y %H:%M:%S")
+            options['update_date'] = datetime.datetime.strptime(encoded_dict['update_date'], "%m-%d-%Y %H:%M:%S")
             del encoded_dict['update_date']
 
         # Set-up class methods that can be external from library. Those class must be installed
@@ -954,6 +955,10 @@ class BaseFile(Serializer):
                 # Set class without initializing it.
                 classname = getattr(module, encoded_dict[key]['classname'])
                 options[key] = classname() if encoded_dict[key]['object'] else classname
+                del encoded_dict[key]
+
+        # Set-up additional options
+        options.update(encoded_dict)
 
         object_init = cls(**options, run_extractor=False)
 
@@ -976,15 +981,16 @@ class BaseFile(Serializer):
             if 'is_binary' in content_dict:
                 del content_dict['is_binary']
 
+            old_path = object_init.path
+
             try:
                 # Set temporary path to object_init because it is required to load data
                 # with FileSystemDataExtracter.
-                old_path = object_init.path
                 object_init.path = content_dict['_cached_path']
                 # Use extractor to load content from file.
                 FileSystemDataExtracter.extract(file_object=object_init, overrider=False)
 
-            except (KeyError, FileNotFoundError):
+            except (AttributeError, KeyError, FileNotFoundError, ValueError):
                 # Try again with saved path instead of _cached_path.
                 object_init.path = object_init.sanitize_path or old_path
                 FileSystemDataExtracter.extract(file_object=object_init, overrider=False)
@@ -1227,6 +1233,9 @@ class BaseFile(Serializer):
         Method to set property attribute path. This method check whether path is a directory before setting, as we only
         allow path to files to be set-up.
         """
+        if value is None:
+            raise ValueError("Attribute `path` informed for File cannot be None.")
+
         self._path = self.file_system_handler.sanitize_path(value)
 
         # Validate if path is really a file.
