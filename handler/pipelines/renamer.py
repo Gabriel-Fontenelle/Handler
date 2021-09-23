@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-Should there be a need for contact the eletronic mail
+Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
 
