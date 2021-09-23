@@ -31,6 +31,7 @@ from .exception import (
 )
 from .handler import FileSystem, WindowsFileSystem, LinuxFileSystem, System, URI
 from .mimetype import LibraryMimeTyper, APIMimeTyper
+from .serializer import Serializer
 
 # Module with classes that define the pipelines and its processors classes.
 # A Pipeline is a sequence that loop processors to be run.
@@ -80,7 +81,7 @@ __all__ = [
     'MimeTypeFromFilenameExtracter', 'NameCompare', 'NoInternalContentError',
     'OperationNotAllowed', 'PathFromURLExtracter', 'Pipeline',
     'Processor', 'ProcessorMixin', 'Renamer', 'ReservedFilenameError',
-    'SHA256Hasher', 'SizeCompare', 'StreamFile', 'System',
+    'Serializer', 'SHA256Hasher', 'SizeCompare', 'StreamFile', 'System',
     'TypeCompare', 'URI', 'UniqueRenamer', 'ValidationError',
     'WindowsFileSystem', 'WindowsRenamer'
 ]
