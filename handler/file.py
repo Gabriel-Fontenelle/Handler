@@ -486,6 +486,40 @@ class FileNaming(Serializer):
         else:
             self.reserved_index[complete_filename][self] = self.reserved_filenames[save_to]
 
+    def to_dict(self):
+        """
+        Overwritten of method that serialize the current class object to a dictionary to avoid serializing
+        `reserved_filenames` and `reserved_index`.
+        """
+        encoded_dict = super(FileNaming, self).to_dict()
+
+        for not_allow_key in ('reserved_filenames', 'reserved_index'):
+            if not_allow_key in encoded_dict:
+                del encoded_dict[not_allow_key]
+
+        return encoded_dict
+
+    @classmethod
+    def from_dict(cls, encoded_dict):
+        """
+        Method to deserialize a given dictionary to a instance of current child class.
+        """
+        initiated_object = cls()
+
+        # We don`t set reserved_filenames and reserved_index because those should be set when renaming a file only.
+        for not_allow_key in ('reserved_filenames', 'reserved_index'):
+            if not_allow_key in encoded_dict:
+                del encoded_dict[not_allow_key]
+
+        for key, value in encoded_dict.items():
+            if hasattr(initiated_object, key):
+                if isinstance(value, (type(None), str, bool)):
+                    setattr(initiated_object, key, value)
+                else:
+                    raise ValueError("In `FileNaming` only are accepted attributes of type None, string and boolean.")
+
+        return initiated_object
+
 
 class FileContent:
     """
