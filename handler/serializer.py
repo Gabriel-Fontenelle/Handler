@@ -34,6 +34,8 @@ class Serializer:
     """
     Class that allow handling of Serialization from object to JSON string and dictionary and Deserialization of JSON
     string and dictionary to object.
+    TODO: Maybe allow in the future to Serializer be a parameter of BaseFile instead, allowing the user to pass its own
+     serializer or something with the same guise.
     """
 
     @classmethod
