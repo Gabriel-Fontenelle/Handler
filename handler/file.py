@@ -571,6 +571,10 @@ class FileContent:
     """
     Stream for file`s content cached.
     """
+    _cached_path = None
+    """
+    Complete path for temporary file used as cache. 
+    """
 
     def __init__(self, raw_value, force=False):
         """
@@ -646,6 +650,56 @@ class FileContent:
                 pass
 
         return block
+
+    def to_dict(self):
+        """
+        Overwritten method that serialize the current class object to a dictionary.
+        This method should not serialize the buffers.
+        """
+        return {
+            '_block_size': self._block_size,
+            'cache_content': self.cache_content,
+            'cache_in_file': self.cache_in_file,
+            'cache_in_memory': self.cache_in_memory,
+            'cached': False,
+            'is_binary': self.is_binary,
+            'is_internal_content': self.is_internal_content,
+            '_cached_path': None if not self.cached or not self.cache_in_file else self._cached_path
+        }
+
+    @classmethod
+    def from_dict(cls, encoded_dict):
+        """
+        Method to deserialize a given dictionary to a instance of current child class.
+
+        If `initiated_object` is provided in `encoded_dict`, we will not initiate a new one.
+
+        For initialization of FileContent a stream, str or byte must be provided in `encoded_dict['stream']`.
+        """
+        content = encoded_dict.pop('stream')
+        initiated_object = encoded_dict.pop('initiated_object')
+        cache_content = encoded_dict.pop('cache_content', False)
+
+        if not (content or initiated_object):
+            raise ValueError("")
+
+        if not initiated_object:
+            initiated_object = cls(content, force=cache_content)
+
+        # We don`t set buffers because those should be set when the object was initialized.
+        for not_allow_key in ('buffer', '_cached_buffer'):
+            if not_allow_key in encoded_dict:
+                del encoded_dict[not_allow_key]
+
+        for key, value in encoded_dict.items():
+            if hasattr(initiated_object, key):
+                if isinstance(value, (str, bool, int, float)):
+                    setattr(initiated_object, key, value)
+                else:
+                    raise ValueError("In `FileContent` only are accepted attributes of type string, int, "
+                                     "float and boolean.")
+
+        return initiated_object
 
 
 class FileInternalContent(FileContent):
@@ -856,6 +910,8 @@ class BaseFile(Serializer):
         ]
         options = {}
 
+        content_dict = encoded_dict.pop('_content')
+
         # Set-up attributes that are classes to inform to init method.
         for key, value in class_dict.items():
             if key in encoded_dict:
@@ -896,6 +952,38 @@ class BaseFile(Serializer):
         for attribute in vars(object_init):
             if hasattr(attribute, 'related_file_object'):
                 attribute.related_file_object = object_init
+
+        # Set-up FileContent after having related_file_object and only if file was saved.
+        # We set it using `FileContent.from_dict` passing the initiated object loaded from
+        # either temporary cache file or from saved path to file.
+        if object_init._actions.was_saved and content_dict:
+            # Remove is_binary from FileContent dict because the `FileContent.__init__` will check
+            # if is binary or not.
+            if 'is_binary' in content_dict:
+                del content_dict['is_binary']
+
+            try:
+                # Set temporary path to object_init because it is required to load data
+                # with FileSystemDataExtracter.
+                old_path = object_init.path
+                object_init.path = content_dict['_cached_path']
+                # Use extractor to load content from file.
+                FileSystemDataExtracter.extract(file_object=object_init, overrider=False)
+
+            except (KeyError, FileNotFoundError):
+                # Try again with saved path instead of _cached_path.
+                object_init.path = object_init.sanitize_path or old_path
+                FileSystemDataExtracter.extract(file_object=object_init, overrider=False)
+
+            finally:
+                # Restore old path
+                object_init.path = old_path
+
+            # Set-up attribute to FileContent
+            file_content = object_init._content
+            if file_content:
+                content_dict['initiated_object'] = file_content
+                setattr(object_init, '_content', FileContent.from_dict(content_dict))
 
         return object_init
 
