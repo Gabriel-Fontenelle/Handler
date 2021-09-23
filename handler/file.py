@@ -800,15 +800,18 @@ class BaseFile(Serializer):
         if self.extract_data_pipeline is None and not 'extract_data_pipeline' in kwargs:
             raise self.ImproperlyConfiguredFile("File object must set-up a pipeline for data`s extraction.")
 
-        # Set-up current file system.
-        self.file_system_handler = kwargs.pop('file_system_handler', None)
+        # Get custom file system.
+        file_system_handler = kwargs.pop('file_system_handler', None)
+        # Get custom pipeline
+        extract_data_pipeline = kwargs.pop('extract_data_pipeline', None)
+        # Get option to run pipeline
+        run_extract_pipeline = kwargs.pop('run_extractor', True)
 
-        if not self.file_system_handler:
-            self.file_system_handler = (
-                self.windows_file_system_handler
-                if name == 'nt'
-                else self.linux_file_system_handler
-            )
+        self.file_system_handler = file_system_handler or (
+            self.windows_file_system_handler
+            if name == 'nt'
+            else self.linux_file_system_handler
+        )
 
         new_kwargs = {}
         # Set-up attributes from kwargs like `file_system_handler` or `path`
@@ -821,29 +824,35 @@ class BaseFile(Serializer):
         self._keyword_arguments = new_kwargs
 
         # Set-up resources used for `save` and `update` methods.
-        self._actions = FileActions()
+        if not self._actions:
+            self._actions = FileActions()
 
         # Set-up resources used for controlling the state of file.
-        self._state = FileState()
+        if not self._state:
+            self._state = FileState()
 
         # Set-up metadata of file
-        self._meta = FileMetadata()
+        if not self._meta:
+            self._meta = FileMetadata()
 
         # Set-up resources used for handling hashes and hash files.
-        self.hashes = FileHashes()
-        self.hashes.related_file_object = self
+        if not self.hashes:
+            self.hashes = FileHashes()
+            self.hashes.related_file_object = self
 
         # Set-up resources used for filename renaming control.
-        self._naming = FileNaming()
-        self._naming.history = []
-        self._naming.related_file_object = self
+        if not self._naming:
+            self._naming = FileNaming()
+            self._naming.history = []
+            self._naming.related_file_object = self
 
-        # Process extractor pipeline
-        extract_data_pipeline = kwargs.pop('extract_data_pipeline', None)
+        # Set-up custom pipeline if there is any.
         if extract_data_pipeline:
             self.extract_data_pipeline = extract_data_pipeline
 
-        self.extract_data_pipeline.run(self, **new_kwargs)
+        # Process extractor pipeline
+        if run_extract_pipeline:
+            self.extract_data_pipeline.run(self, **new_kwargs)
 
     def __len__(self):
         """
