@@ -54,7 +54,7 @@ class Serializer:
             if hasattr(value, 'to_dict'):
                 encoded_dict[key] = value.to_dict()
 
-            elif isinstance(value, (str, int)):
+            elif isinstance(value, (str, int, bool)):
                 encoded_dict[key] = value
 
             elif isinstance(value, (dict, list)):
