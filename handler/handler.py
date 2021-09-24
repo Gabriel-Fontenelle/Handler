@@ -73,12 +73,26 @@ class FileSystem:
     Class that standardized methods of different file systems.
     """
     sep = os_sep
+    """
+    Directory separator in the filesystem.
+    """
     folder_size_limit = 200
+    """
+    Limit for the length of directory path 
+    """
     path_size_limit = 254
+    """
+    Limit for the whole path
+    """
 
     backup_extension = re.compile(r'\.bak(\.[0-9]*)?$')
     """
     Define what is identifiable as a backup`s extension.
+    """
+
+    temporary_folder = None
+    """
+    Define the location of temporary content in filesystem.
     """
 
     @classmethod
@@ -354,6 +368,16 @@ class FileSystem:
         raise NotImplementedError("Method get_path_id(path) should be accessed through inherent class.")
 
     @classmethod
+    def get_temp_directory(cls):
+        if cls.temporary_folder is None:
+            raise ValueError(f"There is no `temporary_folder` attribute set for {cls.__name__}!")
+
+        if not cls.exists(cls.temporary_folder):
+            cls.create_directory(cls.temporary_folder)
+
+        return cls.temporary_folder
+
+    @classmethod
     def read_lines(cls, path):
         """
         Method generator to get lines from file without loading all data in one step.
@@ -376,6 +400,11 @@ class FileSystem:
 class WindowsFileSystem(FileSystem):
     """
     Class that standardized methods of file systems for Windows Operational System.
+    """
+
+    temporary_folder = "C:\\temp\\Handler"
+    """
+    Define the location of temporary content in filesystem.
     """
 
     @classmethod
@@ -413,6 +442,11 @@ class WindowsFileSystem(FileSystem):
 class LinuxFileSystem(FileSystem):
     """
     Class that standardized methods of file systems for Linux Operational System.
+    """
+
+    temporary_folder = "/tmp/Handler"
+    """
+    Define the location of temporary content in filesystem.
     """
 
     @classmethod
