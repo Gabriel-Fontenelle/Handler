@@ -1508,6 +1508,7 @@ class StreamFile(BaseFile):
     """
     Pipeline to extract data from multiple sources.
     """
+    # Stream or content are for downloading files.
 
 
 class DownloadFile(BaseFile):
@@ -1536,8 +1537,3 @@ class File(BaseFile):
     """
     Pipeline to extract data from multiple sources.
     """
-
-
-    # This save must overwrite file.
-
-    # Stream or content are for downloading files.
