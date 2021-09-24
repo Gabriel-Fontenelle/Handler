@@ -51,14 +51,13 @@ from .pipelines.comparer import (
 )
 # Module with pipeline classes for extracting data for files from multiple sources.
 from .pipelines.extracter import (
-    ContentFromSourceExtracter,
+    AudioMetadataFromContentExtracter,
     Extracter,
     FileSystemDataExtracter,
     FilenameAndExtensionFromPathExtracter,
     FilenameFromMetadataExtracter,
     HashFileExtracter,
     MetadataExtracter,
-    MimeTypeFromContentExtracter,
     MimeTypeFromFilenameExtracter,
     FilenameFromURLExtracter,
     PathFromURLExtracter
@@ -70,18 +69,17 @@ from .pipelines.renamer import Renamer, WindowsRenamer, LinuxRenamer, UniqueRena
 
 
 __all__ = [
-    'APIMimeTyper', 'BaseFile', 'BinaryCompare', 'Comparer', 'ContentFile',
-    'ContentFromSourceExtracter', 'DataCompare', 'DownloadFile',
+    'APIMimeTyper', 'AudioMetadataFromContentExtracter', 'BaseFile', 'BinaryCompare',
+    'Comparer', 'ContentFile', 'DataCompare', 'DownloadFile',
     'Extracter', 'File', 'FileSystem', 'FileSystemDataExtracter',
     'FilenameAndExtensionFromPathExtracter', 'FilenameFromMetadataExtracter',
     'FilenameFromURLExtracter', 'HashCompare', 'HashFileExtracter',
     'Hasher', 'ImproperlyConfiguredFile', 'LibraryMimeTyper',
     'LinuxFileSystem',  'LinuxRenamer', 'LousyNameCompare', 'MD5Hasher',
-    'MetadataExtracter', 'MimeTypeCompare', 'MimeTypeFromContentExtracter',
-    'MimeTypeFromFilenameExtracter', 'NameCompare', 'NoInternalContentError',
-    'OperationNotAllowed', 'PathFromURLExtracter', 'Pipeline',
-    'Processor', 'ProcessorMixin', 'Renamer', 'ReservedFilenameError',
-    'Serializer', 'SHA256Hasher', 'SizeCompare', 'StreamFile', 'System',
-    'TypeCompare', 'URI', 'UniqueRenamer', 'ValidationError',
+    'MetadataExtracter', 'MimeTypeCompare', 'MimeTypeFromFilenameExtracter',
+    'NameCompare', 'NoInternalContentError', 'OperationNotAllowed',
+    'PathFromURLExtracter', 'Pipeline', 'Processor', 'ProcessorMixin', 'Renamer',
+    'ReservedFilenameError', 'Serializer', 'SHA256Hasher', 'SizeCompare',
+    'StreamFile', 'System', 'TypeCompare', 'URI', 'UniqueRenamer', 'ValidationError',
     'WindowsFileSystem', 'WindowsRenamer'
 ]

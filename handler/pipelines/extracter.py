@@ -24,18 +24,18 @@ Should there be a need for contact the electronic mail
 from datetime import datetime
 from time import strptime, mktime
 
+from tinytag import TinyTag
 from handler.pipelines import ProcessorMixin
 
 
 __all__ = [
-    'ContentFromSourceExtracter',
+    'AudioMetadataFromContentExtracter',
     'Extracter',
     'FileSystemDataExtracter',
     'FilenameAndExtensionFromPathExtracter',
     'FilenameFromMetadataExtracter',
     'HashFileExtracter',
     'MetadataExtracter',
-    'MimeTypeFromContentExtracter',
     'MimeTypeFromFilenameExtracter',
     'FilenameFromURLExtracter',
     'PathFromURLExtracter'
@@ -127,8 +127,6 @@ class FilenameAndExtensionFromPathExtracter(Extracter):
         # No extension registered found, so we set extension as empty.
         file_object.filename = complete_filename
         file_object.extension = ''
-
-
 
 
 class FilenameFromMetadataExtracter(Extracter):
@@ -685,51 +683,6 @@ class InternalFilesExtracter(Extracter):
         file_object.meta.packed = True
 
 
-class MimeTypeFromContentExtracter(Extracter):
-
-    @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
-        """
-        Method to extract the information necessary from a file_object.
-        This method must be override in child class.
-        """
-        # Check if already is a extension and mimetype, if exists do nothing.
-
-        # Check if there is a content in file_object, else is not possible to extract the mimetype and extension from
-        # it.
-
-        # Check if there is a possible extension and mimetype from content
-
-        # Save in file_object extension and mimetype
-        pass
-
-
-
-
-
-class ContentFromSourceExtracter(Extracter):
-
-    @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
-        """
-        Method to extract the information necessary from a source object.
-        """
-        source = kwargs.get('source')
-
-        # length
-
-        # content
-
-        # metadata
-
-
-class ContentExtracter:
-    pass
-    # Guess extension from content
-    # Guess mimetype from content
-    # Get size from content
-
-
 class VideoMetadataFromContentExtracter(Extracter):
 
     @classmethod
@@ -755,3 +708,50 @@ class AudioMetadataFromContentExtracter(Extracter):
         """
         Method to extract additional metadata information from content.
         """
+        # Use tinytag to get additional metadata.
+        if not file_object.content:
+            raise ValueError(
+                "Attribute `content` must be settled before calling `AudioMetadataFromContentExtracter.extract`!"
+            )
+        if not len(file_object):
+            raise ValueError(
+                "Length for file's object must set before calling `AudioMetadataFromContentExtracter.extract`!"
+            )
+
+        # Reset buffer to initial location
+        if file_object._content.buffer.seekable():
+            file_object._content.buffer.seek(0)
+
+        tinytag = TinyTag(file_object._content.buffer, len(file_object))
+        tinytag.load(tags=True, duration=True, image=False)
+        # Same as code in tinytag, it turn default dict into dict so that it can throw KeyError
+        tinytag.extra = dict(tinytag.extra)
+
+        attributes_to_extract = [
+            'album',
+            'albumartist',
+            'artist',
+            'audio_offset',
+            'bitrate',
+            'channels',
+            'comment',
+            'composer',
+            'disc',
+            'disc_total',
+            'duration',
+            'extra',
+            'genre',
+            'samplerate',
+            'title',
+            'track',
+            'track_total',
+            'year'
+        ]
+        for attribute in attributes_to_extract:
+            tinytag_attribute = getattr(tinytag, attribute, None)
+            if tinytag_attribute and (not getattr(file_object.meta, attribute, None) or overrider):
+                setattr(file_object.meta, attribute, tinytag_attribute)
+
+        # Reset buffer to initial location
+        if file_object._content.buffer.seekable():
+            file_object._content.buffer.seek(0)
