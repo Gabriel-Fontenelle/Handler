@@ -37,7 +37,6 @@ from handler.pipelines.comparer import (
 )
 # modules
 from handler.pipelines.extracter import (
-    ContentFromSourceExtracter,
     FileSystemDataExtracter,
     FilenameAndExtensionFromPathExtracter,
     FilenameFromMetadataExtracter,

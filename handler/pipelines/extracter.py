@@ -339,6 +339,10 @@ class MimeTypeFromFilenameExtracter(Extracter):
         file_object.type = file_object.mime_type_handler.get_type(file_object.mime_type, file_object.extension)
 
 
+class MimeTypeFromContentExtracter(Extracter):
+    pass
+
+
 class MetadataExtracter(Extracter):
     """
     Class that define the extraction of multiple file's data from metadata passed to extract.
