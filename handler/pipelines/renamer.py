@@ -179,12 +179,12 @@ class WindowsRenamer(Renamer):
         # Prepare filename and extension removing enumeration from filename
         # and setting up a empty string is extension is None
         filename = cls.enumeration_pattern.sub('', filename)
-        extension = f'.{extension}' if extension else ''
+        formatted_extension = f'.{extension}' if extension else ''
 
         i = 0
         while (
-                cls.file_system_handler.exists(directory_path + filename + extension)
-                or cls.is_name_reserved(filename, extension)
+                cls.file_system_handler.exists(directory_path + filename + formatted_extension)
+                or cls.is_name_reserved(filename, formatted_extension)
         ):
             i += 1
             filename = cls.enumeration_pattern.sub(f' ({i})', filename)
@@ -208,12 +208,12 @@ class LinuxRenamer(Renamer):
         # Prepare filename and extension removing enumeration from filename
         # and setting up a empty string is extension is None
         filename = cls.enumeration_pattern.sub('', filename)
-        extension = f'.{extension}' if extension else ''
+        formatted_extension = f'.{extension}' if extension else ''
 
         i = 0
         while (
-                cls.file_system_handler.exists(directory_path + filename + extension)
-                or cls.is_name_reserved(filename, extension)
+                cls.file_system_handler.exists(directory_path + filename + formatted_extension)
+                or cls.is_name_reserved(filename, formatted_extension)
         ):
             i += 1
             filename = cls.enumeration_pattern.sub(f' - {i}', filename)
@@ -230,21 +230,21 @@ class UniqueRenamer(Renamer):
         This method will throw a BlockingIOError if there is more then
         100 tries to generate a unique UUID4.
         """
-        extension = f'.{extension}' if extension else ''
+        formatted_extension = f'.{extension}' if extension else ''
 
         #Generate Unique filename
         filename = str(uuid4())
 
         i = 0
         while (
-                cls.file_system_handler.exists(directory_path + filename + extension)
-                or cls.is_name_reserved(filename, extension)
+                cls.file_system_handler.exists(directory_path + filename + formatted_extension)
+                or cls.is_name_reserved(filename, formatted_extension)
         ) and i < 100:
             i += 1
             #Generate Unique filename
             filename = str(uuid4())
 
         if i == 100:
-            raise BlockingIOError("Too many files being handler simultaneous")
+            raise BlockingIOError("Too many files being handler simultaneous!")
 
         return filename, extension
