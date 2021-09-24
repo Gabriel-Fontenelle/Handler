@@ -59,13 +59,11 @@ from .exception import (
 )
 from .handler import LinuxFileSystem, WindowsFileSystem, URI
 from .pipelines import Pipeline
-from .pipelines.renamer import WindowsRenamer
-
+from .pipelines.renamer import WindowsRenamer, UniqueRenamer
 
 __all__ = [
     'BaseFile',
     'ContentFile',
-    'DownloadFile',
     'File',
     'StreamFile'
 ]
@@ -625,8 +623,11 @@ class FileContent:
     def __next__(self):
         """
         Method that defines the behavior of iterable blocks of current object.
-        This method has the potential to double the memory size of current object storaging
+        This method has the potential to double the memory size of current object storing
         the whole buffer in memory.
+
+        This method will cache content in file or in memory depending on value of `cache_content`, `cache_in_memory` and
+        `cache_in_file`. For caching in file, it will generate a unique filename in a temporary directory.
         """
         block = self.buffer.read(self._block_size)
 
@@ -634,9 +635,15 @@ class FileContent:
         if not block and block != 0:
             # Change buffer to be cached content
             if self.cache_content and not self.cached:
-                class_name = BytesIO if self.is_binary else StringIO
-                self.buffer = class_name(self._cached_buffer)
-                self.cached = True
+                if self.cache_in_memory:
+                    class_name = BytesIO if self.is_binary else StringIO
+                    self.buffer = class_name(self._cached_buffer)
+                    self.cached = True
+                elif self.cache_in_file:
+                    # Buffer receive stream from file
+                    mode = 'r' if self.is_binary else 'rb'
+                    self.buffer = self.related_file_object.file_system_handler.open_file(self._cached_path, mode=mode)
+                    self.cached = True
 
             # Reset buffer to begin from first position
             if self.buffer.seekable():
@@ -654,8 +661,25 @@ class FileContent:
                     self._cached_buffer += block
             # Cache content in temporary file
             elif self.cache_in_file:
-                # TODO: Save cache content in temporary file.
-                pass
+                if not self._cached_path:
+                    # Create new temporary file using renamer pipeline to obtain
+                    # a unique filename for temporary file.
+                    temp = self.related_file_object.file_system_handler.get_temp_directory()
+                    filename, extension = UniqueRenamer.get_name(
+                        directory_path=temp,
+                        filename=self.related_file_object.filename,
+                        extension=self.related_file_object.extension
+                    )
+                    formatted_extension = f'.{extension}' if extension else ''
+                    if temp[-1] != self.related_file_object.file_system_handler.sep:
+                        temp += self.related_file_object.file_system_handler.sep
+
+                    self._cached_path = temp + filename + formatted_extension
+
+                # Open file, append block to file and close file.
+                write_mode = 'b' if self.is_binary else ''
+                self.related_file_object.file_system_handler.save_file(self._cached_path, block, file_mode='a',
+                                                                       write_mode=write_mode)
 
         return block
 
