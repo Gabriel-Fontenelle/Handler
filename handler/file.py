@@ -1534,21 +1534,6 @@ class StreamFile(BaseFile):
     # Stream or content are for downloading files.
 
 
-class DownloadFile(BaseFile):
-
-    extract_data_pipeline = Pipeline(
-        FilenameFromMetadataExtracter.to_processor(),
-        FilenameFromURLExtracter.to_processor(),
-        MimeTypeFromFilenameExtracter.to_processor(),
-        MimeTypeFromContentExtracter.to_processor(),
-        MetadataExtracter.to_processor(),
-        ContentFromSourceExtracter.to_processor()
-    )
-    """
-    Pipeline to extract data from multiple sources.
-    """
-
-
 class File(BaseFile):
 
     extract_data_pipeline = Pipeline(
