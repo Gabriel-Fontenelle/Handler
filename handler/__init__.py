@@ -70,7 +70,7 @@ from .pipelines.renamer import Renamer, WindowsRenamer, LinuxRenamer, UniqueRena
 
 __all__ = [
     'APIMimeTyper', 'AudioMetadataFromContentExtracter', 'BaseFile', 'BinaryCompare',
-    'Comparer', 'ContentFile', 'DataCompare', 'DownloadFile',
+    'Comparer', 'ContentFile', 'DataCompare',
     'Extracter', 'File', 'FileSystem', 'FileSystemDataExtracter',
     'FilenameAndExtensionFromPathExtracter', 'FilenameFromMetadataExtracter',
     'FilenameFromURLExtracter', 'HashCompare', 'HashFileExtracter',
