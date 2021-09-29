@@ -1506,13 +1506,17 @@ class BaseFile(Serializer):
 
 
 class ContentFile(BaseFile):
-    # Changing between type of file should be made by controller.
+    """
+    Class to create a file from a in memory content.
+    It can load a file already saved as BaseFile allow it, but is recommended to use `File` instead
+    because it will have a more complete pipeline for data extraction.
+    a new one from memory using `ContentFile`.
+    """
 
     extract_data_pipeline = Pipeline(
         FilenameFromMetadataExtracter.to_processor(),
         MimeTypeFromFilenameExtracter.to_processor(),
         MimeTypeFromContentExtracter.to_processor(),
-        MetadataExtracter.to_processor()
     )
     """
     Pipeline to extract data from multiple sources.
@@ -1520,6 +1524,9 @@ class ContentFile(BaseFile):
 
 
 class StreamFile(BaseFile):
+    """
+    Class to create a file from a HTTP stream that has a header with metadata.
+    """
 
     extract_data_pipeline = Pipeline(
         FilenameFromMetadataExtracter.to_processor(),
@@ -1531,10 +1538,14 @@ class StreamFile(BaseFile):
     """
     Pipeline to extract data from multiple sources.
     """
-    # Stream or content are for downloading files.
 
 
 class File(BaseFile):
+    """
+    Class to create a file from a already saved path in filesystem.
+    It can create a new file as BaseFile allow it, but is recommended to create
+    a new one from memory using `ContentFile`.
+    """
 
     extract_data_pipeline = Pipeline(
         FilenameAndExtensionFromPathExtracter.to_processor(),
