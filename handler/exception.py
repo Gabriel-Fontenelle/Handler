@@ -39,7 +39,7 @@ class NoInternalContentError(Exception):
 
 class ImproperlyConfiguredFile(Exception):
 	"""
-	Exception that defines error for when a File was a missing configuration.
+	Exception that defines error for when a File has a missing configuration.
 	"""
 
 

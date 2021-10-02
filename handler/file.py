@@ -1390,7 +1390,7 @@ class BaseFile(Serializer):
         - save_hashes (bool) - If hash generate for file should also be saved.
         - allow_search_hashes (bool) - Allow hashes to be obtained from hash`s files already saved.
         - allow_update (bool) - If file exists its content will be overwritten.
-        - allow_rename (bool) - If renaming a file and a file with the same name exists a new one will be create
+        - allow_rename (bool) - If renaming a file and a file with the same name exists a new one will be created
         instead of overwriting it.
         - create_backup (bool) - If file exists and its content is being updated the old content will be backup
         before saving.
