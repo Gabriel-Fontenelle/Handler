@@ -8,32 +8,100 @@ brings.
 As time went by, I thought that this 
 component of my project could be a standalone package that I could share.
 
-### So what is this project for?
-
-Loading files, reading its metadata information 
-from compatible filesystems (you can extend the 
-`FileSystem` class to make your local or remote filesystem compatible), generating or checking hashes like md5 and 
-sha256 (and many others), and saving files without worrying about overwriting existing ones, unless you want it 
-to of course.
-
-### Why was this project created?
+### So what is this project for and why to use it?
 
 The main motivation for the existence of this package, initially, was my need to have a download system able to save 
-and load files from multiple filesystems and run distinct pos-processors in it - parsing and generating hashes are 
-a few examples. 
+and load files from multiple filesystems and run distinct pos-processors in it - parsing and generating hashes and 
+HTTP's metadata are a few examples. 
 
 This project obviously isn't that system. It is a bit of it, the part that I thought would make more sense as an 
-independent package, able to load files and do other stuff related to file management.
-
-## How to use
+independent package, able to load files and do other stuff related to file management and being easily extendable. You 
+can extend the `FileSystem` class to make your local or remote filesystem compatible, you can extend the pipeline 
+for data extraction, for generating hashes and many other useful things related to handling files.
 
 To handler files this project provides the classes `File`, `StreamFile` and `ContentFile`. What distinguish one from 
 another is the previously set pipeline for data extraction. Those class inherent from `BaseFile` that requires a 
 pipeline but not implement one. 
 
-Those pipelines are used not only for data extraction (through `extract_data_pipeline`), but also to generate hash 
-(`hasher_pipeline`) or rename a file (`rename_pipeline`) or compare a file with another one (`compare_pipeline`), and 
-are implementations that inherent from `ProcessorMixin` and make use of `Pipeline`.
+Basically this project abstracted the loading and creation of files to avoid some encountered problems:
+
+- When saving overwrite a file, and you are not aware of it;
+- There exists a CHECKSUM related to the file that you are not aware, and should be associated with it;
+- Updating CHECKSUM after file`s content is changed;
+- Loading and saving in a remote filesystem is complicated and each filesystem have distinct api calls.
+
+Thus, this project was created with focus in extendability and hopefull it will be usefull for those that want to 
+avoid the problems mentioned. 
+
+### What resources this project offer when handling files?
+
+The `BaseFile`, where all file`s class are inherent from, has the following attributes:
+
+- `id` (`int` or `None`) - File`s ID in the File System.
+- `filename` (`str` or `None`) -  Name of file without extension.
+- `extension` (`str` or `None`) - Extension of file.
+- `complete_filename` (`str`) - Merge of `filename` with `extension`.
+- `create_date` (`datetime.datetime` or `None`) - Datetime when file was created.
+- `update_date` (`datetime.datetime` or `None`) - Datetime when file was updated.
+- `path` (`str` or `None`) - Full path to file including filename. This is the raw path only partially sanitized.
+- `sanitize_path` (`str` or `None`) - Full sanitized path to file including filename.
+- `save_to` (`str` or `None`) - Path of directory to save file. This path will be use for mixing relative paths.
+- `relative_path` (`str` or `None`) - Relative path to save file. This path will be use for generating whole path 
+  together with `save_to` and `complete_filename` (e.g `save_to` + `relative_path` + `complete_filename`). 
+- `length` (`int`) - Size of file content.
+- `mime_type` (`str` or `None`) - File`s mime type.
+- `type` (`str` or `None`) - File's type (e.g. image, audio, video, application).
+
+- `hashes` (`dict`) - Checksum information for file. It can be multiples like MD5, SHA128, SHA256, SHA512.
+- `file_system_handler` (`FileSystem`) - FileSystem currently in use for File.
+    It can be LinuxFileSystem, WindowsFileSystem or a custom one.
+- `mime_type_handler` = (`BaseMimeTyper`) - Mimetype handler that defines the source of know Mimetypes.
+  This is used to identify mimetype from extension and vice-verse.
+- `uri_handler` (`URI`) - URI handler that defines methods to parser the URL.
+- `extract_data_pipeline` (`Pipeline`) - Pipeline to extract data from multiple sources. This should be override at 
+   child class.
+- `compare_pipeline` (`Pipeline`) - Pipeline to compare two files.
+- `hasher_pipeline` (`Pipeline`) -  Pipeline to generate hashes from content. 
+- `rename_pipeline` (`Pipeline`) - Pipeline to rename file when saving.
+
+- `meta` (`FileMetadata`) - Controller for additional metadata info that file can have. Those metadata will not always 
+  exist for all files.
+- `_state` (`FileState`) - Controller for state of file. The file will be set-up with default state before being 
+  loaded or create from stream.
+- `_actions` (`FileActions`) - Controller for pending actions that file must run. The file will be set-up with default 
+  (empty) 
+  actions.
+- `_naming` (`FileNaming`) - Controller for renaming restrictions that file must adopt.
+- `content` (`FileContent`) - Controller for how the content of file will be handled.
+- `is_binary` (`bool`) - Whether the file content is binary or not. It is a shortcut to `content.is_binary`. 
+
+and the following methods:
+
+- `add_valid_filename` - Method to add filename and extension to file only if it has a valid extension.
+        This method return boolean to indicate whether a filename and extension was added or not.
+- `compare_to` - Method to run the pipeline, for comparing files.
+        This method set-up for current file object with others.
+- `generate_hashes` - Method to run the pipeline, to generate hashes, set-up for the file.
+- `refresh_from_disk` - This method will reset all attributes, calling the pipeline to extract data again from disk.
+- `save` - Method to save file to file system. In this method we do some validation and verify if file can be saved
+        following some options informed through parameter `options`.
+- `validate` - Method to validate if minimum attributes of file were set to allow saving.
+- `write_content` - Method to write content to a given path. This method will truncate the file before saving content to it.
+
+and provide shortcut to the following exceptions:
+
+- `ImproperlyConfiguredFile` - Exception to throw when a required configuration is missing or misplaced.
+- `ValidationError` - Exception to throw when a required attribute to be save is missing or improperly configured.
+- `OperationNotAllowed` - Exception to throw when a operation is no allowed to be performed due to how the options are set-up in `save` 
+  method.
+- `NoInternalContentError` - Exception to throw when file was no internal content or being of wrong type to have internal content.
+- `ReservedFilenameError` - Exception to throw when a file is trying to be renamed, but there is already another file with the filename 
+    reserved. 
+
+
+## How to use
+
+Below I list some examples of how you could use this project.
 
 ### Loading a file
 
@@ -124,6 +192,10 @@ of overwriting it.
 Soon... The code already allow it, just need to complete this README.
 
 ## Contributing
+
+Soon...
+
+## Related Projects
 
 Soon...
 
