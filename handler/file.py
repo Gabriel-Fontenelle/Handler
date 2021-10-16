@@ -55,7 +55,8 @@ from .exception import (
     NoInternalContentError,
     OperationNotAllowed,
     ReservedFilenameError,
-    ValidationError
+    SerializerError,
+    ValidationError,
 )
 from .handler import LinuxFileSystem, WindowsFileSystem, URI
 from .pipelines import Pipeline
@@ -109,7 +110,7 @@ class FileState(Serializer):
     """
 
     @classmethod
-    def from_dict(cls, encoded_dict):
+    def from_dict(cls, encoded_dict, **kwargs):
         """
         Method to deserialize a given dictionary to a instance of current child class.
         """
@@ -119,7 +120,7 @@ class FileState(Serializer):
                 if isinstance(value, bool):
                     setattr(initiated_object, key, value)
                 else:
-                    raise ValueError("In `FileState` only are accepted attributes of type boolean.")
+                    raise SerializerError("In `FileState` only are accepted attributes of type boolean.")
 
         return initiated_object
 
@@ -149,7 +150,7 @@ class FileMetadata(Serializer):
     """
 
     @classmethod
-    def from_dict(cls, encoded_dict):
+    def from_dict(cls, encoded_dict, **kwargs):
         """
         Method to deserialize a given dictionary to a instance of current child class.
         """
@@ -159,7 +160,7 @@ class FileMetadata(Serializer):
                 if isinstance(value, bool):
                     setattr(initiated_object, key, value)
                 else:
-                    raise ValueError("In `FileMetadata` only are accepted attributes of type boolean.")
+                    raise SerializerError("In `FileMetadata` only are accepted attributes of type boolean.")
 
         return initiated_object
 
@@ -260,7 +261,7 @@ class FileActions(Serializer):
         self.was_hashed = True
 
     @classmethod
-    def from_dict(cls, encoded_dict):
+    def from_dict(cls, encoded_dict, **kwargs):
         """
         Method to deserialize a given dictionary to a instance of current child class.
         """
@@ -270,7 +271,7 @@ class FileActions(Serializer):
                 if isinstance(value, bool):
                     setattr(initiated_object, key, value)
                 else:
-                    raise ValueError("In `FileActions` only are accepted attributes of type boolean.")
+                    raise SerializerError("In `FileActions` only are accepted attributes of type boolean.")
 
         return initiated_object
 
@@ -359,15 +360,15 @@ class FileHashes(Serializer):
                 else:
                     hash_file.save(overwrite=overwrite, allow_update=overwrite)
 
-    def to_dict(self, ignore_keys=[]):
+    def to_dict(self, ignore_keys=[], **kwargs):
         """
         Overwritten of method that serialize the current class object to a dictionary to avoid recursive serialization.
         """
         ignore_keys.append('related_file_object')
-        return super(FileHashes, self).to_dict(ignore_keys=ignore_keys)
+        return super(FileHashes, self).to_dict(ignore_keys=ignore_keys, **kwargs)
 
     @classmethod
-    def from_dict(cls, encoded_dict):
+    def from_dict(cls, encoded_dict, **kwargs):
         """
         Method to deserialize a given dictionary to a instance of current child class.
         """
@@ -388,7 +389,7 @@ class FileHashes(Serializer):
                 if isinstance(value, dict):
                     setattr(initiated_object, key, value)
                 else:
-                    raise ValueError("In `FileActions` only are accepted attributes of type dict.")
+                    raise SerializerError("In `FileActions` only are accepted attributes of type dict.")
 
         return initiated_object
 
@@ -490,13 +491,13 @@ class FileNaming(Serializer):
         else:
             self.reserved_index[complete_filename][self] = self.reserved_filenames[save_to]
 
-    def to_dict(self, ignore_keys=[]):
+    def to_dict(self, ignore_keys=[], **kwargs):
         """
         Overwritten of method that serialize the current class object to a dictionary to avoid serializing
         `reserved_filenames` and `reserved_index`.
         """
         ignore_keys.append('related_file_object')
-        encoded_dict = super(FileNaming, self).to_dict(ignore_keys=ignore_keys)
+        encoded_dict = super(FileNaming, self).to_dict(ignore_keys=ignore_keys, **kwargs)
 
         for not_allow_key in ('reserved_filenames', 'reserved_index'):
             if not_allow_key in encoded_dict:
@@ -505,7 +506,7 @@ class FileNaming(Serializer):
         return encoded_dict
 
     @classmethod
-    def from_dict(cls, encoded_dict):
+    def from_dict(cls, encoded_dict, **kwargs):
         """
         Method to deserialize a given dictionary to a instance of current child class.
         """
@@ -521,8 +522,8 @@ class FileNaming(Serializer):
                 if isinstance(value, (type(None), str, bool, list, dict)):
                     setattr(initiated_object, key, value)
                 else:
-                    raise ValueError(f"In `FileNaming` only are accepted attributes of type None, list, "
-                                     f"dict, string and boolean. Not of type {type(value)}!")
+                    raise SerializerError("In `FileNaming` only are accepted attributes of type None, list, "
+                                          f"dict, string and boolean. Not of type {type(value)}!")
 
         return initiated_object
 
@@ -553,6 +554,10 @@ class FileContent:
     _block_size = 256
     """
     Block size of file to be loaded in each step of iterator.
+    """
+    _buffer_encoding = 'utf-8'
+    """
+    Encoding default used to convert the buffer to string.
     """
 
     # Cache handles
@@ -683,7 +688,44 @@ class FileContent:
 
         return block
 
-    def to_dict(self, ignore_keys=[]):
+    def _consume_buffer_in_memory(self):
+        """
+        Method to load in memory the content of the file.
+        This method uses the buffer cached, it the file wasn't cached before, this method will cache it and load
+        the data in memory from the cache.
+        """
+        old_cache_in_memory = self.cache_in_memory
+        old_cache_in_file = self.cache_in_file
+
+        # Set cache to load in memory
+        if not (self.cache_in_memory or self.cache_in_file):
+            self.cache_in_memory = True
+            self.cache_in_file = False
+
+        if self._cached_buffer is None or self._cached_path is None:
+            # Consume content if not loaded
+            while True:
+                try:
+                    next(self.buffer)
+                except StopIteration:
+                    break
+
+        # Content in case that it was loaded in memory. If not, it will be None and override below.
+        content = self._cached_buffer
+
+        # Override `content` with content from file.
+        if self.cache_in_file:
+            mode = 'rb' if self.is_binary else 'r'
+            buffer = self.related_file_object.file_system_handler.open_file(self._cached_path, mode=mode)
+            content = buffer.read()
+            self.related_file_object.file_system_handler.close_file(buffer)
+
+        self.cache_in_memory = old_cache_in_memory
+        self.cache_in_file = old_cache_in_file
+
+        return content
+
+    def to_dict(self, ignore_keys=[], use_buffer=False, **kwargs):
         """
         Overwritten method that serialize the current class object to a dictionary.
         This method should not serialize the buffers.
@@ -699,6 +741,14 @@ class FileContent:
             '_cached_path': None if not self.cached or not self.cache_in_file else self._cached_path
         }
 
+        if use_buffer:
+            # Convert buffer to str and add it to `enconded_dict`
+            buffer_loaded = self._consume_buffer_in_memory()
+            if self.is_binary:
+                buffer_loaded = str(buffer_loaded, encoding=self._buffer_encoding)
+
+            encoded_dict['buffer'] = buffer_loaded
+
         for key in ignore_keys:
             if key in encoded_dict:
                 del encoded_dict[key]
@@ -706,25 +756,42 @@ class FileContent:
         return encoded_dict
 
     @classmethod
-    def from_dict(cls, encoded_dict):
+    def from_dict(cls, encoded_dict, **kwargs):
         """
         Method to deserialize a given dictionary to a instance of current child class.
 
         If `initiated_object` is provided in `encoded_dict`, we will not initiate a new one.
 
-        For initialization of FileContent a stream, str or byte must be provided in `encoded_dict['stream']`.
+        For initialization of FileContent a stream, str or byte must be provided in `encoded_dict['stream']` or a
+        encoded string must be provided in `encoded_dict['buffer']`.
+
+        There is a side effect to this method that occur when providing `encoded_dict['buffer']`: The buffer will be
+        saved in memory when `initiated_object` is created in this method, even when `cache_in_file` is available
+        and the `_cached_path` exists in the file system. This could result in lost of space in disk in the
+        filesystem if old cached files are not removed.
         """
         content = encoded_dict.pop('stream', None)
         initiated_object = encoded_dict.pop('initiated_object', None)
         cache_content = encoded_dict.pop('cache_content', False)
+        buffer = encoded_dict.pop('buffer', None)
 
-        if not (content or initiated_object):
-            raise ValueError("")
+        if not (content or initiated_object or buffer):
+            raise SerializerError("There is no `stream`, `initiated_object` or `buffer` passed as parameter in "
+                                  "`FileContent` to be serialized!")
+
+        # Instantiating `initiated_object` from `buffer` will save the content in memory and not in a cached file,
+        # this imply in caching the file in memory, even when `cache_in_file` is available and the `_cached_path`
+        # exists in the file system. As a side effect a new file, with unique filename, will be created and saved in
+        # `_cached_path`, which could result in lost of space in disk in the filesystem if old cached files are not
+        # removed.
+        if buffer:
+            is_binary = encoded_dict.get('is_binary', False)
+            content = bytes(buffer, encoding=cls._buffer_encoding) if is_binary else buffer
 
         if not initiated_object:
             initiated_object = cls(content, force=cache_content)
 
-        # We don`t set buffers because those should be set when the object was initialized.
+        # We don`t set buffers as BaseIO because those should be set when the object was initialized.
         for not_allow_key in ('buffer', '_cached_buffer'):
             if not_allow_key in encoded_dict:
                 del encoded_dict[not_allow_key]
@@ -734,8 +801,8 @@ class FileContent:
                 if isinstance(value, (type(None), str, bool, int, float)):
                     setattr(initiated_object, key, value)
                 else:
-                    raise ValueError("In `FileContent` only are accepted attributes of type None, string, int, "
-                                     f"float and boolean. Not of type {type(value)}!")
+                    raise SerializerError("In `FileContent` only are accepted attributes of type None, string, int, "
+                                          f"float and boolean. Not of type {type(value)}!")
 
         return initiated_object
 
@@ -919,7 +986,7 @@ class BaseFile(Serializer):
     """
 
     @classmethod
-    def from_dict(cls, encoded_dict):
+    def from_dict(cls, encoded_dict, **kwargs):
         """
         Class method that allow the creation of a BaseFile instance from a dictionary.
         This method is useful for creating BaseFile`s objects from JSON files.
