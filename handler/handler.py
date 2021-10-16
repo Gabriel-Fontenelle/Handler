@@ -164,6 +164,14 @@ class FileSystem:
         return open(file_path, mode=mode)
 
     @classmethod
+    def close_file(cls, file_buffer):
+        """
+        Method to close a buffer previously opened by open_file.
+        Override this method if that’s not appropriate for your storage.
+        """
+        return file_buffer.close()
+
+    @classmethod
     def save_file(cls, file_path, content, **kwargs):
         """
         Method to save content on file.
