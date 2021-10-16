@@ -191,6 +191,10 @@ of overwriting it.
 
 Soon... The code already allow it, just need to complete this README.
 
+## Testing
+
+Soon... I didn't create any automated test yet, but I intend to.
+
 ## Contributing
 
 Soon...
