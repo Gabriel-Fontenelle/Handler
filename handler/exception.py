@@ -26,8 +26,15 @@ __all__ = [
 	'NoInternalContentError',
 	'OperationNotAllowed',
 	'ValidationError',
-	'ReservedFilenameError'
+	'ReservedFilenameError',
+	'SerializerError'
 ]
+
+
+class SerializerError(Exception):
+	"""
+	Exception that defines errors for when a serialization problem occur in file.
+	"""
 
 
 class NoInternalContentError(Exception):

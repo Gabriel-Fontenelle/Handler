@@ -29,6 +29,8 @@ __all__ = [
     'Serializer'
 ]
 
+from handler.exception import SerializerError
+
 
 class Serializer:
     """
@@ -39,7 +41,7 @@ class Serializer:
     """
 
     @classmethod
-    def from_dict(cls, encoded_dict):
+    def from_dict(cls, encoded_dict, **kwargs):
         """
         Method to deserialize a given dictionary to a instance of current child class.
         This method must be overwritten in child class, as it is the responsibility of child class to implement how the
@@ -47,7 +49,7 @@ class Serializer:
         """
         raise NotImplementedError("This method `from_dict` should be overwrite in inherent classes!")
 
-    def to_dict(self, ignore_keys=[]):
+    def to_dict(self, ignore_keys=[], **kwargs):
         """
         Method that serialize the current class object to a dictionary.
         The parameter `ignore_keys` will be used to ignore attributes in a recursive way.
@@ -86,17 +88,17 @@ class Serializer:
                 encoded_dict[key] = {'import_path': value.__module__, 'classname': value.__name__, 'object': True}
 
             else:
-                raise ValueError(f"Couldn't convert {value} to string for use in `to_dict` method!")
+                raise SerializerError(f"Couldn't convert {value} to string for use in `to_dict` method!")
 
         return encoded_dict
 
-    def to_json(self, ignore_keys=[]):
+    def to_json(self, ignore_keys=[], **kwargs):
         """
         Method that serialize the current class object to JSON string.
         The parameter `ignore_keys` will be used to ignore attributes in a recursive way.
         """
         return json.dumps(
-            self.to_dict(ignore_keys=ignore_keys)
+            self.to_dict(ignore_keys=ignore_keys, **kwargs)
         )
 
     for_json = to_json
@@ -105,8 +107,8 @@ class Serializer:
     """
 
     @classmethod
-    def from_json(cls, value):
+    def from_json(cls, value, **kwargs):
         """
         Method to deserialize a given JSON string to a instance of current child class.
         """
-        return cls.from_dict(json.loads(value))
+        return cls.from_dict(json.loads(value), **kwargs)
