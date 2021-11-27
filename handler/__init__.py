@@ -21,7 +21,7 @@ Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
 
-from .file import BaseFile, File, ContentFile, StreamFile, DownloadFile
+from .file import BaseFile, File, ContentFile, StreamFile
 from .exception import (
     ImproperlyConfiguredFile,
     NoInternalContentError,
