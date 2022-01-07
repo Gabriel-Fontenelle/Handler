@@ -35,6 +35,7 @@ from os import (
     stat
 )
 from os.path import (
+    abspath,
     basename,
     dirname,
     exists,
@@ -101,7 +102,7 @@ class FileSystem:
         The default implementation uses os.path operations.
         Override this method if that’s not appropriate for your storage.
         """
-        return isdir(path)
+        return isdir(cls.get_absolute_path(path))
 
     @classmethod
     def is_file(cls, path):
@@ -109,7 +110,7 @@ class FileSystem:
         The default implementation uses os.path operations.
          Override this method if that’s not appropriate for your storage.
         """
-        return cls.is_dir(path)
+        return not cls.is_dir(path)
 
     @classmethod
     def is_empty(cls, path):
@@ -306,6 +307,9 @@ class FileSystem:
         """
         Method used to get the path without filename from a complete path.
         """
+        if cls.is_dir(path):
+            return path
+
         return dirname(path)
 
     @classmethod
@@ -343,6 +347,13 @@ class FileSystem:
             return '../' * relative_to[last_bar:].count(cls.sep) + path[last_bar:]
 
         return path
+
+    @classmethod
+    def get_absolute_path(cls, path):
+        """
+        Method used to convert the relative path informed in `path` to its absolute version.
+        """
+        return abspath(path)
 
     @classmethod
     def get_size(cls, path):
