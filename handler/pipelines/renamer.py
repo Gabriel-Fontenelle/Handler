@@ -125,7 +125,8 @@ class Renamer(ProcessorMixin):
 
             # Restore File System attribute to original.
             cls.file_system_handler = class_file_system_handler
-        except BlockingIOError:
+        except BlockingIOError as e:
+            cls.register_error(e)
             return False
 
         # Set new name at File's object.

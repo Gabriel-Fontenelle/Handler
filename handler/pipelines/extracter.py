@@ -70,7 +70,8 @@ class Extracter(ProcessorMixin):
 
         try:
             cls.extract(file_object=object_to_process, **kwargs)
-        except (ValueError, IOError):
+        except (ValueError, IOError) as e:
+            cls.register_error(e)
             return False
 
         return True
