@@ -78,7 +78,7 @@ class CacheDescriptor:
     This class is used for FileHashes._cache.
     """
 
-    def __get__(self, instance, cls=None):
+    def __get__(self, instance, owner):
         """
         Method `get` to automatically set-up empty values in a instance.
         """
@@ -86,6 +86,23 @@ class CacheDescriptor:
             return self
 
         res = instance.__dict__['_cache'] = {}
+        return res
+
+
+class LoadedDescriptor:
+    """
+    Descriptor class to storage data for instance`s loaded.
+    This class is used for FileHashes._loaded.
+    """
+
+    def __get__(self, instance, owner):
+        """
+        Method `get` to automatically set-up empty values in a instance.
+        """
+        if instance is None:
+            return self
+
+        res = instance.__dict__['_loaded'] = []
         return res
 
 
@@ -285,6 +302,11 @@ class FileHashes(Serializer):
     """
     Descriptor to storage the digested hashes for the file instance.
     """
+    _loaded = LoadedDescriptor()
+    """
+    Descriptor to storage the digested hashes that were loaded from external source. 
+    """
+
     related_file_object = None
     """
     Variable to work as shortcut for the current related object for the hashes.
@@ -296,13 +318,17 @@ class FileHashes(Serializer):
         This method expects a tuple as value to set-up the hash hexadecimal value and hash file related
         to the hasher.
         """
-        hex_value, hash_file = value
+        hex_value, hash_file, processor = value
 
         if not isinstance(hash_file, File):
             raise ImproperlyConfiguredFile("Tuple for hashes must be the Hexadecimal value and a File Object for the "
                                            "hash.")
 
-        self._cache[hasher_name] = hex_value, hash_file
+        self._cache[hasher_name] = hex_value, hash_file, processor
+
+        if hash_file.meta.loaded:
+            # Add `hash_file` loaded from external source in a list for easy retrieval of loaded hashes.
+            self._loaded.append(hasher_name)
 
     def __getitem__(self, hasher_name):
         """
@@ -322,7 +348,7 @@ class FileHashes(Serializer):
         This method don`t save files, only prepare the filename and content to be correct before saving it.
         """
         for hasher_name, value in self._cache.items():
-            hex_value, hash_file = value
+            hex_value, hash_file, processor = value
 
             if not hash_file.meta.checksum:
                 # Rename filename if is not `checksum.hasher_name`
@@ -345,6 +371,27 @@ class FileHashes(Serializer):
             hash_file.content = content
             hash_file._actions.to_save()
 
+    def validate(self, force=False):
+        """
+        Method to validate integraty of file comparing hashes`s hex value with file content.
+        This method will only check the first hex value from files loaded, or any cached hash if no hash loaded from
+        external source is available, for efficient sake. If desire to check all hashes in loaded set `force` to True.
+        """
+        if not (self._loaded or self._cache):
+            raise ValueError(f"There is no hash available to compare for file {self.related_file_object}.")
+
+        for hash_name in self._loaded or self._cache.keys():
+            hex_value, hash_file, processor = self._cache[hash_name]
+            # Compare content with hex_value
+            result = processor.check_hash(object=self.related_file_object, compare_to_hex=hex_value)
+
+            if not result:
+                raise ValidationError(f"File {self.related_file_object} don`t pass the integrity check with "
+                                      f"{hash_name}!")
+
+            if not force:
+                break
+
     def save(self, overwrite=False):
         """
         Method to save all hashes files if it was not saved already.
@@ -352,7 +399,7 @@ class FileHashes(Serializer):
         if not self.related_file_object:
             raise ImproperlyConfiguredFile("A related file object must be specified for hashes before saving.")
 
-        for hex_value, hash_file in self._cache.values():
+        for hex_value, hash_file, processor in self._cache.values():
             if hash_file._actions.save:
                 if hash_file.meta.checksum:
                     # If file is CHECKSUM.<hasher_name> we not allow overwrite.
@@ -621,9 +668,10 @@ class FileContent:
 
     def __iter__(self):
         """
-        Method to return current object as iterator.
+        Method to return current object as iterator. As it already implements __next__ we just return the current
+        object.
         """
-        yield self.__next__()
+        return self
 
     def __next__(self):
         """
@@ -917,7 +965,9 @@ class BaseFile(Serializer):
     # Pipelines
     extract_data_pipeline = None
     """
-    Pipeline to extract data from multiple sources. This should be override at child class.
+    Pipeline to extract data from multiple sources. This should be override at child class. This pipeline can be 
+    non-blocking and errors that occur in it will be available through attribute `errors` at 
+    `extract_data_pipeline.errors`.
     """
     compare_pipeline = Pipeline(
         TypeCompare.to_processor(stopper=True, stop_value=False),
@@ -940,7 +990,9 @@ class BaseFile(Serializer):
         WindowsRenamer.to_processor(stopper=True)
     )
     """
-    Pipeline to rename file when saving.
+    Pipeline to rename file when saving. This pipeline can be 
+    non-blocking and errors that occur in it will be available through attribute `errors` at 
+    `extract_data_pipeline.errors`.
     """
 
     # Behavior controller for file
@@ -1299,9 +1351,24 @@ class BaseFile(Serializer):
         """
         try:
             return self._content.is_binary
-
         except AttributeError:
             return None
+
+    @property
+    def is_content_wholesome(self) -> [bool, None]:
+        """
+        Method to check the integrity of file content given priority to hashes loaded from external source instead of
+        generated one. If no hash was loaded from external source, this method will generate new hashes and compare it
+        to already existing ones.
+        """
+        try:
+            self.hashes.validate()
+        except ValidationError:
+            return False
+        except ValueError:
+            return None
+
+        return True
 
     @property
     def meta(self):
@@ -1344,9 +1411,14 @@ class BaseFile(Serializer):
         """
         Method to set property all attributes related to path.
         """
-        self._save_to = self.file_system_handler.sanitize_path(value)
 
-        # Validate if path is really a directory.
+        # We convert the sanitized path to its absolute version to avoid problems when saving.
+        self._save_to = self.file_system_handler.get_absolute_path(
+            self.file_system_handler.sanitize_path(value)
+        )
+
+        # Validate if path is really a directory. `is_dir` will convert the path to its absolute form before checking
+        # it to avoid a bug where `~/` is not interpreted as existing.
         if not self.file_system_handler.is_dir(self._save_to):
             raise ValueError("Attribute `save_to` informed for File must be a directory.")
 

@@ -80,6 +80,14 @@ class Processor:
         """
         return getattr(self.classname, item)
 
+    @property
+    def errors(self):
+        """
+        Method to return list of errors found in class that will be processed by method `run`. The class will always
+        be one that inherent from `ProcessorMixin`.
+        """
+        return getattr(self.classname, 'errors_found')
+
     def run(self, *args, **kwargs):
         """
         Method to run method_name from classname and return boolean. Thus running the processor logic.
@@ -108,7 +116,15 @@ class ProcessorMixin:
     """
     Class to add required methods of pipelines to the class of processor.classname.
     """
+
     method_name_to_process = "process"
+    """
+    Name of the method that will be called when running a pipeline.
+    """
+    errors_found = []
+    """
+    List of errors found to allow non-blocking pipelines to register occurrence of errors.
+    """
 
     @classmethod
     def to_processor(cls, stopper=False, stop_value=True, overrider=False):
@@ -138,6 +154,13 @@ class ProcessorMixin:
         """
         raise NotImplementedError("The process method must be overwrite on child class.")
 
+    @classmethod
+    def register_error(cls, error):
+        """
+        Method to save in memory a error found by the processor.
+        """
+        cls.errors_found.append(error)
+
 
 class Pipeline:
     """
@@ -161,6 +184,10 @@ class Pipeline:
         self.pipeline_processors = []
         """
         Variable to register the available processors for the current pipeline object.
+        """
+        self.errors = []
+        """
+        Variable to register the errors found by processors for the current pipeline object.
         """
 
         for processor in processors:
@@ -227,10 +254,14 @@ class Pipeline:
         # For each processor
         ran = 0
         result = None
+        errors_found = []
 
         for processor in self.pipeline_processors:
             result = processor.run(*args, **kwargs)
             ran += 1
+
+            if processor.errors:
+                errors_found += processor.errors
 
             if processor.stopper:
                 # If processor is a step that should stop the whole pipeline
@@ -247,3 +278,4 @@ class Pipeline:
         # register statical data about pipelines.
         self.processors_ran = ran
         self.last_result = result
+        self.errors = errors_found

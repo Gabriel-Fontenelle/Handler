@@ -56,7 +56,7 @@ class Extracter(ProcessorMixin):
         raise NotImplementedError("Method extract must be overwritten on child class.")
 
     @classmethod
-    def process(cls, *args, **kwargs):
+    def process(cls, *args: list, **kwargs: dict):
         """
         Method used to run this class on Processor`s Pipeline for Extracting info from Data.
         This method and to_processor() is not need to extract info outside a pipeline.
@@ -70,7 +70,8 @@ class Extracter(ProcessorMixin):
 
         try:
             cls.extract(file_object=object_to_process, **kwargs)
-        except (ValueError, IOError):
+        except (ValueError, IOError) as e:
+            cls.register_error(e)
             return False
 
         return True
