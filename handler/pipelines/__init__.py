@@ -88,14 +88,12 @@ class Processor:
         """
         return getattr(self.classname, 'errors_found')
 
-    def run(self, *args, **kwargs):
+    def run(self, **kwargs):
         """
         Method to run method_name from classname and return boolean. Thus running the processor logic.
         For this method to work method_name should return boolean whether it as successful or not.
         """
-        list_args = list(args)
-        object_to_process = kwargs.pop('object', None) or list_args.pop(0)
-        args = tuple(list_args)
+        object_to_process = kwargs.pop('object')
 
         # Get method
         method = getattr(self.classname, self.method_name)
@@ -105,11 +103,11 @@ class Processor:
         if not ismethod(method):
             class_to_use = self.classname()
             method = getattr(class_to_use, self.method_name)
-            return method(object_to_process, *args, overrider=self.overrider, **kwargs)
+            return method(object=object_to_process, overrider=self.overrider, **kwargs)
 
         # Run method_name (`classmethod` or class function) passing args and kwargs to it
         # and return boolean result from processor
-        return method(object_to_process, *args, overrider=self.overrider, **kwargs)
+        return method(object=object_to_process, overrider=self.overrider, **kwargs)
 
 
 class ProcessorMixin:
@@ -238,7 +236,7 @@ class Pipeline:
             processor
         )
 
-    def run(self, *args, **kwargs):
+    def run(self, **kwargs):
         """
         Method to run the entire pipelines.
         The processor will define if method will stop or not the pipelines.
@@ -257,7 +255,7 @@ class Pipeline:
         errors_found = []
 
         for processor in self.pipeline_processors:
-            result = processor.run(*args, **kwargs)
+            result = processor.run(**kwargs)
             ran += 1
 
             if processor.errors:

@@ -1213,7 +1213,7 @@ class BaseFile(Serializer):
 
         # Process extractor pipeline
         if run_extract_pipeline:
-            self.extract_data_pipeline.run(self, **new_kwargs)
+            self.extract_data_pipeline.run(object=self, **new_kwargs)
 
     def __len__(self):
         """

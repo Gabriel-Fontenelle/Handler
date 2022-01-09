@@ -71,7 +71,7 @@ class Renamer(ProcessorMixin):
         raise NotImplementedError("Method get_name must be overwrite on child class.")
 
     @classmethod
-    def process(cls, *args, **kwargs):
+    def process(cls, **kwargs):
         """
         Method used to run this class on Processor`s Pipeline for Files.
         This method and to_processor() is not need to rename files outside a pipeline.
@@ -94,7 +94,7 @@ class Renamer(ProcessorMixin):
         This processors return boolean to indicate that process was ran successfully.
         """
         # Get default values from keywords arguments
-        object_to_process = kwargs.pop('object', None) or args[0]
+        object_to_process = kwargs.pop('object')
         path_attribute = kwargs.pop('path_attribute', 'path')
         reserved_names = kwargs.pop('reserved_names', None)
 

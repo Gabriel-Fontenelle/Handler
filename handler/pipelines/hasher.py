@@ -174,7 +174,7 @@ class Hasher(ProcessorMixin):
         raise FileNotFoundError(f"{full_name} not found!")
 
     @classmethod
-    def process(cls, *args, **kwargs):
+    def process(cls, **kwargs):
         """
         Method used to run this class on Processor's Pipeline for Hash.
         This method and to_processor() is not need to generate hash outside a pipelines.
@@ -189,7 +189,7 @@ class Hasher(ProcessorMixin):
 
         This processors return boolean to indicate that process was ran successfully.
         """
-        object_to_process = kwargs.get('object', None)
+        object_to_process = kwargs.get('object')
         try_loading_from_file = kwargs.get('try_loading_from_file', False)
 
         # Check if there is already a hash previously loaded on file,
@@ -248,7 +248,7 @@ class Hasher(ProcessorMixin):
         return True
 
     @classmethod
-    def process_from_file(cls, *args, **kwargs) -> bool:
+    def process_from_file(cls, **kwargs) -> bool:
         """
         Method to try to process the hash from a hash's file instead of generating one.
         It will return False if no hash was found in files.
