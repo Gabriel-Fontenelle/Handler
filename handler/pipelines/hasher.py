@@ -154,7 +154,11 @@ class Hasher(ProcessorMixin):
         extension = f'.{extension}' if extension else ''
         full_name = filename + extension
 
-        files_to_check = [full_name + '.' + cls.hasher_name]
+        files_to_check = [
+            full_name + '.' + cls.hasher_name,
+            # Check checksum files that removed the extension from filename.
+            filename + '.' + cls.hasher_name
+        ]
 
         if full_check:
             files_to_check.append('CHECKSUM.' + cls.hasher_name)
