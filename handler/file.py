@@ -61,6 +61,7 @@ from .exception import (
 from .handler import LinuxFileSystem, WindowsFileSystem, URI
 from .pipelines import Pipeline
 from .pipelines.renamer import WindowsRenamer, UniqueRenamer
+from .serializer import Serializer
 
 __all__ = [
     'BaseFile',
@@ -69,7 +70,7 @@ __all__ = [
     'StreamFile'
 ]
 
-from .serializer import Serializer
+
 
 
 class CacheDescriptor:
