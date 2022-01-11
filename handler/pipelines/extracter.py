@@ -294,7 +294,7 @@ class HashFileExtracter(Extracter):
         if not file_object.path:
             raise ValueError("Attribute `path` must be settled before calling `HashFileExtracter.extract`.")
 
-        full_check = kwargs.pop('full_check', False)
+        full_check = kwargs.pop('full_check', True)
 
         for processor in file_object.hasher_pipeline:
             hasher = processor.classname
