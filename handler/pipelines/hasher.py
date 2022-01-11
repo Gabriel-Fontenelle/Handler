@@ -43,23 +43,6 @@ from handler.pipelines.extracter import (
 )
 
 
-class HashObjectsDescriptor:
-    """
-    Descriptor class to storage hashes objects for Hasher.
-    This class ensure that hash_objects is instantiated for each individual class.
-    """
-
-    def __get__(self, instance, cls=None):
-        """
-        Method `get` to automatically set-up empty values in a instance.
-        """
-        if instance is None:
-            return self
-
-        res = instance.__dict__['hash_objects'] = {}
-        return res
-
-
 class Hasher(ProcessorMixin):
     """
     Base class to be inherent to define class to be used on Hasher pipelines.
@@ -73,7 +56,7 @@ class Hasher(ProcessorMixin):
     """
     Name of hasher algorithm and also its extension abbreviation.
     """
-    hash_objects = HashObjectsDescriptor()
+    hash_objects = {}
     """
     Cache of hashes for given objects' ids.
     """
@@ -85,7 +68,7 @@ class Hasher(ProcessorMixin):
         that is generated from file content. File content can be from File System, Memory or Stream
         so it is susceptible to data corruption.
         """
-        object_to_process = kwargs.pop('object', None)
+        object_to_process = kwargs.pop('object')
         hex_value = kwargs.pop('compare_to_hex', None) or object_to_process.hashes[cls.hasher_name][0]
 
         hash_instance = cls.instantiate_hash()
@@ -125,8 +108,12 @@ class Hasher(ProcessorMixin):
     @classmethod
     def update_hash(cls, hash_instance, content):
         """
-        Method to update content in hash_instance to generate the hash.
+        Method to update content in hash_instance to generate the hash. We convert all content to bytes to
+        generate a hash of it.
         """
+        if isinstance(content, str):
+            content = content.encode('utf8')
+
         hash_instance.update(content)
 
     @classmethod
@@ -169,7 +156,8 @@ class Hasher(ProcessorMixin):
             file_path = cls.file_system_handler.join(directory_path, hash_filename)
             if cls.file_system_handler.exists(file_path):
                 for line in cls.file_system_handler.read_lines(file_path):
-                    if full_name in line:
+                    # We ignore lines that begin with comment describer `;`.
+                    if ';' != line[0] and full_name in line:
                         # Get hash from line and return it.
                         # It's assuming that first argument until first white space if the hash and second
                         # is the filename.
@@ -202,7 +190,7 @@ class Hasher(ProcessorMixin):
 
             if try_loading_from_file:
                 # Check if hash loaded from file and if so exit with success.
-                if cls.process_from_file(**kwargs, full_check=True):
+                if cls.process_from_file(full_check=True, **kwargs):
                     return True
 
             file_id = id(object_to_process)
@@ -261,17 +249,18 @@ class Hasher(ProcessorMixin):
         CHECKSUM.<cls.hasher_name>, if there is any in the same directory as the file to be processed.
         """
         object_to_process = kwargs.pop('object', None)
-        full_check = kwargs.pop('full_check', False)
+        full_check = kwargs.pop('full_check', True)
 
         # Save current file system handler
         class_file_system_handler = cls.file_system_handler
 
         cls.file_system_handler = object_to_process.file_system_handler
         path = cls.file_system_handler.sanitize_path(object_to_process.path)
+        directory_path = cls.file_system_handler.get_directory_from_path(path)
 
         try:
             hex_value, hash_filename = cls.load_from_file(
-                directory_path=cls.file_system_handler.get_directory_from_path(path),
+                directory_path=directory_path,
                 filename=object_to_process.filename,
                 extension=object_to_process.extension,
                 full_check=full_check
@@ -282,15 +271,17 @@ class Hasher(ProcessorMixin):
             # Restore File System attribute to original.
             cls.file_system_handler = class_file_system_handler
 
+        file_system = object_to_process.file_system_handler
+
         # Add hash to file. The content will be obtained from file pointer.
         hash_file = object_to_process.__class__(
-            path=f"{path}{hash_filename}",
+            path=f"{file_system.join(directory_path, hash_filename)}",
             extract_data_pipeline=Pipeline(
                 FilenameAndExtensionFromPathExtracter.to_processor(),
                 MimeTypeFromFilenameExtracter.to_processor(),
                 FileSystemDataExtracter.to_processor()
             ),
-            file_system_handler=object_to_process.file_system_handler
+            file_system_handler=file_system
         )
         # Set-up metadata checksum as boolean to indicate whether the source
         # of the hash is a CHECKSUM.hasher_name file (contains multiple files) or not.
