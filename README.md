@@ -73,7 +73,8 @@ The `BaseFile`, where all file`s class are inherent from, has the following attr
   actions.
 - `_naming` (`FileNaming`) - Controller for renaming restrictions that file must adopt.
 - `content` (`FileContent`) - Controller for how the content of file will be handled.
-- `is_binary` (`bool`) - Whether the file content is binary or not. It is a shortcut to `content.is_binary`. 
+- `is_binary` (`bool`) - Whether the file content is binary or not. It is a shortcut to `file.content.is_binary`. 
+- `is_content_wholesome` (`bool`) - Whether the file hash is the same as the one generate by its content. It is a shortcut to `file.hashes.validate()`. 
 
 and the following methods:
 
