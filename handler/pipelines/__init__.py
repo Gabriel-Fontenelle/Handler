@@ -1,5 +1,5 @@
 """
-Handler is a package for creating files in an object-oriented way, 
+Handler is a package for creating files in an object-oriented way,
 allowing extendability to any file system.
 
 Copyright (C) 2021 Gabriel Fontenelle Senno Silva
@@ -173,7 +173,7 @@ class Pipeline(Serializer):
         and stopper configuration.
         """
         self.processors_ran = 0
-        """ 
+        """
         Variable to register the amount of processors ran for this pipelines.
         """
         self.last_result = None

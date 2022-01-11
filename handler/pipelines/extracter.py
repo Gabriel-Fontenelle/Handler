@@ -1,5 +1,5 @@
 """
-Handler is a package for creating files in an object-oriented way, 
+Handler is a package for creating files in an object-oriented way,
 allowing extendability to any file system.
 
 Copyright (C) 2021 Gabriel Fontenelle Senno Silva
