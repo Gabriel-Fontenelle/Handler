@@ -403,8 +403,9 @@ class FileSystem:
         """
         with open(path, 'r') as file:
             line = file.readline()
-            if line:
+            while line:
                 yield line
+                line = file.readline()
 
     @classmethod
     def sanitize_path(cls, path: str) -> str:
