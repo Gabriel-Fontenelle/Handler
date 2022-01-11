@@ -22,6 +22,7 @@ Should there be a need for contact the electronic mail
 """
 
 from inspect import ismethod
+from ..serializer import Serializer
 
 __all__ = [
     'Processor',
@@ -30,7 +31,7 @@ __all__ = [
 ]
 
 
-class Processor:
+class Processor(Serializer):
     """
     Class to initiate a processor to be used on Pipeline.
     Processors are intermediate class between the pipelines manager (Pipeline)
@@ -160,7 +161,7 @@ class ProcessorMixin:
         cls.errors_found.append(error)
 
 
-class Pipeline:
+class Pipeline(Serializer):
     """
     Class to initiate a pipelines with given processors to be run.
     """
@@ -277,3 +278,13 @@ class Pipeline:
         self.processors_ran = ran
         self.last_result = result
         self.errors = errors_found
+
+    def to_dict(self, ignore_keys=[], **kwargs):
+        """
+        Overwritten of method that serialize the current class object to a dictionary to avoid recursive serialization.
+        """
+        ignore_keys.append('processors_ran')
+        ignore_keys.append('last_result')
+        ignore_keys.append('errors')
+
+        return super(Pipeline, self).to_dict(ignore_keys=ignore_keys, **kwargs)
