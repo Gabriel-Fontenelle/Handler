@@ -40,6 +40,44 @@ class Serializer:
      serializer or something with the same guise.
     """
 
+    def _serialize_item(self, value, ignore_keys=[]):
+        """
+        Method to serialize individual values.
+        This method exists to recursive serialize list and dict objects.
+        """
+        if hasattr(value, 'to_dict'):
+            return value.to_dict(ignore_keys=ignore_keys)
+
+        elif isinstance(value, (str, int, bool)):
+            return value
+
+        elif isinstance(value, list):
+            return [self._serialize_item(key) for key in value]
+
+        elif isinstance(value, dict):
+            return {key: self._serialize_item(new_value) for key, new_value in value.items()}
+
+        elif isinstance(value, bytes):
+            return value.decode('utf-8')
+
+        elif isinstance(value, datetime):
+            return value.strftime("%m-%d-%Y %H:%M:%S")
+
+        elif isinstance(value, time):
+            return value.strftime("%H:%M:%S")
+
+        elif isinstance(value, date):
+            return value.strftime("%m-%d-%Y")
+
+        elif inspect.isclass(value):
+            return {'import_path': value.__module__, 'classname': value.__name__, 'object': False}
+
+        elif callable(value):
+            return {'import_path': value.__module__, 'classname': value.__name__, 'object': True}
+
+        else:
+            raise ValueError(f"Couldn't convert {value} to string in `_serialize_item` method!")
+
     @classmethod
     def from_dict(cls, encoded_dict, **kwargs):
         """
@@ -60,34 +98,12 @@ class Serializer:
             if key in ignore_keys:
                 continue
 
-            if hasattr(value, 'to_dict'):
-                encoded_dict[key] = value.to_dict(ignore_keys=ignore_keys)
-
-            elif isinstance(value, (str, int, bool)):
-                encoded_dict[key] = value
-
-            elif isinstance(value, (dict, list)):
-                encoded_dict[key] = value
-
-            elif isinstance(value, bytes):
-                encoded_dict[key] = value.decode('utf-8')
-
-            elif isinstance(value, datetime):
-                encoded_dict[key] = value.strftime("%m-%d-%Y %H:%M:%S")
-
-            elif isinstance(value, time):
-                encoded_dict[key] = value.strftime("%H:%M:%S")
-
-            elif isinstance(value, date):
-                encoded_dict[key] = value.strftime("%m-%d-%Y")
-
-            elif inspect.isclass(value):
-                encoded_dict[key] = {'import_path': value.__module__, 'classname': value.__name__, 'object': False}
-
-            elif callable(value):
-                encoded_dict[key] = {'import_path': value.__module__, 'classname': value.__name__, 'object': True}
-
-            else:
+            try:
+                encoded_dict[key] = self._serialize_item(
+                    value=value,
+                    ignore_keys=ignore_keys
+                )
+            except ValueError:
                 raise SerializerError(f"Couldn't convert {value} to string for use in `to_dict` method!")
 
         return encoded_dict

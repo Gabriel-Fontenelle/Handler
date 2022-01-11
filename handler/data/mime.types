@@ -1883,6 +1883,7 @@ text/calendar				ics ifb
 text/css				css
 text/csv				csv
 text/csv-schema				csv
+text/checksum               md5 sha256 sha512
 # text/directory
 # text/dns
 # text/ecmascript

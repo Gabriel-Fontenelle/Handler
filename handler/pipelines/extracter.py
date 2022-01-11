@@ -1,5 +1,5 @@
 """
-Handler is a package for creating files in an object-oriented way, 
+Handler is a package for creating files in an object-oriented way,
 allowing extendability to any file system.
 
 Copyright (C) 2021 Gabriel Fontenelle Senno Silva
@@ -56,7 +56,7 @@ class Extracter(ProcessorMixin):
         raise NotImplementedError("Method extract must be overwritten on child class.")
 
     @classmethod
-    def process(cls, *args: list, **kwargs: dict):
+    def process(cls, **kwargs: dict):
         """
         Method used to run this class on Processor`s Pipeline for Extracting info from Data.
         This method and to_processor() is not need to extract info outside a pipeline.
@@ -66,7 +66,7 @@ class Extracter(ProcessorMixin):
         or through key work `object`.
 
         """
-        object_to_process = kwargs.pop('object', None) or args[0]
+        object_to_process = kwargs.pop('object', None)
 
         try:
             cls.extract(file_object=object_to_process, **kwargs)
@@ -294,7 +294,7 @@ class HashFileExtracter(Extracter):
         if not file_object.path:
             raise ValueError("Attribute `path` must be settled before calling `HashFileExtracter.extract`.")
 
-        full_check = kwargs.pop('full_check', False)
+        full_check = kwargs.pop('full_check', True)
 
         for processor in file_object.hasher_pipeline:
             hasher = processor.classname

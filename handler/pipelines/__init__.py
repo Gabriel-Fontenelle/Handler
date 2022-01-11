@@ -1,5 +1,5 @@
 """
-Handler is a package for creating files in an object-oriented way, 
+Handler is a package for creating files in an object-oriented way,
 allowing extendability to any file system.
 
 Copyright (C) 2021 Gabriel Fontenelle Senno Silva
@@ -22,6 +22,7 @@ Should there be a need for contact the electronic mail
 """
 
 from inspect import ismethod
+from ..serializer import Serializer
 
 __all__ = [
     'Processor',
@@ -30,7 +31,7 @@ __all__ = [
 ]
 
 
-class Processor:
+class Processor(Serializer):
     """
     Class to initiate a processor to be used on Pipeline.
     Processors are intermediate class between the pipelines manager (Pipeline)
@@ -88,14 +89,12 @@ class Processor:
         """
         return getattr(self.classname, 'errors_found')
 
-    def run(self, *args, **kwargs):
+    def run(self, **kwargs):
         """
         Method to run method_name from classname and return boolean. Thus running the processor logic.
         For this method to work method_name should return boolean whether it as successful or not.
         """
-        list_args = list(args)
-        object_to_process = kwargs.pop('object', None) or list_args.pop(0)
-        args = tuple(list_args)
+        object_to_process = kwargs.pop('object')
 
         # Get method
         method = getattr(self.classname, self.method_name)
@@ -105,11 +104,11 @@ class Processor:
         if not ismethod(method):
             class_to_use = self.classname()
             method = getattr(class_to_use, self.method_name)
-            return method(object_to_process, *args, overrider=self.overrider, **kwargs)
+            return method(object=object_to_process, overrider=self.overrider, **kwargs)
 
         # Run method_name (`classmethod` or class function) passing args and kwargs to it
         # and return boolean result from processor
-        return method(object_to_process, *args, overrider=self.overrider, **kwargs)
+        return method(object=object_to_process, overrider=self.overrider, **kwargs)
 
 
 class ProcessorMixin:
@@ -162,7 +161,7 @@ class ProcessorMixin:
         cls.errors_found.append(error)
 
 
-class Pipeline:
+class Pipeline(Serializer):
     """
     Class to initiate a pipelines with given processors to be run.
     """
@@ -174,7 +173,7 @@ class Pipeline:
         and stopper configuration.
         """
         self.processors_ran = 0
-        """ 
+        """
         Variable to register the amount of processors ran for this pipelines.
         """
         self.last_result = None
@@ -238,7 +237,7 @@ class Pipeline:
             processor
         )
 
-    def run(self, *args, **kwargs):
+    def run(self, **kwargs):
         """
         Method to run the entire pipelines.
         The processor will define if method will stop or not the pipelines.
@@ -257,7 +256,7 @@ class Pipeline:
         errors_found = []
 
         for processor in self.pipeline_processors:
-            result = processor.run(*args, **kwargs)
+            result = processor.run(**kwargs)
             ran += 1
 
             if processor.errors:
@@ -279,3 +278,13 @@ class Pipeline:
         self.processors_ran = ran
         self.last_result = result
         self.errors = errors_found
+
+    def to_dict(self, ignore_keys=[], **kwargs):
+        """
+        Overwritten of method that serialize the current class object to a dictionary to avoid recursive serialization.
+        """
+        ignore_keys.append('processors_ran')
+        ignore_keys.append('last_result')
+        ignore_keys.append('errors')
+
+        return super(Pipeline, self).to_dict(ignore_keys=ignore_keys, **kwargs)

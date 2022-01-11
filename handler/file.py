@@ -61,6 +61,7 @@ from .exception import (
 from .handler import LinuxFileSystem, WindowsFileSystem, URI
 from .pipelines import Pipeline
 from .pipelines.renamer import WindowsRenamer, UniqueRenamer
+from .serializer import Serializer
 
 __all__ = [
     'BaseFile',
@@ -69,7 +70,7 @@ __all__ = [
     'StreamFile'
 ]
 
-from .serializer import Serializer
+
 
 
 class CacheDescriptor:
@@ -342,6 +343,12 @@ class FileHashes(Serializer):
         """
         return iter(self._cache)
 
+    def __bool__(self):
+        """
+        Method to check if there is any hash saved in self._cache.
+        """
+        return bool(self._cache)
+
     def rename(self, new_filename):
         """
         This method will rename file for each hash file existing in _caches.
@@ -412,7 +419,20 @@ class FileHashes(Serializer):
         Overwritten of method that serialize the current class object to a dictionary to avoid recursive serialization.
         """
         ignore_keys.append('related_file_object')
-        return super(FileHashes, self).to_dict(ignore_keys=ignore_keys, **kwargs)
+        ignore_keys.append('_cache')
+
+        encoded_dict = super(FileHashes, self).to_dict(ignore_keys=ignore_keys, **kwargs)
+
+        cached_objects = {}
+
+        # Process _cache
+        for hash_name, cache_values in self._cache.items():
+            hex_value, dict_file_object, class_hash = cache_values
+            cached_objects[hash_name] = hex_value, dict_file_object.to_dict(), self._serialize_item(class_hash)
+
+        encoded_dict['_cache'] = cached_objects
+
+        return encoded_dict
 
     @classmethod
     def from_dict(cls, encoded_dict, **kwargs):
@@ -426,8 +446,9 @@ class FileHashes(Serializer):
             encoded_cache = encoded_dict.pop('_cache', {})
             cached_objects = {}
             for hash_name, cache_values in encoded_cache.items():
-                hex_value, dict_file_object = cache_values
-                cached_objects[hash_name] = hex_value, File.from_dict(dict_file_object)
+                hex_value, dict_file_object, class_dict = cache_values
+                class_object = getattr(import_module(class_dict['import_path']), class_dict['classname'])
+                cached_objects[hash_name] = hex_value, File.from_dict(dict_file_object), class_object
 
             initiated_object._cache = cached_objects
 
@@ -1105,9 +1126,9 @@ class BaseFile(Serializer):
         object_init = cls(**options, run_extractor=False)
 
         # Set-up pipelines for the object instead of class.
-        for key in pipeline_list:
-            if key in encoded_dict:
-                setattr(object_init, key, Pipeline.from_dict(encoded_dict[key]))
+        for pipeline_attribute in pipeline_list:
+            if pipeline_attribute in encoded_dict:
+                setattr(object_init, pipeline_attribute, Pipeline.from_dict(encoded_dict[pipeline_attribute]))
 
         # Set-up related_file_object for classes that support it.
         for attribute in vars(object_init):
@@ -1213,7 +1234,7 @@ class BaseFile(Serializer):
 
         # Process extractor pipeline
         if run_extract_pipeline:
-            self.extract_data_pipeline.run(self, **new_kwargs)
+            self.extract_data_pipeline.run(object=self, **new_kwargs)
 
     def __len__(self):
         """

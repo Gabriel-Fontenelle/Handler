@@ -52,7 +52,7 @@ class Comparer(ProcessorMixin):
         raise NotImplementedError("The method is_the_same needs to be overwrite on child class.")
 
     @classmethod
-    def process(cls, *args: tuple, **kwargs: dict) -> Union[None, bool]:
+    def process(cls, **kwargs: dict) -> Union[None, bool]:
         """
         Method used to run this class on Processor`s Pipeline for Files.
         This method and to_processor() is not need to compare files outside a pipeline.
@@ -64,7 +64,7 @@ class Comparer(ProcessorMixin):
         This processor return boolean whether files are the same, different of others processors that return boolean
         to indicate that process was ran successfully.
         """
-        objects_to_process = kwargs.pop('objects', args.get(0))
+        objects_to_process = kwargs.pop('objects')
 
         if not objects_to_process or len(objects_to_process) < 2:
             raise ValueError("There must be at least two objects to compare at `objects`s kwargs for "
