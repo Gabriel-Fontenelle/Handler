@@ -343,6 +343,12 @@ class FileHashes(Serializer):
         """
         return iter(self._cache)
 
+    def __bool__(self):
+        """
+        Method to check if there is any hash saved in self._cache.
+        """
+        return bool(self._cache)
+
     def rename(self, new_filename):
         """
         This method will rename file for each hash file existing in _caches.
