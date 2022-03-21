@@ -48,7 +48,7 @@ class Serializer:
         if hasattr(value, 'to_dict'):
             return value.to_dict(ignore_keys=ignore_keys)
 
-        elif isinstance(value, (str, int, bool)):
+        elif isinstance(value, (str, int, bool, type(None))):
             return value
 
         elif isinstance(value, list):
