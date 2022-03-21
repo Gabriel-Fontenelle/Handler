@@ -60,6 +60,10 @@ class Hasher(ProcessorMixin):
     """
     Cache of hashes for given objects' ids.
     """
+    hash_digested_values = {}
+    """
+    Cache of digested hashes for given objects filename.
+    """
 
     @classmethod
     def check_hash(cls, **kwargs):
@@ -135,24 +139,42 @@ class Hasher(ProcessorMixin):
     @classmethod
     def load_from_file(cls, directory_path, filename, extension, full_check=True):
         """
-        Method to find and load the hash value from a file named <filename>.<hasher name> or CHECKSUM.<hasher name>.
+        Method to find and load the hash value from a file named <filename>.<hasher name> or CHECKSUM.<hasher name>
+        or <directory_path>.<hasher_name>.
         Both names will be used if `full_check` is True, else only <filename>.<hasher name> will be searched.
         """
         extension = f'.{extension}' if extension else ''
         full_name = filename + extension
 
+        # Load and cache dictionary
+        hash_directories = cls.hash_digested_values.get(full_name, {})
+
+        if not hash_directories:
+            cls.hash_digested_values[full_name] = hash_directories
+
+        # Return cached hash if already processed.
+        if directory_path in hash_directories:
+            return hash_directories[directory_path]
+
         files_to_check = [
+            # Check checksum files that contain the full name of file plus `cls.hasher_name`
             full_name + '.' + cls.hasher_name,
-            # Check checksum files that removed the extension from filename.
-            filename + '.' + cls.hasher_name
+            # Check checksum files that removed the extension from filename plus `cls.hasher_name`.
+            filename + '.' + cls.hasher_name,
+            # Check checksum files that literally are named `CHECKSUM`.
+            'CHECKSUM.' + cls.hasher_name,
+            # Check checksum files that are named after its directory
+            cls.file_system_handler.get_filename_from_path(directory_path) + '.' + cls.hasher_name
         ]
 
         if full_check:
-            files_to_check.append('CHECKSUM.' + cls.hasher_name)
+            # Iterate through directory to find all files of type `cls.hasher_name` in order to load all available
+            # checksums.
+            files_to_check += list(cls.file_system_handler.list_files(directory_path, f'*.{cls.hasher_name}'))
 
         # Try to find filename with hasher_name in directory_path or
         # try to find filename in CHECKSUM.<hasher_name> in directory_path
-        for hash_filename in files_to_check:
+        for hash_filename in set(files_to_check):
             file_path = cls.file_system_handler.join(directory_path, hash_filename)
             if cls.file_system_handler.exists(file_path):
                 for line in cls.file_system_handler.read_lines(file_path):
@@ -161,7 +183,12 @@ class Hasher(ProcessorMixin):
                         # Get hash from line and return it.
                         # It's assuming that first argument until first white space if the hash and second
                         # is the filename.
-                        return line.lstrip().split(maxsplit=1)[0], hash_filename
+                        hashed_value = line.lstrip().split(maxsplit=1)[0]
+
+                        # Add hash to cache
+                        hash_directories[directory_path] = hashed_value
+
+                        return hashed_value, hash_filename
 
         raise FileNotFoundError(f"{full_name} not found!")
 
