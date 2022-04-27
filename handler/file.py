@@ -1247,7 +1247,7 @@ class BaseFile(Serializer):
         """
         Method to allow comparison < to work between BaseFiles.
         TODO: Compare metadata resolution for when type is image, video and bitrate when type
-        is audio and sequence when type is chemical.
+         is audio and sequence when type is chemical.
         """
         # Check if size is lower than.
         return len(self) < len(other_instance)
@@ -1279,7 +1279,7 @@ class BaseFile(Serializer):
         """
         Method to allow comparison > to work between BaseFiles.
         TODO: Compare metadata resolution for when type is image, video and bitrate when type
-        is audio and sequence when type is chemical.
+         is audio and sequence when type is chemical.
         """
         # Check if size is greater than.
         return len(self) > len(other_instance)
