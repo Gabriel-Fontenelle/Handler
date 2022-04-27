@@ -424,6 +424,32 @@ class FileSystem:
         raise NotImplementedError("Method get_created_date(path) should be accessed through inherent class.")
 
     @classmethod
+    def get_renamed_path(cls, path, sequence=1):
+        """
+        Method used to get a new filename base on `path`.
+        This method requires that attribute `file_sequence_style` be set in child specific for Operation System or
+        this method should be overwritten in child specific for Operational System as each OS has its own style of
+        sequence.
+        """
+        if not (
+                hasattr(cls, 'file_sequence_style')
+                and isinstance(cls.file_sequence_style, tuple)
+                and len(cls.file_sequence_style) == 2
+                and isinstance(cls.file_sequence_style[0], re.Pattern)
+                and isinstance(cls.file_sequence_style[1], str)
+                and 'sequence' in cls.file_sequence_style[1]
+        ):
+            raise NotImplementedError("Method `get_renamed_path(path, sequence)` requires that `file_sequence_style` "
+                                      "to be set in through inherent class as a tuple with a pattern and string value "
+                                      "with the placeholder for sequence `{sequence}`.")
+
+        filename = cls.get_filename_from_path(path)
+
+        return path.replace(filename, re.sub(
+            cls.file_sequence_style[0], cls.file_sequence_style[1].format(sequence=sequence), filename)
+        )
+
+    @classmethod
     def get_path_id(cls, path):
         """
         Method to get the file system id for path.
