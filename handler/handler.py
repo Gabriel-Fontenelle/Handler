@@ -26,6 +26,7 @@ import re
 from collections import namedtuple
 from datetime import datetime
 from filecmp import cmp
+from glob import iglob
 from shutil import copyfile
 
 from os import (
@@ -225,6 +226,8 @@ class FileSystem:
 
         This method will overwrite destination file if force is True.
         Override this method if that’s not appropriate for your storage.
+
+        TODO: Test what happens if file_path_destination is a directory.
         """
         if cls.exists(file_path_origin) and (not cls.exists(file_path_destination) or force):
             copyfile(file_path_origin, file_path_destination)
@@ -245,6 +248,36 @@ class FileSystem:
             return True
 
         return False
+
+    @classmethod
+    def rename(cls, file_path_origin, file_path_destination, force=False):
+        """
+        Method to rename a file from origin to destination.
+        This method try to find a new filename if one already exists.
+        This method will overwrite destination file if force is True
+        if the destination file already exists.
+        """
+        i = 1
+        while cls.exists(file_path_destination) and not force:
+            file_path_destination = cls.get_renamed_path(path=file_path_destination, sequence=i)
+            i += 1
+
+        return cls.move(file_path_origin, file_path_destination, force)
+
+    @classmethod
+    def clone(cls, file_path_origin, file_path_destination):
+        """
+        Method to copy a file from origin to destination avoiding override of destination file.
+        This method try to find a new filename if one already exists before copying the file.
+        The difference between this method and copy is that this method generate a new filename
+        for destination file before trying to copy to destination path.
+        """
+        i = 1
+        while cls.exists(file_path_destination):
+            file_path_destination = cls.get_renamed_path(path=file_path_destination, sequence=i)
+            i += 1
+
+        return cls.copy(file_path_origin, file_path_destination, force=False)
 
     @classmethod
     def delete(cls, path, force=False):
@@ -278,7 +311,7 @@ class FileSystem:
         return exists(path)
 
     @classmethod
-    def cmp(cls, file_path_1, file_path_2):
+    def compare(cls, file_path_1, file_path_2):
         """
         Method used to compare file from file_path informed.
         Override this method if that’s not appropriate for your storage.
@@ -294,6 +327,18 @@ class FileSystem:
         Override this method if that’s not appropriate for your storage.
         """
         return join(*paths)
+
+    @classmethod
+    def list_files(cls, directory_path, filter="*"):
+        """
+        Method used to list files following pattern in filter.
+        verride this method if that’s not appropriate for your storage.
+        This method must return an iterable that filter results based on filter values.
+        `filter` should accept wildcards.
+        """
+        for file in iglob(filter, root_dir=directory_path):
+            if cls.is_file(cls.join(directory_path, file)):
+                yield file
 
     @classmethod
     def get_filename_from_path(cls, path):
