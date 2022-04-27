@@ -497,6 +497,12 @@ class WindowsFileSystem(FileSystem):
     """
     Define the location of temporary content in filesystem.
     """
+    file_sequence_style = (re.compile(r"(\ *\([0-9]+?\))?(\.[^.]*$)"), r" ({sequence})\2")
+    """
+    Define the pattern to use to replace a sequence in the stylus of the filesystem.
+    The first part identify the search and the second the replace value.
+    This allow search by `<str>.<str>` and replace by `<str> (<int>).<str>`.
+    """
 
     @classmethod
     def get_path_id(cls, path):
@@ -538,6 +544,12 @@ class LinuxFileSystem(FileSystem):
     temporary_folder = "/tmp/Handler"
     """
     Define the location of temporary content in filesystem.
+    """
+    file_sequence_style = (re.compile(r"(\ *-\ *[0-9]+?)?(\.[^.]*$)"), r" - {sequence}\2")
+    """
+    Define the pattern to use to replace a sequence in the stylus of the filesystem.
+    The first part identify the search and the second the replace value.
+    This allow search by `<str>.<str>` and replace by `<str> - <int>.<str>`.
     """
 
     @classmethod
