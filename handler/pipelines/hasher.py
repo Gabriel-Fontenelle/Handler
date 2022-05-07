@@ -98,15 +98,30 @@ class Hasher:
         return hash_instance.hexdigest()
 
     @classmethod
+    def get_hash_objects(cls):
+        """
+        Method to get the `hash_object` filtering the `hasher_name` considering that `hash_objects` is a dictionary
+        shared between all classes that inherent from `Hasher`.
+        """
+        hash_object = cls.hash_objects.get(cls.hasher_name, {})
+        cls.hash_objects[cls.hasher_name] = hash_object
+
+        return hash_object
+
+    @classmethod
     def get_hash_instance(cls, file_id):
         """
         Method to get the cached instantiate hash object for the given file id.
         """
         try:
-            return cls.hash_objects[file_id]
+            return cls.hash_objects[cls.hasher_name][file_id]
         except KeyError:
             h = cls.instantiate_hash()
-            cls.hash_objects[file_id] = h
+            if cls.hasher_name in cls.hash_objects:
+                cls.hash_objects[cls.hasher_name][file_id] = h
+            else:
+                cls.hash_objects[cls.hasher_name] = {file_id: h}
+
             return h
 
     @classmethod
@@ -147,10 +162,14 @@ class Hasher:
         full_name = filename + extension
 
         # Load and cache dictionary
-        hash_directories = cls.hash_digested_values.get(full_name, {})
+        hash_digested = cls.hash_digested_values.get(cls.hasher_name, {})
+        if not hash_digested:
+            # Add missing hasher_name dictionary
+            cls.hash_digested_values[cls.hasher_name] = hash_digested
 
+        hash_directories = hash_digested.get(full_name, {})
         if not hash_directories:
-            cls.hash_digested_values[full_name] = hash_directories
+            cls.hash_digested_values[cls.hasher_name][full_name] = hash_directories
 
         # Return cached hash if already processed.
         if directory_path in hash_directories:
@@ -224,7 +243,7 @@ class Hasher:
             file_id = id(object_to_process)
 
             # Check if there is already a hash previously generated in cache.
-            if file_id not in cls.hash_objects:
+            if file_id not in cls.get_hash_objects():
                 # Get hash_instance
                 hash_instance = cls.get_hash_instance(file_id)
 
@@ -232,7 +251,7 @@ class Hasher:
                 cls.generate_hash(hash_instance=hash_instance, content_iterator=object_to_process.content)
 
             else:
-                hash_instance = cls.hash_objects[file_id]
+                hash_instance = cls.get_hash_objects()[file_id]
 
             # Digest hash
             digested_hex_value = cls.digest_hex_hash(hash_instance=hash_instance)
