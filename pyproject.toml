@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Handler"
-version = "0.7.4"
+version = "0.8.0"
 description = "Package for abstracting file system handler in an oriented-object style."
 authors = ["Gabriel <contato@gabrielfontenelle.com>"]
 license = "GNU GENERAL PUBLIC LICENSE v3"
