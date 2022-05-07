@@ -27,28 +27,13 @@ from importlib import import_module
 from io import IOBase, StringIO, BytesIO
 from os import name
 
-from handler.mimetype import LibraryMimeTyper
-from handler.pipelines.comparer import (
-    BinaryCompare,
-    DataCompare,
-    HashCompare,
-    SizeCompare,
-    TypeCompare
-)
 # modules
+from handler.mimetype import LibraryMimeTyper
 from handler.pipelines.extracter import (
     FileSystemDataExtracter,
     FilenameAndExtensionFromPathExtracter,
-    FilenameFromMetadataExtracter,
-    FilenameFromURLExtracter,
     HashFileExtracter,
-    MetadataExtracter,
-    MimeTypeFromContentExtracter,
     MimeTypeFromFilenameExtracter,
-)
-from handler.pipelines.hasher import (
-    MD5Hasher,
-    SHA256Hasher
 )
 from .exception import (
     ImproperlyConfiguredFile,
@@ -60,7 +45,7 @@ from .exception import (
 )
 from .handler import LinuxFileSystem, WindowsFileSystem, URI
 from .pipelines import Pipeline
-from .pipelines.renamer import WindowsRenamer, UniqueRenamer
+from .pipelines.renamer import UniqueRenamer
 from .serializer import Serializer
 
 __all__ = [
@@ -69,8 +54,6 @@ __all__ = [
     'File',
     'StreamFile'
 ]
-
-
 
 
 class CacheDescriptor:
@@ -535,11 +518,12 @@ class FileNaming(Serializer):
                 # The pipeline will update `complete_filename` of file to reflect new one. We shouldn`t change `path`
                 # of file; `complete_filename` will add the new filename to `history` and remove the old one from
                 # `reserved_filenames`.
-                self.related_file_object.rename_pipeline.run(
-                    object=self.related_file_object,
-                    path_attribute='save_to',
-                    reserved_names=reserved_names
-                )
+                # Set path_attribute and reserved_names in processors before running the pipeline.
+                for processor in self.related_file_object.rename_pipeline:
+                    processor.parameters['path_attribute'] = 'save_to',
+                    processor.parameters['reserved_names'] = reserved_names,
+
+                self.related_file_object.rename_pipeline.run(object_to_process=self.related_file_object)
 
                 # Rename hash_files if there is any. This method not save the hash files giving the responsibility to
                 # `save` method.
@@ -991,24 +975,24 @@ class BaseFile(Serializer):
     `extract_data_pipeline.errors`.
     """
     compare_pipeline = Pipeline(
-        TypeCompare.to_processor(stopper=True, stop_value=False),
-        SizeCompare.to_processor(stopper=True, stop_value=False),
-        BinaryCompare.to_processor(stopper=True, stop_value=False),
-        HashCompare.to_processor(stopper=True, stop_value=(True, False)),
-        DataCompare.to_processor(stopper=True, stop_value=(True, False))
+        'handler.pipelines.comparer.TypeCompare',
+        'handler.pipelines.comparer.SizeCompare',
+        'handler.pipelines.comparer.BinaryCompare',
+        'handler.pipelines.comparer.HashCompare',
+        'handler.pipelines.comparer.DataCompare'
     )
     """
     Pipeline to compare two files.
     """
     hasher_pipeline = Pipeline(
-        MD5Hasher.to_processor(),
-        SHA256Hasher.to_processor()
+        ('handler.pipelines.hasher.MD5Hasher', {'full_check': True}),
+        ('handler.pipelines.hasher.SHA256Hasher', {'full_check': True}),
     )
     """
     Pipeline to generate hashes from content.
     """
     rename_pipeline = Pipeline(
-        WindowsRenamer.to_processor(stopper=True)
+        'handler.pipelines.renamer.WindowsRenamer'
     )
     """
     Pipeline to rename file when saving. This pipeline can be 
@@ -1179,7 +1163,7 @@ class BaseFile(Serializer):
         Keyword argument `extract_data_pipeline` allow to specified a custom file extractor pipeline.
         """
         # Validate class creation
-        if self.extract_data_pipeline is None and not 'extract_data_pipeline' in kwargs:
+        if self.extract_data_pipeline is None and 'extract_data_pipeline' not in kwargs:
             raise self.ImproperlyConfiguredFile("File object must set-up a pipeline for data`s extraction.")
 
         # Get custom file system.
@@ -1234,7 +1218,7 @@ class BaseFile(Serializer):
 
         # Process extractor pipeline
         if run_extract_pipeline:
-            self.extract_data_pipeline.run(object=self, **new_kwargs)
+            self.extract_data_pipeline.run(object_to_process=self, **new_kwargs)
 
     def __len__(self):
         """
@@ -1261,6 +1245,7 @@ class BaseFile(Serializer):
     def __eq__(self, other_instance):
         """
         Method to allow comparison == to work between BaseFiles.
+        `other_instance` can be a object or a list of objects to be compared.
         """
         # Run compare pipeline
         try:
@@ -1498,11 +1483,13 @@ class BaseFile(Serializer):
         if not files:
             raise ValueError("There must be at least one file to be compared in `BaseFile.compare_to` method.")
 
-        # Add current object to be compared mixed with others in files before any other
-        files.insert(0, self)
+        # Set the objects_to_compare parameter in processors
+        for processor in self.compare_pipeline:
+            processor.parameters['objects_to_compare'] = files
 
         # Run pipeline passing objects to be compared
-        self.compare_pipeline.run(objects=files)
+        self.compare_pipeline.run(object_to_process=self)
+
         result = self.compare_pipeline.last_result
 
         if result is None:
@@ -1520,7 +1507,11 @@ class BaseFile(Serializer):
             # If content is being changed a new hash need to be generated instead of load from hash files.
             try_loading_from_file = False if self._state.changing or force else self._actions.was_saved
 
-            self.hasher_pipeline.run(object=self, try_loading_from_file=try_loading_from_file)
+            # Reset `try_loading_from_file` in pipeline.
+            for processor in self.hasher_pipeline:
+                processor.parameters['try_loading_from_file'] = try_loading_from_file
+
+            self.hasher_pipeline.run(object_to_process=self)
 
             self._actions.hashed()
 
@@ -1674,9 +1665,9 @@ class ContentFile(BaseFile):
     """
 
     extract_data_pipeline = Pipeline(
-        FilenameFromMetadataExtracter.to_processor(),
-        MimeTypeFromFilenameExtracter.to_processor(),
-        MimeTypeFromContentExtracter.to_processor(),
+        'handler.pipelines.extracter.FilenameFromMetadataExtracter',
+        'handler.pipelines.extracter.MimeTypeFromFilenameExtracter',
+        'handler.pipelines.extracter.MimeTypeFromContentExtracter',
     )
     """
     Pipeline to extract data from multiple sources.
@@ -1689,11 +1680,11 @@ class StreamFile(BaseFile):
     """
 
     extract_data_pipeline = Pipeline(
-        FilenameFromMetadataExtracter.to_processor(),
-        FilenameFromURLExtracter.to_processor(),
-        MimeTypeFromFilenameExtracter.to_processor(),
-        MimeTypeFromContentExtracter.to_processor(),
-        MetadataExtracter.to_processor()
+        'handler.pipelines.extracter.FilenameFromMetadataExtracter',
+        'handler.pipelines.extracter.FilenameFromURLExtracter',
+        'handler.pipelines.extracter.MimeTypeFromFilenameExtracter',
+        'handler.pipelines.extracter.MimeTypeFromContentExtracter',
+        'handler.pipelines.extracter.MetadataExtracter'
     )
     """
     Pipeline to extract data from multiple sources.
@@ -1708,10 +1699,10 @@ class File(BaseFile):
     """
 
     extract_data_pipeline = Pipeline(
-        FilenameAndExtensionFromPathExtracter.to_processor(),
-        MimeTypeFromFilenameExtracter.to_processor(),
-        FileSystemDataExtracter.to_processor(),
-        HashFileExtracter.to_processor(),
+        'handler.pipelines.extracter.FilenameAndExtensionFromPathExtracter',
+        'handler.pipelines.extracter.MimeTypeFromFilenameExtracter',
+        'handler.pipelines.extracter.FileSystemDataExtracter',
+        'handler.pipelines.extracter.HashFileExtracter',
     )
     """
     Pipeline to extract data from multiple sources.
