@@ -26,9 +26,6 @@ import re
 from typing import Union
 from uuid import uuid4
 
-# core modules
-from handler.pipelines import ProcessorMixin
-
 # modules
 from handler.handler import FileSystem
 
@@ -40,9 +37,14 @@ __all__ = [
 ]
 
 
-class Renamer(ProcessorMixin):
+class Renamer:
     """
     Base class to be inherent to define class to be used on Renamer pipeline.
+    """
+
+    stopper = True
+    """
+    Variable that define if this class used as processor should stop the pipeline.
     """
 
     file_system_handler = FileSystem
@@ -94,7 +96,7 @@ class Renamer(ProcessorMixin):
         This processors return boolean to indicate that process was ran successfully.
         """
         # Get default values from keywords arguments
-        object_to_process = kwargs.pop('object')
+        object_to_process = kwargs.pop('object_to_process')
         path_attribute = kwargs.pop('path_attribute', 'path')
         reserved_names = kwargs.pop('reserved_names', None)
 

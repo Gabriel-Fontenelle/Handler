@@ -23,8 +23,6 @@ Should there be a need for contact the electronic mail
 
 from typing import Union
 
-from handler.pipelines.__init__ import ProcessorMixin
-
 __all__ = [
     'Comparer',
     'BinaryCompare',
@@ -38,9 +36,14 @@ __all__ = [
 ]
 
 
-class Comparer(ProcessorMixin):
+class Comparer:
     """
     Base class to be inherent to define classes for use on Comparer pipeline.
+    """
+
+    stopper = True
+    """
+    Variable that define if this class used as processor should stop the pipeline.
     """
 
     @classmethod
@@ -64,16 +67,15 @@ class Comparer(ProcessorMixin):
         This processor return boolean whether files are the same, different of others processors that return boolean
         to indicate that process was ran successfully.
         """
-        objects_to_process = kwargs.pop('objects')
+        object_to_process = kwargs.pop('object_to_process')
+        objects_to_compare = kwargs.pop('objects_to_compare')
 
-        if not objects_to_process or len(objects_to_process) < 2:
-            raise ValueError("There must be at least two objects to compare at `objects`s kwargs for "
+        if not objects_to_compare or not isinstance(objects_to_compare, (list, tuple)):
+            raise ValueError("There must be at least one object to compare at `objects_to_compare`s kwargs for "
                              "`Comparer.process`.")
 
-        first = objects_to_process.pop(0)
-
-        for element in objects_to_process:
-            is_the_same = cls.is_the_same(first, element)
+        for element in objects_to_compare:
+            is_the_same = cls.is_the_same(object_to_process, element)
             if not is_the_same:
                 # This can return None or False
                 return is_the_same
@@ -84,6 +86,11 @@ class Comparer(ProcessorMixin):
 class DataCompare(Comparer):
     """
     Class that define comparing of data between two Files for use in Comparer Pipeline.
+    """
+
+    stop_value = (True, False)
+    """
+    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
     """
 
     @classmethod
@@ -173,6 +180,11 @@ class SizeCompare(Comparer):
     Class that define comparing of size of content between two Files for use in Comparer Pipeline.
     """
 
+    stop_value = False
+    """
+    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
+    """
+
     @classmethod
     def is_the_same(cls, file_1, file_2) -> Union[None, bool]:
         """
@@ -188,6 +200,11 @@ class SizeCompare(Comparer):
 class HashCompare(Comparer):
     """
     Class that define comparing of hash between two Files for use in Comparer Pipeline.
+    """
+
+    stop_value = (True, False)
+    """
+    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
     """
 
     @classmethod
@@ -209,6 +226,11 @@ class HashCompare(Comparer):
 class LousyNameCompare(Comparer):
     """
     Class that define comparing of filename between two Files for use in Comparer Pipeline.
+    """
+
+    stop_value = False
+    """
+    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
     """
 
     @classmethod
@@ -237,6 +259,11 @@ class NameCompare(Comparer):
     Class that define comparing of filename between two Files for use in Comparer Pipeline.
     """
 
+    stop_value = False
+    """
+    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
+    """
+
     @classmethod
     def is_the_same(cls, file_1, file_2) -> Union[None, bool]:
         """
@@ -254,6 +281,11 @@ class MimeTypeCompare(Comparer):
     Class that define comparing of mimetype between two Files for use in Comparer Pipeline.
     """
 
+    stop_value = False
+    """
+    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
+    """
+
     @classmethod
     def is_the_same(cls, file_1, file_2) -> Union[None, bool]:
         """
@@ -269,6 +301,11 @@ class MimeTypeCompare(Comparer):
 class BinaryCompare(Comparer):
     """
     Class that define comparing of binary attribute between two Files for use in Comparer Pipeline.
+    """
+
+    stop_value = False
+    """
+    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
     """
 
     @classmethod
@@ -289,6 +326,11 @@ class BinaryCompare(Comparer):
 class TypeCompare(Comparer):
     """
     Class that define comparing of type between two Files for use in Comparer Pipeline.
+    """
+
+    stop_value = False
+    """
+    Variable that define if this class used as processor should stop the pipeline when resulting in stop_value`s values.
     """
 
     @classmethod

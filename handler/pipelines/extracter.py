@@ -25,7 +25,6 @@ from datetime import datetime
 from time import strptime, mktime
 
 from tinytag import TinyTag
-from handler.pipelines import ProcessorMixin
 
 
 __all__ = [
@@ -42,7 +41,7 @@ __all__ = [
 ]
 
 
-class Extracter(ProcessorMixin):
+class Extracter:
     """
     Base class to be inherent to define class to be used on Extracter pipeline.
     """
@@ -66,12 +65,16 @@ class Extracter(ProcessorMixin):
         or through key work `object`.
 
         """
-        object_to_process = kwargs.pop('object', None)
+        object_to_process = kwargs.pop('object_to_process', None)
 
         try:
             cls.extract(file_object=object_to_process, **kwargs)
         except (ValueError, IOError) as e:
-            cls.register_error(e)
+            if not hasattr(cls, 'errors'):
+                setattr(cls, 'errors', [e])
+            elif isinstance(cls.errors, list):
+                cls.errors.append(e)
+
             return False
 
         return True

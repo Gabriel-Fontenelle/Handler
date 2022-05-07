@@ -25,7 +25,7 @@ Should there be a need for contact the electronic mail
 import hashlib
 
 # core modules
-from handler.pipelines import ProcessorMixin, Pipeline
+from handler.pipelines import Pipeline
 
 # modules
 from handler.handler import FileSystem
@@ -43,7 +43,7 @@ from handler.pipelines.extracter import (
 )
 
 
-class Hasher(ProcessorMixin):
+class Hasher:
     """
     Base class to be inherent to define class to be used on Hasher pipelines.
     """
@@ -72,7 +72,7 @@ class Hasher(ProcessorMixin):
         that is generated from file content. File content can be from File System, Memory or Stream
         so it is susceptible to data corruption.
         """
-        object_to_process = kwargs.pop('object')
+        object_to_process = kwargs.pop('object_to_process')
         hex_value = kwargs.pop('compare_to_hex', None) or object_to_process.hashes[cls.hasher_name][0]
 
         hash_instance = cls.instantiate_hash()
@@ -137,7 +137,7 @@ class Hasher(ProcessorMixin):
             cls.update_hash(hash_instance, block)
 
     @classmethod
-    def load_from_file(cls, directory_path, filename, extension, full_check=True):
+    def load_from_file(cls, directory_path, filename, extension, full_check=False):
         """
         Method to find and load the hash value from a file named <filename>.<hasher name> or CHECKSUM.<hasher name>
         or <directory_path>.<hasher_name>.
@@ -208,8 +208,9 @@ class Hasher(ProcessorMixin):
 
         This processors return boolean to indicate that process was ran successfully.
         """
-        object_to_process = kwargs.get('object')
+        object_to_process = kwargs.get('object_to_process')
         try_loading_from_file = kwargs.get('try_loading_from_file', False)
+        full_check = kwargs.get('full_check', False)
 
         # Check if there is already a hash previously loaded on file,
         # so that we don't try to digest it again.
@@ -217,7 +218,7 @@ class Hasher(ProcessorMixin):
 
             if try_loading_from_file:
                 # Check if hash loaded from file and if so exit with success.
-                if cls.process_from_file(full_check=True, **kwargs):
+                if cls.process_from_file(full_check=full_check, **kwargs):
                     return True
 
             file_id = id(object_to_process)
@@ -241,8 +242,8 @@ class Hasher(ProcessorMixin):
                 path=f"{cls.file_system_handler.sanitize_path(object_to_process.path)}{object_to_process.filename}"
                      f".{cls.hasher_name}",
                 extract_data_pipeline=Pipeline(
-                    FilenameAndExtensionFromPathExtracter.to_processor(),
-                    MimeTypeFromFilenameExtracter.to_processor(),
+                    'handler.pipelines.extracter.FilenameAndExtensionFromPathExtracter',
+                    'handler.pipelines.extracter.MimeTypeFromFilenameExtracter',
                 ),
                 file_system_handler=object_to_process.file_system_handler
             )
@@ -275,7 +276,7 @@ class Hasher(ProcessorMixin):
         Specifying the keyword argument `full_check` as True will make the processor to verify the hash value in file
         CHECKSUM.<cls.hasher_name>, if there is any in the same directory as the file to be processed.
         """
-        object_to_process = kwargs.pop('object', None)
+        object_to_process = kwargs.pop('object_to_process')
         full_check = kwargs.pop('full_check', True)
 
         # Save current file system handler
