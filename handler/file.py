@@ -87,6 +87,23 @@ class LoadedDescriptor:
         return res
 
 
+class InternalFilesDescriptor:
+    """
+    Descriptor class to storage data for instance`s internal files' dictionary.
+    This class is used for FileHashes._loaded.
+    """
+
+    def __get__(self, instance, owner):
+        """
+        Method `get` to automatically set-up empty values in an instance.
+        """
+        if instance is None:
+            return self
+
+        res = instance.__dict__['_internal_files'] = {}
+        return res
+
+
 class FileState(Serializer):
     """
     Class that store file instance state.
