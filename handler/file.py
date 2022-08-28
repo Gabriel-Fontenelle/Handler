@@ -606,7 +606,7 @@ class FileNaming(Serializer):
         return initiated_object
 
 
-class FileContent:
+class FileContent(Serializer):
     """
     Class that store file instance content.
     """
