@@ -306,6 +306,17 @@ class LibraryMimeTyper(BaseMimeTyper):
             'zip',
         ]
 
+    def packed_extensions(self):
+        """
+        Method to return as attribute the extensions that are for extractable containers of some sort.
+        """
+        return self.compressed_extensions + [
+            'psd',
+            'epub',
+            'mkv',
+            'mka',
+        ]
+
     def get_extensions(self, mimetype):
         """
         Method to get all registered extensions for given mimetype.
