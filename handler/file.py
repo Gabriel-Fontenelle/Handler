@@ -61,7 +61,7 @@ class CacheDescriptor:
 
     def __get__(self, instance, owner):
         """
-        Method `get` to automatically set-up empty values in a instance.
+        Method `get` to automatically set-up empty values in an instance.
         """
         if instance is None:
             return self
@@ -78,7 +78,7 @@ class LoadedDescriptor:
 
     def __get__(self, instance, owner):
         """
-        Method `get` to automatically set-up empty values in a instance.
+        Method `get` to automatically set-up empty values in an instance.
         """
         if instance is None:
             return self
@@ -127,7 +127,7 @@ class FileState(Serializer):
     @classmethod
     def from_dict(cls, encoded_dict, **kwargs):
         """
-        Method to deserialize a given dictionary to a instance of current child class.
+        Method to deserialize a given dictionary to an instance of current child class.
         """
         initiated_object = cls()
         for key, value in encoded_dict.items():
@@ -164,10 +164,22 @@ class FileMetadata(Serializer):
     it can be generate just not saved in the package.
     """
 
+    # Hasher files
+    # loaded = None
+    """
+    Indicate whether an object is a hash file loaded from a file or not.
+    This is mostly used for hash files created with hasher and will be set up only in those files.
+    """
+    # checksum = None
+    """
+    Indicate whether an object is a hash file named CHECKSUM.hasher_name file (contains multiple files) or not.
+    This is mostly used for hash files created with hasher and will be set up only in those files.
+    """
+
     @classmethod
     def from_dict(cls, encoded_dict, **kwargs):
         """
-        Method to deserialize a given dictionary to a instance of current child class.
+        Method to deserialize a given dictionary to an instance of current child class.
         """
         initiated_object = cls()
         for key, value in encoded_dict.items():
@@ -221,7 +233,7 @@ class FileActions(Serializer):
 
     def to_extract(self):
         """
-        Method to set-up the action of save file.
+        Method to set up the action of save file.
         """
         self.extract = True
         self.was_extracted = False
@@ -235,7 +247,7 @@ class FileActions(Serializer):
 
     def to_save(self):
         """
-        Method to set-up the action of save file.
+        Method to set up the action of save file.
         """
         self.save = True
         self.was_saved = False
@@ -249,7 +261,7 @@ class FileActions(Serializer):
 
     def to_rename(self):
         """
-        Method to set-up the action of rename file.
+        Method to set up the action of rename file.
         """
         self.rename = True
         self.was_renamed = False
@@ -263,7 +275,7 @@ class FileActions(Serializer):
 
     def to_hash(self):
         """
-        Method to set-up the action of generate hash for file.
+        Method to set up the action of generate hash for file.
         """
         self.hash = True
         self.was_hashed = False
@@ -278,7 +290,7 @@ class FileActions(Serializer):
     @classmethod
     def from_dict(cls, encoded_dict, **kwargs):
         """
-        Method to deserialize a given dictionary to a instance of current child class.
+        Method to deserialize a given dictionary to an instance of current child class.
         """
         initiated_object = cls()
         for key, value in encoded_dict.items():
@@ -312,8 +324,8 @@ class FileHashes(Serializer):
 
     def __setitem__(self, hasher_name, value):
         """
-        Method to set-up values for file hash as dict item.
-        This method expects a tuple as value to set-up the hash hexadecimal value and hash file related
+        Method to set up values for file hash as dict item.
+        This method expects a tuple as value to set up the hash hexadecimal value and hash file related
         to the hasher.
         """
         hex_value, hash_file, processor = value
@@ -356,12 +368,12 @@ class FileHashes(Serializer):
 
             if not hash_file.meta.checksum:
                 # Rename filename if is not `checksum.hasher_name`
-                # complete_filename is a property that will set-up additional action to rename the file`s filename if
+                # complete_filename is a property that will set up additional action to rename the file`s filename if
                 # it was already saved before.
                 hash_file.complete_filename = new_filename, hasher_name
 
             # Load content from generator.
-            # First we set-up content of type binary or string.
+            # First we set up content of type binary or string.
             content = b"" if hash_file.is_binary else ""
 
             # Then we load content from generator using a loop.
@@ -377,7 +389,7 @@ class FileHashes(Serializer):
 
     def validate(self, force=False):
         """
-        Method to validate integraty of file comparing hashes`s hex value with file content.
+        Method to validate the integrity of file comparing hashes`s hex value with file content.
         This method will only check the first hex value from files loaded, or any cached hash if no hash loaded from
         external source is available, for efficient sake. If desire to check all hashes in loaded set `force` to True.
         """
@@ -406,7 +418,7 @@ class FileHashes(Serializer):
         for hex_value, hash_file, processor in self._cache.values():
             if hash_file._actions.save:
                 if hash_file.meta.checksum:
-                    # If file is CHECKSUM.<hasher_name> we not allow overwrite.
+                    # If file is CHECKSUM.<hasher_name> we not allow to overwrite.
                     hash_file.save(overwrite=False, allow_update=overwrite)
                 else:
                     hash_file.save(overwrite=overwrite, allow_update=overwrite)
@@ -434,7 +446,7 @@ class FileHashes(Serializer):
     @classmethod
     def from_dict(cls, encoded_dict, **kwargs):
         """
-        Method to deserialize a given dictionary to a instance of current child class.
+        Method to deserialize a given dictionary to an instance of current child class.
         """
         initiated_object = cls()
 
@@ -518,7 +530,7 @@ class FileNaming(Serializer):
         object_reserved = reserved_folder.get(complete_filename, None) if reserved_folder else None
 
         # Check if filename already reserved name. Reserved names cannot be renamed even if overwrite is used in save,
-        # so the only option is the have a new filename created, but only if `on_conflict_rename` is `True`.
+        # so the only option is to have a new filename created, but only if `on_conflict_rename` is `True`.
         if reserved_folder and object_reserved and object_reserved is not self.related_file_object:
             if not self.on_conflict_rename:
                 raise ReservedFilenameError(f"Rename cannot be made, because the filename {complete_filename} is "
@@ -549,7 +561,7 @@ class FileNaming(Serializer):
         elif not object_reserved:
             self.reserved_filenames[save_to][complete_filename] = self.related_file_object
 
-        # Update reserved index to current filename. This allow for easy finding of filename and object at
+        # Update reserved index to current filename. This allows for easy finding of filename and object at
         # `self.reserved_filenames`.
         if complete_filename not in self.reserved_index:
             # Pass reference of dict `save_to` to index of reserved names.
@@ -574,7 +586,7 @@ class FileNaming(Serializer):
     @classmethod
     def from_dict(cls, encoded_dict, **kwargs):
         """
-        Method to deserialize a given dictionary to a instance of current child class.
+        Method to deserialize a given dictionary to an instance of current child class.
         """
         initiated_object = cls()
 
