@@ -70,6 +70,14 @@ class BaseMimeTyper:
         """
         raise NotImplementedError("compressed_extensions() method must be overwritten on child class.")
 
+    @property
+    def packed_extensions(self):
+        """
+        Method to return as attribute the extensions that are for containers of compression.
+        This method should be override in child class.
+        """
+        raise NotImplementedError("packed_extensions() method must be overwritten on child class.")
+
     def get_extensions(self, mimetype):
         """
         Method to get all registered extensions for given mimetype.
