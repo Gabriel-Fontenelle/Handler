@@ -623,7 +623,7 @@ class FileContent(Serializer):
     """
     related_file_object = None
     """
-    Variable to work as shortcut for the current related object for the hashes.
+    Variable to work as shortcut for the current related object for the hashes and other data.
     """
     _block_size = 256
     """
@@ -663,7 +663,7 @@ class FileContent(Serializer):
 
     def __init__(self, raw_value, force=False):
         """
-        Initial method that set-up the buffer to be used.
+        Initial method that set up the buffer to be used.
         The parameter `force` when True will force usage of cache even if is IO is seekable.
         """
         if not raw_value:
@@ -766,7 +766,7 @@ class FileContent(Serializer):
     def _consume_buffer_in_memory(self):
         """
         Method to load in memory the content of the file.
-        This method uses the buffer cached, it the file wasn't cached before, this method will cache it and load
+        This method uses the buffer cached, if the file wasn't cached before this method will cache it, and load
         the data in memory from the cache.
         """
         old_cache_in_memory = self.cache_in_memory
@@ -816,7 +816,7 @@ class FileContent(Serializer):
         }
 
         if use_buffer:
-            # Convert buffer to str and add it to `enconded_dict`
+            # Convert buffer to str and add it to `encoded_dict`
             buffer_loaded = self._consume_buffer_in_memory()
             if self.is_binary:
                 buffer_loaded = str(buffer_loaded, encoding=self._buffer_encoding)
@@ -832,7 +832,7 @@ class FileContent(Serializer):
     @classmethod
     def from_dict(cls, encoded_dict, **kwargs):
         """
-        Method to deserialize a given dictionary to a instance of current child class.
+        Method to deserialize a given dictionary to an instance of current child class.
 
         If `initiated_object` is provided in `encoded_dict`, we will not initiate a new one.
 
@@ -854,7 +854,7 @@ class FileContent(Serializer):
                                   "`FileContent` to be serialized!")
 
         # Instantiating `initiated_object` from `buffer` will save the content in memory and not in a cached file,
-        # this imply in caching the file in memory, even when `cache_in_file` is available and the `_cached_path`
+        # this implies in caching the file in memory, even when `cache_in_file` is available and the `_cached_path`
         # exists in the file system. As a side effect a new file, with unique filename, will be created and saved in
         # `_cached_path`, which could result in lost of space in disk in the filesystem if old cached files are not
         # removed.
