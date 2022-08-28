@@ -140,6 +140,12 @@ class BaseMimeTyper:
         """
         return extension in self.compressed_extensions
 
+    def is_extension_packed(self, extension):
+        """
+        Method to check if an extension is related to a file that is extractable container of some sort.
+        """
+        return extension in self.packed_extensions
+
     def is_mimetype_compressed(self, mimetype):
         """
         Method to check if a mimetype is related to a file that is container of compression or not.
