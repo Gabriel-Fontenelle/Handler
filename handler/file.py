@@ -29,11 +29,8 @@ from os import name
 
 # modules
 from handler.mimetype import LibraryMimeTyper
-from handler.pipelines.extracter import (
-    FileSystemDataExtracter,
-    FilenameAndExtensionFromPathExtracter,
-    HashFileExtracter,
-    MimeTypeFromFilenameExtracter,
+from handler.pipelines.extractor import (
+    FileSystemDataExtractor,
 )
 from .exception import (
     ImproperlyConfiguredFile,
