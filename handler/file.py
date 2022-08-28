@@ -881,11 +881,96 @@ class FileContent(Serializer):
         return initiated_object
 
 
-class FileInternalContent(FileContent):
-    _content_list = None
+class FilePacket:
+    """
+    Class that store internal files from file instance content.
+    """
 
-    def get_internal_content(self):
-        raise NoInternalContentError(f"This file {repr(self)} don't have a internal content.")
+    _internal_files = InternalFilesDescriptor()
+    """
+    Dictionary used for storing the internal files data. Each file is reserved through its <directory>/<name> inside
+    the package.
+    """
+    related_file_content = None
+    """
+    Variable to work as shortcut for the current related content (FileContent object).
+    """
+
+    # Pipelines
+    extract_data_pipeline = Pipeline(
+        'handler.pipelines.extractor.CompressedFilesFromContentExtractor',
+    )
+    """
+    Pipeline to extract data from multiple sources. For it to work, its classes should implement stopper as True.
+    """
+
+    def __init__(self, content):
+        """
+        Initial method that set up the `_internal_files` extracting data from file content. The extraction is
+        performance through `extract_data_pipeline`.
+        The parameter `content` should be an instance of FileContent else an exception should be raised.
+        """
+        if not isinstance(content, FileContent):
+            raise ValueError(
+                f"The parameter content for FilePacket should be an instance of FileContent not {type(content)}."
+            )
+
+        # Set the related content to allow usage of it in pipeline.
+        self.related_content_object = content
+
+        # perform extraction from content
+        self.extract_data_pipeline.run(object_to_process=self)
+
+    def __getitem__(self, item):
+        """
+        Method to serve as shortcut to allow return of item in _internal_files in instance of FilePacket.
+        """
+        return self._internal_files[item]
+
+    def __contains__(self, item):
+        """
+        Method to serve as shortcut to allow verification if item contains in _internal_files in instance of FilePacket.
+        """
+        return item in self._internal_files
+
+    def __setitem__(self, key, value):
+        """
+        Method to serve as shortcut to allow adding a item in _internal_files in instance of FilePacket.
+        """
+        self._internal_files[key] = value
+
+    def __len__(self):
+        """
+        Method that defines the size of current object. We will considere the size as being the same of
+        `_internal_files`
+        """
+        return len(self._internal_files)
+
+    def __iter__(self):
+        """
+        Method to return current object as iterator. As it already implements __next__ we just return the current
+        object.
+        """
+        return self
+
+    def __next__(self):
+        """
+        Method that defines the behavior of iterable blocks of current object.
+        """
+        for key, value in self._internal_files.items():
+            yield key, value
+
+    def names(self):
+        """
+        Method to obtain the list of names of internal files stored at `_internal_files`.
+        """
+        return self._internal_files.keys()
+
+    def files(self):
+        """
+        Method to obtain the list of objects File stored at `_internal_files`.
+        """
+        return self._internal_files.values()
 
 
 class BaseFile(Serializer):
