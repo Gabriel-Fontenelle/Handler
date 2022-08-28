@@ -1,13 +1,30 @@
-from .extractor import (
-    FileSystemDataExtracter,
-    FilenameAndExtensionFromPathExtracter,
-    HashFileExtracter,
-    MimeTypeFromFilenameExtracter,
+from .extractor import Extractor
+from .file import (
+    FileSystemDataExtractor,
+    FilenameAndExtensionFromPathExtractor,
+    FilenameFromMetadataExtractor,
+    HashFileExtractor,
+    MetadataExtractor,
+    MimeTypeFromFilenameExtractor,
+    FilenameFromURLExtractor,
+    PathFromURLExtractor
 )
+from .content import AudioMetadataFromContentExtractor
 
 __all__ = [
-    "FileSystemDataExtracter",
-    "FilenameAndExtensionFromPathExtracter",
-    "HashFileExtracter",
-    "MimeTypeFromFilenameExtracter",
+    "Extractor",
+    "FileSystemDataExtractor",
+    "FilenameAndExtensionFromPathExtractor",
+    "HashFileExtractor",
+    "MimeTypeFromFilenameExtractor",
+    "AudioMetadataFromContentExtractor",
+    "Extractor",
+    "FileSystemDataExtractor",
+    "FilenameAndExtensionFromPathExtractor",
+    "FilenameFromMetadataExtractor",
+    "HashFileExtractor",
+    "MetadataExtractor",
+    "MimeTypeFromFilenameExtractor",
+    "FilenameFromURLExtractor",
+    "PathFromURLExtractor"
 ]
