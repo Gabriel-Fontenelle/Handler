@@ -136,7 +136,7 @@ class BaseMimeTyper:
 
     def is_extension_compressed(self, extension):
         """
-        Method to check if a extension is related to a file that is container of compression or not.
+        Method to check if an extension is related to a file that is container of compression or not.
         """
         return extension in self.compressed_extensions
 
