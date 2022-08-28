@@ -1241,15 +1241,15 @@ class BaseFile(Serializer):
 
             try:
                 # Set temporary path to object_init because it is required to load data
-                # with FileSystemDataExtracter.
+                # with FileSystemDataExtractor.
                 object_init.path = content_dict['_cached_path']
                 # Use extractor to load content from file.
-                FileSystemDataExtracter.extract(file_object=object_init, overrider=False)
+                FileSystemDataExtractor.extract(file_object=object_init, overrider=False)
 
             except (AttributeError, KeyError, FileNotFoundError, ValueError):
                 # Try again with saved path instead of _cached_path.
                 object_init.path = object_init.sanitize_path or old_path
-                FileSystemDataExtracter.extract(file_object=object_init, overrider=False)
+                FileSystemDataExtractor.extract(file_object=object_init, overrider=False)
 
             finally:
                 # Restore old path
@@ -1646,10 +1646,10 @@ class BaseFile(Serializer):
         """
         # Set-up pipeline to extract data from.
         pipeline = Pipeline(
-            FilenameAndExtensionFromPathExtracter.to_processor(),
-            MimeTypeFromFilenameExtracter.to_processor(),
-            FileSystemDataExtracter.to_processor(),
-            HashFileExtracter.to_processor(),
+            'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+            'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+            'handler.pipelines.extractor.FileSystemDataExtractor',
+            'handler.pipelines.extractor.HashFileExtractor',
         )
 
         # Run the pipeline.
@@ -1789,9 +1789,9 @@ class ContentFile(BaseFile):
     """
 
     extract_data_pipeline = Pipeline(
-        'handler.pipelines.extracter.FilenameFromMetadataExtracter',
-        'handler.pipelines.extracter.MimeTypeFromFilenameExtracter',
-        'handler.pipelines.extracter.MimeTypeFromContentExtracter',
+        'handler.pipelines.extractor.FilenameFromMetadataExtractor',
+        'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+        'handler.pipelines.extractor.MimeTypeFromContentExtractor',
     )
     """
     Pipeline to extract data from multiple sources.
@@ -1804,11 +1804,11 @@ class StreamFile(BaseFile):
     """
 
     extract_data_pipeline = Pipeline(
-        'handler.pipelines.extracter.FilenameFromMetadataExtracter',
-        'handler.pipelines.extracter.FilenameFromURLExtracter',
-        'handler.pipelines.extracter.MimeTypeFromFilenameExtracter',
-        'handler.pipelines.extracter.MimeTypeFromContentExtracter',
-        'handler.pipelines.extracter.MetadataExtracter'
+        'handler.pipelines.extractor.FilenameFromMetadataExtractor',
+        'handler.pipelines.extractor.FilenameFromURLExtractor',
+        'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+        'handler.pipelines.extractor.MimeTypeFromContentExtractor',
+        'handler.pipelines.extractor.MetadataExtractor'
     )
     """
     Pipeline to extract data from multiple sources.
@@ -1823,10 +1823,10 @@ class File(BaseFile):
     """
 
     extract_data_pipeline = Pipeline(
-        'handler.pipelines.extracter.FilenameAndExtensionFromPathExtracter',
-        'handler.pipelines.extracter.MimeTypeFromFilenameExtracter',
-        'handler.pipelines.extracter.FileSystemDataExtracter',
-        'handler.pipelines.extracter.HashFileExtracter',
+        'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+        'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+        'handler.pipelines.extractor.FileSystemDataExtractor',
+        'handler.pipelines.extractor.HashFileExtractor',
     )
     """
     Pipeline to extract data from multiple sources.
