@@ -1718,7 +1718,7 @@ class BaseFile(Serializer):
 
         # Create new filename to avoid overwrite if allow_rename is set to `True`.
         if self._state.renaming:
-            self._naming.on_conflict_rename=allow_rename
+            self._naming.on_conflict_rename = allow_rename
             self._naming.rename()
 
         # Copy current file to be .bak before updating content.
