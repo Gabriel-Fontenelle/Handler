@@ -979,7 +979,6 @@ class BaseFile(Serializer):
     This class will behave like Django Model with methods save(), delete(), etc.
 
     TODO: Add support to moving and copying file avoiding conflict on moving or copying.
-    TODO: Add support to packed files and its internal content.
     """
 
     # Filesystem data
@@ -1122,6 +1121,10 @@ class BaseFile(Serializer):
     _content = None
     """
     Controller for how the content of file will be handled. 
+    """
+    _content_files = None
+    """
+    Controller for how the internal files packet in content of file will be handled.
     """
 
     # Common Exceptions shortcut
@@ -1454,6 +1457,20 @@ class BaseFile(Serializer):
         self._actions.to_hash()
 
     @property
+    def files(self):
+        """
+        Method to return as attribute the internal files that can be present in content.
+        This method can be override in child class, and it should always return a generator.
+        """
+        if not self.meta.packed:
+            raise ValueError(f"The file {self} is not a package and don't have internal files.")
+
+        if not self._content_files:
+            self._content_files = FilePacket(content=self._content)
+
+        return iter(self._content_files)
+
+    @property
     def is_binary(self) -> [bool, None]:
         """
         Method to return as attribute if file is binary or not. This information is obtain from `is_binary` from
@@ -1550,7 +1567,7 @@ class BaseFile(Serializer):
 
         The following attributes are set for file:
         - complete_filename (filename, extension)
-        - _meta (compressed, lossless)
+        - _meta (compressed, lossless, packed)
 
         TODO: we could change add_valid_filename to also search for extension
          in mime_type of file, case there is any, for more efficient search
@@ -1576,6 +1593,7 @@ class BaseFile(Serializer):
             # Save additional metadata to file.
             self._meta.compressed = self.mime_type_handler.is_extension_compressed(self.extension)
             self._meta.lossless = self.mime_type_handler.is_extension_lossless(self.extension)
+            self._meta.packed = self.mime_type_handler.is_extension_packed(self.extension)
 
             return True
 
