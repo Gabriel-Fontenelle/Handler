@@ -1203,7 +1203,7 @@ class BaseFile(Serializer):
             del encoded_dict['update_date']
 
         # Set-up class methods that can be external from library. Those class must be installed
-        # in project environment else a ImportError will be throw by `import_module`.
+        # in project environment else a ImportError will be thrown by `import_module`.
         for key in handler_class_list:
             if key in encoded_dict:
                 # Import module before using its class.
@@ -1268,8 +1268,8 @@ class BaseFile(Serializer):
         Method to instantiate BaseFile. This method can be used for any child class, ony needing
         to change the extract_data_pipeline to be suited for each class.
 
-        Keyword argument `file_system_handler` allow to specified a custom file system handler.
-        Keyword argument `extract_data_pipeline` allow to specified a custom file extractor pipeline.
+        Keyword argument `file_system_handler` allow to specify a custom file system handler.
+        Keyword argument `extract_data_pipeline` allow to specify a custom file extractor pipeline.
         """
         # Validate class creation
         if self.extract_data_pipeline is None and 'extract_data_pipeline' not in kwargs:
@@ -1354,7 +1354,7 @@ class BaseFile(Serializer):
     def __eq__(self, other_instance):
         """
         Method to allow comparison == to work between BaseFiles.
-        `other_instance` can be a object or a list of objects to be compared.
+        `other_instance` can be an object or a list of objects to be compared.
         """
         # Run compare pipeline
         try:
@@ -1423,7 +1423,7 @@ class BaseFile(Serializer):
         """
         Method to return as attribute the content that can be previous loaded from content,
         or a stream_content or need to be load from file system.
-        This method can be override in child class and it should always return a generator.
+        This method can be override in child class, and it should always return a generator.
         """
         if not self._content:
             raise ValueError(f"There is no content to use for file {self}.")
@@ -1473,7 +1473,7 @@ class BaseFile(Serializer):
     @property
     def is_binary(self) -> [bool, None]:
         """
-        Method to return as attribute if file is binary or not. This information is obtain from `is_binary` from
+        Method to return as attribute if file is binary or not. This information is obtained from `is_binary` from
         `FileContent` that should be set-up when data is loaded to content.
 
         There is no setter method, because the 'binarility' of file is determined by its content.
@@ -1587,7 +1587,7 @@ class BaseFile(Serializer):
                     return False
 
             # Use first class Renamer declared in pipeline because `prepare_filename` is a class method from base
-            # Renamer class and we don't require any other specialized methods from Renamer children.
+            # Renamer class, and we don't require any other specialized methods from Renamer children.
             self.complete_filename = self.rename_pipeline[0].prepare_filename(complete_filename, possible_extension)
 
             # Save additional metadata to file.
@@ -1642,7 +1642,7 @@ class BaseFile(Serializer):
     def refresh_from_disk(self):
         """
         This method will reset all attributes, calling the pipeline to extract data again from disk.
-        Both the content and metadata will be reload from disk.
+        Both the content and metadata will be reloaded from disk.
         """
         # Set-up pipeline to extract data from.
         pipeline = Pipeline(
@@ -1673,7 +1673,7 @@ class BaseFile(Serializer):
         This method basically do three things:
         1. Create file and its hashes files (if exists option `overwrite` must be `True`).
         2. Update content if was changed (`allow_update` or `create_backup` must be `True` for this method
-        to overwritten the content).
+        to overwrite the content).
         3. Rename filename and its hashes filenames (if new filename already exists in filesystem, `allow_rename`
         must be `True` for this method to change the renaming state).
         """
@@ -1757,7 +1757,7 @@ class BaseFile(Serializer):
         if not self.filename and not self.extension:
             raise self.ValidationError("The attribute `filename` or `extension` must be set for the file!")
 
-        # Raise if not save_to provided.
+        # Raise if not save_to is provided.
         if not self.save_to:
             raise self.ValidationError("The attribute `save_to` must be set for the file!")
 
@@ -1782,7 +1782,7 @@ class BaseFile(Serializer):
 
 class ContentFile(BaseFile):
     """
-    Class to create a file from a in memory content.
+    Class to create a file from an in memory content.
     It can load a file already saved as BaseFile allow it, but is recommended to use `File` instead
     because it will have a more complete pipeline for data extraction.
     a new one from memory using `ContentFile`.
@@ -1800,7 +1800,7 @@ class ContentFile(BaseFile):
 
 class StreamFile(BaseFile):
     """
-    Class to create a file from a HTTP stream that has a header with metadata.
+    Class to create a file from an HTTP stream that has a header with metadata.
     """
 
     extract_data_pipeline = Pipeline(
@@ -1817,7 +1817,7 @@ class StreamFile(BaseFile):
 
 class File(BaseFile):
     """
-    Class to create a file from a already saved path in filesystem.
+    Class to create a file from an already saved path in filesystem.
     It can create a new file as BaseFile allow it, but is recommended to create
     a new one from memory using `ContentFile`.
     """
