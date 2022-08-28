@@ -61,9 +61,9 @@ class CompressedFilesFromContentExtractor(Extractor):
         hash_file = object_to_process.__class__(
             path=f"{file_system.join(directory_path, hash_filename)}",
             extract_data_pipeline=Pipeline(
-                FilenameAndExtensionFromPathExtractor.to_processor(),
-                MimeTypeFromFilenameExtractor.to_processor(),
-                FileSystemDataExtractor.to_processor()
+                'handler.pipelines.extracter.FilenameAndExtensionFromPathExtractor',
+                'handler.pipelines.extracter.MimeTypeFromFilenameExtractor',
+                'handler.pipelines.extracter.FileSystemDataExtractor'
             ),
             file_system_handler=file_system
         )
