@@ -615,10 +615,6 @@ class FileContent(Serializer):
     """
     Type of stream used in buffer for content. 
     """
-    is_internal_content = False
-    """
-    
-    """
 
     # Buffer handles
     buffer = None
@@ -816,7 +812,6 @@ class FileContent(Serializer):
             'cache_in_memory': self.cache_in_memory,
             'cached': False,
             'is_binary': self.is_binary,
-            'is_internal_content': self.is_internal_content,
             '_cached_path': None if not self.cached or not self.cache_in_file else self._cached_path
         }
 
