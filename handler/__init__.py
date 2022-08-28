@@ -69,16 +69,16 @@ from .pipelines.renamer import Renamer, WindowsRenamer, LinuxRenamer, UniqueRena
 
 
 __all__ = [
-    'APIMimeTyper', 'AudioMetadataFromContentExtracter', 'BaseFile', 'BinaryCompare',
+    'APIMimeTyper', 'AudioMetadataFromContentExtractor', 'BaseFile', 'BinaryCompare',
     'Comparer', 'ContentFile', 'DataCompare',
-    'Extracter', 'File', 'FileSystem', 'FileSystemDataExtracter',
-    'FilenameAndExtensionFromPathExtracter', 'FilenameFromMetadataExtracter',
-    'FilenameFromURLExtracter', 'HashCompare', 'HashFileExtracter',
+    'Extractor', 'File', 'FileSystem', 'FileSystemDataExtractor',
+    'FilenameAndExtensionFromPathExtractor', 'FilenameFromMetadataExtractor',
+    'FilenameFromURLExtractor', 'HashCompare', 'HashFileExtractor',
     'Hasher', 'ImproperlyConfiguredFile', 'LibraryMimeTyper',
     'LinuxFileSystem',  'LinuxRenamer', 'LousyNameCompare', 'MD5Hasher',
-    'MetadataExtracter', 'MimeTypeCompare', 'MimeTypeFromFilenameExtracter',
+    'MetadataExtractor', 'MimeTypeCompare', 'MimeTypeFromFilenameExtractor',
     'NameCompare', 'NoInternalContentError', 'OperationNotAllowed',
-    'PathFromURLExtracter', 'Pipeline', 'Processor', 'ProcessorMixin', 'Renamer',
+    'PathFromURLExtractor', 'Pipeline', 'Processor', 'ProcessorMixin', 'Renamer',
     'ReservedFilenameError', 'Serializer', 'SHA256Hasher', 'SizeCompare',
     'StreamFile', 'System', 'TypeCompare', 'URI', 'UniqueRenamer', 'ValidationError',
     'WindowsFileSystem', 'WindowsRenamer'
