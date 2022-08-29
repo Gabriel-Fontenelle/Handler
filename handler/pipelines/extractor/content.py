@@ -20,14 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
-from handler.pipelines.hasher import CRC32Hasher
+from ..hasher import CRC32Hasher
 from tinytag import TinyTag
 
 from py7zr import SevenZipFile
 from py7zr.exceptions import Bad7zFile
 
 from .extractor import Extractor
-from ... import Pipeline
+from .. import Pipeline
 
 from ...exception import ValidationError
 

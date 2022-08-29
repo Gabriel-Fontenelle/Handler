@@ -29,7 +29,7 @@ from os import name
 
 # modules
 from handler.mimetype import LibraryMimeTyper
-from handler.pipelines.extractor import (
+from .pipelines.extractor import (
     FileSystemDataExtractor,
 )
 from .exception import (
