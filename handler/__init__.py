@@ -35,7 +35,7 @@ from .serializer import Serializer
 
 # Module with classes that define the pipelines and its processors classes.
 # A Pipeline is a sequence that loop processors to be run.
-from .pipelines import Processor, ProcessorMixin, Pipeline
+from .pipelines import Processor, Pipeline
 
 # Module with pipeline classes for comparing Files.
 from .pipelines.comparer import (
@@ -50,36 +50,41 @@ from .pipelines.comparer import (
     TypeCompare
 )
 # Module with pipeline classes for extracting data for files from multiple sources.
-from .pipelines.extracter import (
-    AudioMetadataFromContentExtracter,
-    Extracter,
-    FileSystemDataExtracter,
-    FilenameAndExtensionFromPathExtracter,
-    FilenameFromMetadataExtracter,
-    HashFileExtracter,
-    MetadataExtracter,
-    MimeTypeFromFilenameExtracter,
-    FilenameFromURLExtracter,
-    PathFromURLExtracter
+from .pipelines.extractor import (
+    Extractor,
+    ContentExtractor,
+    FileSystemDataExtractor,
+    FilenameAndExtensionFromPathExtractor,
+    MimeTypeFromFilenameExtractor,
+    HashFileExtractor,
+    FilenameFromURLExtractor,
+    PathFromURLExtractor,
+    FilenameFromMetadataExtractor,
+    MetadataExtractor,
+    SevenZipCompressedFilesFromContentExtractor,
+    AudioMetadataFromContentExtractor,
+    RARCompressedFilesFromContentExtractor,
+    MimeTypeFromContentExtractor
 )
 # Module with pipeline classes for generating or extracting hashed data related to file.
-from .pipelines.hasher import Hasher, MD5Hasher, SHA256Hasher
+from .pipelines.hasher import Hasher, CRC32Hasher, MD5Hasher, SHA256Hasher
 # Module with pipeline classes for renaming files.
 from .pipelines.renamer import Renamer, WindowsRenamer, LinuxRenamer, UniqueRenamer
 
 
 __all__ = [
     'APIMimeTyper', 'AudioMetadataFromContentExtractor', 'BaseFile', 'BinaryCompare',
-    'Comparer', 'ContentFile', 'DataCompare',
+    'Comparer', 'ContentExtractor', 'ContentFile', 'CRC32Hasher', 'DataCompare',
     'Extractor', 'File', 'FileSystem', 'FileSystemDataExtractor',
     'FilenameAndExtensionFromPathExtractor', 'FilenameFromMetadataExtractor',
     'FilenameFromURLExtractor', 'HashCompare', 'HashFileExtractor',
     'Hasher', 'ImproperlyConfiguredFile', 'LibraryMimeTyper',
     'LinuxFileSystem',  'LinuxRenamer', 'LousyNameCompare', 'MD5Hasher',
-    'MetadataExtractor', 'MimeTypeCompare', 'MimeTypeFromFilenameExtractor',
-    'NameCompare', 'NoInternalContentError', 'OperationNotAllowed',
-    'PathFromURLExtractor', 'Pipeline', 'Processor', 'ProcessorMixin', 'Renamer',
-    'ReservedFilenameError', 'Serializer', 'SHA256Hasher', 'SizeCompare',
-    'StreamFile', 'System', 'TypeCompare', 'URI', 'UniqueRenamer', 'ValidationError',
-    'WindowsFileSystem', 'WindowsRenamer'
+    'MetadataExtractor', 'MimeTypeCompare', 'MimeTypeFromContentExtractor',
+    'MimeTypeFromFilenameExtractor', 'NameCompare', 'NoInternalContentError',
+    'OperationNotAllowed', 'PathFromURLExtractor', 'Pipeline', 'Processor',
+    'RARCompressedFilesFromContentExtractor', 'Renamer', 'ReservedFilenameError',
+    'Serializer', 'SHA256Hasher', 'SevenZipCompressedFilesFromContentExtractor',
+    'SizeCompare', 'StreamFile', 'System', 'TypeCompare', 'URI', 'UniqueRenamer',
+    'ValidationError', 'WindowsFileSystem', 'WindowsRenamer'
 ]
