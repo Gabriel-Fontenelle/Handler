@@ -76,8 +76,8 @@ class Processor(Serializer):
         """
         Method to return classname.<item> if no attribute is found in current object.
         """
-        if hasattr(self, item):
-            return getattr(self, item)
+        if item in self.__dict__:
+            return self.__dict__[item]
 
         return getattr(self.classname, item)
 
@@ -173,7 +173,7 @@ class Pipeline(Serializer):
             result = processor.process(object_to_process=object_to_process, **processor.parameters)
             ran += 1
 
-            if processor.errors:
+            if hasattr(processor, 'errors') and processor.errors:
                 errors_found += processor.errors
 
             if hasattr(processor, 'stopper') and processor.stopper:
