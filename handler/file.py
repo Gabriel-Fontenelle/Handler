@@ -1187,7 +1187,8 @@ class BaseFile(Serializer):
             '_meta': FileMetadata,
             '_naming': FileNaming,
             'hashes': FileHashes,
-            '_content': FileContent
+            '_content': FileContent,
+            '_content_files': FilePacket
         }
         pipeline_list = [
             'extract_data_pipeline',
@@ -1278,12 +1279,14 @@ class BaseFile(Serializer):
                 # Restore old path
                 object_init.path = old_path
 
-            # Set-up attribute to FileContent
+            # Set up attribute to FileContent
             file_content = object_init._content
             if file_content:
                 content_dict['initiated_object'] = file_content
                 setattr(object_init, '_content', FileContent.from_dict(content_dict))
 
+            # TODO: save in object _content_files
+    
         return object_init
 
     def __init__(self, **kwargs):
@@ -1296,13 +1299,13 @@ class BaseFile(Serializer):
         """
         # Validate class creation
         if self.extract_data_pipeline is None and 'extract_data_pipeline' not in kwargs:
-            raise self.ImproperlyConfiguredFile("File object must set-up a pipeline for data`s extraction.")
+            raise self.ImproperlyConfiguredFile("File object must set up a pipeline for data`s extraction.")
 
         # Get custom file system.
         file_system_handler = kwargs.pop('file_system_handler', None)
         # Get custom pipeline
         extract_data_pipeline = kwargs.pop('extract_data_pipeline', None)
-        # Get option to run pipeline
+        # Get option to run pipeline.
         run_extract_pipeline = kwargs.pop('run_extractor', True)
 
         self.file_system_handler = file_system_handler or (
@@ -1348,9 +1351,9 @@ class BaseFile(Serializer):
         if extract_data_pipeline:
             self.extract_data_pipeline = extract_data_pipeline
 
-        # Process extractor pipeline
-        if run_extract_pipeline:
-            self.extract_data_pipeline.run(object_to_process=self, **new_kwargs)
+        # Process extractor pipeline. We only run pipeline if there is kwargs.
+        if run_extract_pipeline and new_kwargs:
+            self.refresh_from_pipeline()
 
     def __len__(self):
         """
@@ -1486,10 +1489,10 @@ class BaseFile(Serializer):
         This method can be override in child class, and it should always return a generator.
         """
         if not self.meta.packed:
-            raise ValueError(f"The file {self} is not a package and don't have internal files.")
+            raise self.NoInternalContentError(f"The file {self} is not a package and don't have internal files.")
 
         if not self._content_files:
-            self._content_files = FilePacket(content=self._content)
+            self._content_files = FilePacket(content=self._content, file_object=self)
 
         return iter(self._content_files)
 
@@ -1676,7 +1679,14 @@ class BaseFile(Serializer):
         )
 
         # Run the pipeline.
-        pipeline.run(object=self, **self._keyword_arguments)
+        pipeline.run(object_to_process=self, **{'overrider': True, **self._keyword_arguments})
+
+    def refresh_from_pipeline(self, force=False):
+        """
+        This method will load all attributes, calling the pipeline to extract data. By default, this method will
+        not overwrite data already loaded.
+        """
+        self.extract_data_pipeline.run(object_to_process=self, **{'overrider': force, **self._keyword_arguments})
 
     def save(self, **options):
         """
