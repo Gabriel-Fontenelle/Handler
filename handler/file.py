@@ -891,10 +891,6 @@ class FilePacket:
     Dictionary used for storing the internal files data. Each file is reserved through its <directory>/<name> inside
     the package.
     """
-    related_file_content = None
-    """
-    Variable to work as shortcut for the current related content (FileContent object).
-    """
 
     # Pipelines
     extract_data_pipeline = Pipeline(
@@ -904,20 +900,6 @@ class FilePacket:
     """
     Pipeline to extract data from multiple sources. For it to work, its classes should implement stopper as True.
     """
-
-    def __init__(self, content):
-        """
-        Initial method that set up the `_internal_files` extracting data from file content. The extraction is
-        performance through `extract_data_pipeline`.
-        The parameter `content` should be an instance of FileContent else an exception should be raised.
-        """
-        if not isinstance(content, FileContent):
-            raise ValueError(
-                f"The parameter content for FilePacket should be an instance of FileContent not {type(content)}."
-            )
-
-        # Set the related content to allow usage of it in pipeline.
-        self.related_content_object = content
 
     def __getitem__(self, item):
         """
@@ -1470,7 +1452,7 @@ class BaseFile(Serializer):
             raise self.NoInternalContentError(f"The file {self} is not a package and don't have internal files.")
 
         if not self._content_files:
-            self._content_files = FilePacket(content=self._content)
+            self._content_files = FilePacket()
             self._content_files.extract_data_pipeline.run(self)
 
         return iter(self._content_files)
