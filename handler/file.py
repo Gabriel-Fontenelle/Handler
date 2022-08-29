@@ -895,16 +895,21 @@ class FilePacket:
     """
     Variable to work as shortcut for the current related content (FileContent object).
     """
+    related_file_object = None
+    """
+    Variable to work as shortcut for the current related object for access to meta data.
+    """
 
     # Pipelines
     extract_data_pipeline = Pipeline(
-        'handler.pipelines.extractor.CompressedFilesFromContentExtractor',
+        'handler.pipelines.extractor.SevenZipCompressedFilesFromContentExtractor',
+        'handler.pipelines.extractor.RARCompressedFilesFromContentExtractor',
     )
     """
     Pipeline to extract data from multiple sources. For it to work, its classes should implement stopper as True.
     """
 
-    def __init__(self, content):
+    def __init__(self, content, file_object):
         """
         Initial method that set up the `_internal_files` extracting data from file content. The extraction is
         performance through `extract_data_pipeline`.
@@ -915,8 +920,16 @@ class FilePacket:
                 f"The parameter content for FilePacket should be an instance of FileContent not {type(content)}."
             )
 
+        if not isinstance(file_object, BaseFile):
+            raise ValueError(
+                f"The parameter file_object for FilePacket should be an instance of BaseFile not {type(file_object)}."
+            )
+
         # Set the related content to allow usage of it in pipeline.
         self.related_content_object = content
+
+        # Set the related file object to allow usage of its meta data in pipeline.
+        self.related_file_object = file_object
 
         # perform extraction from content
         self.extract_data_pipeline.run(object_to_process=self)
