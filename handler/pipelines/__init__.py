@@ -151,7 +151,7 @@ class Pipeline(Serializer):
 
     def add_processor(self, processor):
         """
-        Method add a processor object to list of processors.
+        Method adds a processor object to list of processors.
         """
         self.pipeline_processors.append(processor)
 
