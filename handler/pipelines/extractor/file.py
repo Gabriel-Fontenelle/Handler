@@ -312,10 +312,6 @@ class MimeTypeFromFilenameExtractor(Extractor):
         )
 
 
-class MimeTypeFromContentExtractor(Extractor):
-    pass
-
-
 class MetadataExtractor(Extractor):
     """
     Class that define the extraction of multiple file's data from metadata passed to extract.

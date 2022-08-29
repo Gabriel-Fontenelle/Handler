@@ -9,22 +9,32 @@ from .file import (
     FilenameFromURLExtractor,
     PathFromURLExtractor
 )
-from .content import AudioMetadataFromContentExtractor
+from .content import (
+    ContentExtractor,
+    AudioMetadataFromContentExtractor,
+    SevenZipCompressedFilesFromContentExtractor,
+    RARCompressedFilesFromContentExtractor,
+    MimeTypeFromContentExtractor
+)
 
 __all__ = [
+    # Parent classes
     "Extractor",
+    "ContentExtractor",
+    # Parsing from storage
     "FileSystemDataExtractor",
     "FilenameAndExtensionFromPathExtractor",
-    "HashFileExtractor",
     "MimeTypeFromFilenameExtractor",
-    "AudioMetadataFromContentExtractor",
-    "Extractor",
-    "FileSystemDataExtractor",
-    "FilenameAndExtensionFromPathExtractor",
-    "FilenameFromMetadataExtractor",
     "HashFileExtractor",
-    "MetadataExtractor",
-    "MimeTypeFromFilenameExtractor",
+    # Parsing from URL
     "FilenameFromURLExtractor",
-    "PathFromURLExtractor"
+    "PathFromURLExtractor",
+    # Parsing from Metadata
+    "FilenameFromMetadataExtractor",
+    "MetadataExtractor",
+    # Parsing from Content
+    "SevenZipCompressedFilesFromContentExtractor",
+    "AudioMetadataFromContentExtractor",
+    "RARCompressedFilesFromContentExtractor",
+    "MimeTypeFromContentExtractor"
 ]
