@@ -23,7 +23,7 @@ Should there be a need for contact the electronic mail
 from inspect import isclass
 from importlib import import_module
 
-from handler import ValidationError
+from ..exception import ValidationError
 
 from ..serializer import Serializer
 
@@ -134,9 +134,10 @@ class Pipeline(Serializer):
         for candidate in processors_candidate:
             try:
                 # Get parameters if there is any besides processor in list or tuple.
-                parameters, processor_candidate = {}, candidate if not isinstance(
-                    candidate, (tuple, list)
-                ) else candidate[1], candidate[0]
+                if isinstance(candidate, (tuple, list)):
+                    parameters, processor_candidate = candidate[1], candidate[0]
+                else:
+                    parameters, processor_candidate = {}, candidate
 
                 self.add_processor(Processor(source=processor_candidate, parameters=parameters))
             except ValidationError:
