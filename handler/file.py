@@ -895,10 +895,6 @@ class FilePacket:
     """
     Variable to work as shortcut for the current related content (FileContent object).
     """
-    related_file_object = None
-    """
-    Variable to work as shortcut for the current related object for access to meta data.
-    """
 
     # Pipelines
     extract_data_pipeline = Pipeline(
@@ -909,7 +905,7 @@ class FilePacket:
     Pipeline to extract data from multiple sources. For it to work, its classes should implement stopper as True.
     """
 
-    def __init__(self, content, file_object):
+    def __init__(self, content):
         """
         Initial method that set up the `_internal_files` extracting data from file content. The extraction is
         performance through `extract_data_pipeline`.
@@ -920,19 +916,8 @@ class FilePacket:
                 f"The parameter content for FilePacket should be an instance of FileContent not {type(content)}."
             )
 
-        if not isinstance(file_object, BaseFile):
-            raise ValueError(
-                f"The parameter file_object for FilePacket should be an instance of BaseFile not {type(file_object)}."
-            )
-
         # Set the related content to allow usage of it in pipeline.
         self.related_content_object = content
-
-        # Set the related file object to allow usage of its meta data in pipeline.
-        self.related_file_object = file_object
-
-        # perform extraction from content
-        self.extract_data_pipeline.run(object_to_process=self)
 
     def __getitem__(self, item):
         """
@@ -964,14 +949,7 @@ class FilePacket:
         Method to return current object as iterator. As it already implements __next__ we just return the current
         object.
         """
-        return self
-
-    def __next__(self):
-        """
-        Method that defines the behavior of iterable blocks of current object.
-        """
-        for key, value in self._internal_files.items():
-            yield key, value
+        return iter(self._internal_files.items())
 
     def names(self):
         """
@@ -1351,8 +1329,8 @@ class BaseFile(Serializer):
         if extract_data_pipeline:
             self.extract_data_pipeline = extract_data_pipeline
 
-        # Process extractor pipeline. We only run pipeline if there is kwargs.
-        if run_extract_pipeline and new_kwargs:
+        # Process extractor pipeline. We only run pipeline if there is kwargs informed.
+        if run_extract_pipeline and kwargs:
             self.refresh_from_pipeline()
 
     def __len__(self):
@@ -1492,7 +1470,8 @@ class BaseFile(Serializer):
             raise self.NoInternalContentError(f"The file {self} is not a package and don't have internal files.")
 
         if not self._content_files:
-            self._content_files = FilePacket(content=self._content, file_object=self)
+            self._content_files = FilePacket(content=self._content)
+            self._content_files.extract_data_pipeline.run(self)
 
         return iter(self._content_files)
 
@@ -1672,21 +1651,33 @@ class BaseFile(Serializer):
         """
         # Set-up pipeline to extract data from.
         pipeline = Pipeline(
-            'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
-            'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
-            'handler.pipelines.extractor.FileSystemDataExtractor',
-            'handler.pipelines.extractor.HashFileExtractor',
+            (
+                'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                {'overrider': True, **self._keyword_arguments}
+            ),
+            (
+                'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+                {'overrider': True, **self._keyword_arguments}
+            ),
+            (
+                'handler.pipelines.extractor.FileSystemDataExtractor',
+                {'overrider': True, **self._keyword_arguments}
+            ),
+            (
+                'handler.pipelines.extractor.HashFileExtractor',
+                {'overrider': True, **self._keyword_arguments}
+            )
         )
 
         # Run the pipeline.
-        pipeline.run(object_to_process=self, **{'overrider': True, **self._keyword_arguments})
+        pipeline.run(object_to_process=self)
 
     def refresh_from_pipeline(self, force=False):
         """
         This method will load all attributes, calling the pipeline to extract data. By default, this method will
         not overwrite data already loaded.
         """
-        self.extract_data_pipeline.run(object_to_process=self, **{'overrider': force, **self._keyword_arguments})
+        self.extract_data_pipeline.run(object_to_process=self)
 
     def save(self, **options):
         """
