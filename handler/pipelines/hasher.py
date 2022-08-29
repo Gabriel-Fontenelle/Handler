@@ -25,6 +25,8 @@ Should there be a need for contact the electronic mail
 import hashlib
 
 # core modules
+from zlib import crc32
+
 from handler.pipelines import Pipeline
 
 # modules
@@ -32,6 +34,7 @@ from handler.handler import FileSystem
 
 __all__ = [
     'Hasher',
+    'CRC32Hasher',
     'MD5Hasher',
     'SHA256Hasher'
 ]
@@ -387,3 +390,48 @@ class SHA256Hasher(Hasher):
         Method to instantiate the hash generator to be used digesting the hash.
         """
         return hashlib.sha256()
+
+
+class CRC32Hasher(Hasher):
+    """
+    Class specifying algorithm CRC32 to be used on Hasher pipelines.
+    """
+
+    hasher_name = 'crc32'
+    """
+    Name of hasher algorithm and also its extension abbreviation.
+    """
+
+    @classmethod
+    def instantiate_hash(cls):
+        """
+        Method to instantiate the hash generator to be used digesting the hash.
+        """
+        return {'crc32': 0}
+
+    @classmethod
+    def digest_hash(cls, hash_instance):
+        """
+        Method to digest the hash generated at hash_instance.
+        As CRC32 don't work as hashlib we used the instantiate_hash to start a dictionary
+        for the sum of the digested hash.
+        """
+        return hash_instance['crc32']
+
+    @classmethod
+    def digest_hex_hash(cls, hash_instance):
+        """
+        Method to digest the hash generated at hash_instance.
+        """
+        return hash_instance['crc32']
+
+    @classmethod
+    def update_hash(cls, hash_instance, content):
+        """
+        Method to update content in hash_instance to generate the hash. We convert all content to bytes to
+        generate a hash of it.
+        """
+        if isinstance(content, str):
+            content = content.encode('utf8')
+
+        hash_instance['crc32'] = crc32(content, hash_instance['crc32'])
