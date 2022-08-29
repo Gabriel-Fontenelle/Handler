@@ -28,6 +28,7 @@ from datetime import datetime
 from filecmp import cmp
 from glob import iglob
 from shutil import copyfile
+from sys import version_info
 
 from os import (
     makedirs,
@@ -336,7 +337,12 @@ class FileSystem:
         This method must return an iterable that filter results based on filter values.
         `filter` should accept wildcards.
         """
-        for file in iglob(filter, root_dir=directory_path):
+        if version_info.major == 3 and version_info.minor > 9:
+            iter_glob = iglob(filter, root_dir=directory_path)
+        else:
+            iter_glob = iglob(f"{directory_path}{cls.sep}{filter}")
+
+        for file in iter_glob:
             if cls.is_file(cls.join(directory_path, file)):
                 yield file
 
