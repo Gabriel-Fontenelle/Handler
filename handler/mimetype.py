@@ -267,6 +267,7 @@ class LibraryMimeTyper(BaseMimeTyper):
             'application/vnd.apple.installer+xm',
             'application/vnd.ezpix-album',
             'application/vnd.ezpix-package',
+            'application/x-7z-compressed',
             'application/x-cbr',
             'application/x-debian-package',
             'application/x-dgc-compressed',
@@ -285,6 +286,7 @@ class LibraryMimeTyper(BaseMimeTyper):
         Method to return as attribute the extensions that are for containers of compression.
         """
         return [
+            '7z',
             'abr',
             'cb7',
             'cba',
@@ -306,6 +308,7 @@ class LibraryMimeTyper(BaseMimeTyper):
             'zip',
         ]
 
+    @property
     def packed_extensions(self):
         """
         Method to return as attribute the extensions that are for extractable containers of some sort.
