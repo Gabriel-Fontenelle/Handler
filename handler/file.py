@@ -1075,6 +1075,16 @@ class BaseFile(Serializer):
     FileSystem currently in use for File.
     It can be LinuxFileSystem, WindowsFileSystem or a custom one.
     """
+    storage = None
+    """
+    Storage or file system currently in use for File.
+    It can be LinuxFileSystem, WindowsFileSystem or a custom one.
+    """
+    serializer = None
+    """
+    Serializer available to make the object portable. 
+    This can be changed to any class that implements serialize and deserialize method.
+    """
     mime_type_handler = LibraryMimeTyper()
     """
     Mimetype handler that defines the source of know Mimetypes.
