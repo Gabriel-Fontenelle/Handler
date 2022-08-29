@@ -264,7 +264,7 @@ class HashFileExtractor(Extractor):
                 continue
 
             # Extract from hash file and save to hasher if hash file content found.
-            hasher.process_from_file(object=file_object, full_check=full_check)
+            hasher.process_from_file(object_to_process=file_object, full_check=full_check)
 
 
 class MimeTypeFromFilenameExtractor(Extractor):

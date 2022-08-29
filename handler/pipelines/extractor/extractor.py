@@ -51,9 +51,10 @@ class Extractor:
 
         """
         object_to_process = kwargs.pop('object_to_process', None)
+        overrider = kwargs.pop('overrider', False)
 
         try:
-            cls.extract(file_object=object_to_process, **kwargs)
+            cls.extract(file_object=object_to_process, overrider=overrider, **kwargs)
         except (ValueError, IOError) as e:
             if not hasattr(cls, 'errors'):
                 setattr(cls, 'errors', [e])

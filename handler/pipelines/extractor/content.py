@@ -129,8 +129,8 @@ class SevenZipCompressedFilesFromContentExtractor(ContentExtractor):
                 internal_file_object = file_class(
                     path=internal_file.filename,
                     extract_data_pipeline=Pipeline(
-                        'handler.pipelines.extracter.FilenameAndExtensionFromPathExtractor',
-                        'handler.pipelines.extracter.MimeTypeFromFilenameExtractor',
+                        'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                        'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
                     ),
                     file_system_handler=file_system
                 )

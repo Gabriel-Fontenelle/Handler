@@ -159,8 +159,8 @@ class Hasher:
             path=f"{cls.file_system_handler.sanitize_path(object_to_process.path)}{object_to_process.filename}"
                  f".{cls.hasher_name}",
             extract_data_pipeline=Pipeline(
-                'handler.pipelines.extracter.FilenameAndExtensionFromPathExtractor',
-                'handler.pipelines.extracter.MimeTypeFromFilenameExtractor',
+                'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
             ),
             file_system_handler=object_to_process.file_system_handler
         )
@@ -332,9 +332,9 @@ class Hasher:
         hash_file = object_to_process.__class__(
             path=f"{file_system.join(directory_path, hash_filename)}",
             extract_data_pipeline=Pipeline(
-                'handler.pipelines.extracter.FilenameAndExtensionFromPathExtractor',
-                'handler.pipelines.extracter.MimeTypeFromFilenameExtractor',
-                'handler.pipelines.extracter.FileSystemDataExtractor'
+                'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+                'handler.pipelines.extractor.FileSystemDataExtractor'
             ),
             file_system_handler=file_system
         )
