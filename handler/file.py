@@ -891,6 +891,10 @@ class FilePacket:
     Dictionary used for storing the internal files data. Each file is reserved through its <directory>/<name> inside
     the package.
     """
+    loaded = False
+    """
+    Attribute used to indicate if content was already loaded through extractor pipeline.
+    """
 
     # Pipelines
     extract_data_pipeline = Pipeline(
@@ -1296,6 +1300,10 @@ class BaseFile(Serializer):
         if not self._meta:
             self._meta = FileMetadata()
 
+        # Set-up resources used for handling internal files
+        if not self._content_files:
+            self._content_files = FilePacket()
+
         # Set-up resources used for handling hashes and hash files.
         if not self.hashes:
             self.hashes = FileHashes()
@@ -1451,9 +1459,11 @@ class BaseFile(Serializer):
         if not self.meta.packed:
             raise self.NoInternalContentError(f"The file {self} is not a package and don't have internal files.")
 
-        if not self._content_files:
-            self._content_files = FilePacket()
+        if not self._content_files.loaded:
+            # Extract data from content
             self._content_files.extract_data_pipeline.run(self)
+            # Set loaded to avoid reloading from pipeline again.
+            self._content_files.loaded = True
 
         return iter(self._content_files)
 
