@@ -31,7 +31,9 @@ from .exception import (
 )
 from .handler import FileSystem, WindowsFileSystem, LinuxFileSystem, System, URI
 from .mimetype import LibraryMimeTyper, APIMimeTyper
-from .serializer import Serializer
+
+# Module with classes for serializing/deserializing objects.
+from .serializer import PickleSerializer, JSONSerializer
 
 # Module with classes that define the pipelines and its processors classes.
 # A Pipeline is a sequence that loop processors to be run.
@@ -78,13 +80,13 @@ __all__ = [
     'Extractor', 'File', 'FileSystem', 'FileSystemDataExtractor',
     'FilenameAndExtensionFromPathExtractor', 'FilenameFromMetadataExtractor',
     'FilenameFromURLExtractor', 'HashCompare', 'HashFileExtractor',
-    'Hasher', 'ImproperlyConfiguredFile', 'LibraryMimeTyper',
+    'Hasher', 'ImproperlyConfiguredFile', 'JSONSerializer', 'LibraryMimeTyper',
     'LinuxFileSystem',  'LinuxRenamer', 'LousyNameCompare', 'MD5Hasher',
     'MetadataExtractor', 'MimeTypeCompare', 'MimeTypeFromContentExtractor',
     'MimeTypeFromFilenameExtractor', 'NameCompare', 'NoInternalContentError',
-    'OperationNotAllowed', 'PathFromURLExtractor', 'Pipeline', 'Processor',
+    'OperationNotAllowed', 'PathFromURLExtractor', 'PickleSerializer', 'Pipeline', 'Processor',
     'RARCompressedFilesFromContentExtractor', 'Renamer', 'ReservedFilenameError',
-    'Serializer', 'SHA256Hasher', 'SevenZipCompressedFilesFromContentExtractor',
+    'SHA256Hasher', 'SevenZipCompressedFilesFromContentExtractor',
     'SizeCompare', 'StreamFile', 'System', 'TypeCompare', 'URI', 'UniqueRenamer',
     'ValidationError', 'WindowsFileSystem', 'WindowsRenamer'
 ]

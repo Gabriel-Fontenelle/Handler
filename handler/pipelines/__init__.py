@@ -25,15 +25,13 @@ from importlib import import_module
 
 from ..exception import ValidationError
 
-from ..serializer import Serializer
-
 __all__ = [
     'Processor',
     'Pipeline'
 ]
 
 
-class Processor(Serializer):
+class Processor:
     """
     Class to initiate a processor to be used on Pipeline.
     Processors are intermediate class between the pipelines manager (Pipeline)
@@ -95,12 +93,12 @@ class Processor(Serializer):
                               f"{dotted_path} is a python string with dotted path to a processor class.")
 
 
-class Pipeline(Serializer):
+class Pipeline:
     """
     Class to initiate a pipelines with given processors to be run.
     """
 
-    def __init__(self, *processors_candidate):
+    def __init__(self, *processors_candidate, **kwargs):
         """
         This method can receive multiples
         This method can receive a single path to a class in string format that implement methods
@@ -110,6 +108,9 @@ class Pipeline(Serializer):
         or a tuple with classname, verbose_name
         and stopper configuration.
         """
+        if not processors_candidate and "processors_candidate" not in kwargs:
+            raise ValueError("A processor candidate must be informed for pipeline to be initialized")
+
         self.processors_ran = 0
         """
         Variable to register the amount of processors ran for this pipelines.
@@ -126,12 +127,12 @@ class Pipeline(Serializer):
         """
         Variable to register the errors found by processors for the current pipeline object.
         """
-        self.processors_candidate = processors_candidate
+        self.processors_candidate = kwargs.get("processors_candidate", processors_candidate)
         """
         Variable to register the original input that instantiate the Pipeline`s object.
         """
 
-        for candidate in processors_candidate:
+        for candidate in self.processors_candidate:
             try:
                 # Get parameters if there is any besides processor in list or tuple.
                 if isinstance(candidate, (tuple, list)):
@@ -149,17 +150,28 @@ class Pipeline(Serializer):
         """
         return self.pipeline_processors[item]
 
+    @property
+    def __serialize__(self):
+        """
+        Method to allow dir and vars to work with the class simplifying the serialization of object.
+
+        This method only return processors_candidate because the pipeline should be clean before serializing and reset
+        before being used from a deserialization.
+        """
+        return {
+            "processors_candidate": self.processors_candidate
+        }
+
     def add_processor(self, processor):
         """
         Method adds a processor object to list of processors.
         """
         self.pipeline_processors.append(processor)
 
-    def run(self, object_to_process):
+    def run(self, object_to_process, **parameters):
         """
         Method to run the entire pipelines.
         The processor will define if method will stop or not the pipelines.
-        Either args or kwargs must have the object to be processed.
 
         Not all pipelines are required to run this method, as example, Hasher Pipeline avoid
         its use when loading hashes from files.
@@ -196,13 +208,3 @@ class Pipeline(Serializer):
         self.processors_ran = ran
         self.last_result = result
         self.errors = errors_found
-
-    def to_dict(self, ignore_keys=[], **kwargs):
-        """
-        Overwritten of method that serialize the current class object to a dictionary to avoid recursive serialization.
-        """
-        ignore_keys.append('processors_ran')
-        ignore_keys.append('last_result')
-        ignore_keys.append('errors')
-
-        return super(Pipeline, self).to_dict(ignore_keys=ignore_keys, **kwargs)
