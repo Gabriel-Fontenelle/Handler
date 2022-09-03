@@ -149,6 +149,9 @@ class SevenZipCompressedFilesFromContentExtractor(ContentExtractor):
                 )
                 internal_file_object.hashes['crc32'] = internal_file.crc32, hash_file, CRC32Hasher
 
+                # Set up action to be extracted instead of to save.
+                internal_file_object._actions.to_extract()
+
                 # Add internal file as File object to file.
                 file_object._content_files[internal_file.filename] = internal_file_object
 
@@ -156,7 +159,10 @@ class SevenZipCompressedFilesFromContentExtractor(ContentExtractor):
             if file_object._content.buffer.seekable():
                 file_object._content.buffer.seek(0)
 
+            # Update metadata and actions.
             file_object.meta.packed = True
+            file_object._actions.listed()
+
             return True
 
         except (Bad7zFile, ValidationError):
