@@ -111,7 +111,7 @@ class SevenZipCompressedFilesFromContentExtractor(ContentExtractor):
             if file_object._content.buffer.seekable():
                 file_object._content.buffer.seek(0)
 
-            file_system = file_object.file_system_handler
+            file_system = file_object.storage
             file_class = file_object.__class__
 
             file7z = SevenZipFile(file=file_object._content.buffer)

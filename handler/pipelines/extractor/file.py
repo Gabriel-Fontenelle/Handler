@@ -71,7 +71,7 @@ class FilenameAndExtensionFromPathExtractor(Extractor):
         if not (file_object.filename is None or overrider):
             return
 
-        file_system_handler = file_object.file_system_handler
+        file_system_handler = file_object.storage
 
         # Set-up save_to and relative_path
         file_object.save_to = file_system_handler.get_directory_from_path(file_object.path)
@@ -188,7 +188,7 @@ class FileSystemDataExtractor(Extractor):
         if not file_object.type:
             raise ValueError("Attribute `type` must be settled before calling `FileSystemDataExtractor.extract`.")
 
-        file_system_handler = file_object.file_system_handler
+        file_system_handler = file_object.storage
 
         # Check if path exists
         if not file_system_handler.exists(file_object.path):
@@ -220,7 +220,7 @@ class FileSystemDataExtractor(Extractor):
             mode += 'b'
 
         # Get buffer io
-        buffer = file_object.file_system_handler.open_file(file_object.path, mode=mode)
+        buffer = file_object.storage.open_file(file_object.path, mode=mode)
 
         # Set content with buffer, as content is a property it will validate the buffer and
         # add it as a generator allowing to just loop through chunks of content.
@@ -310,6 +310,7 @@ class MimeTypeFromFilenameExtractor(Extractor):
         file_object.meta.packed = file_object.mime_type_handler.is_extension_packed(
             file_object.extension
         )
+        file_object._actions.to_list()
 
 
 class MetadataExtractor(Extractor):
@@ -493,6 +494,7 @@ class MetadataExtractor(Extractor):
                         file_object.meta.packed = file_object.mime_type_handler.is_extension_packed(
                             file_object.extension
                         )
+                        file_object._actions.to_list()
 
             # Set-up type from mimetype and extension
             if file_object.mime_type and file_object.extension and (not file_object.type or overrider):
@@ -560,7 +562,7 @@ class FilenameFromURLExtractor(Extractor):
         try:
             possible_urls = kwargs['url']
             processed_uri = None
-            results = file_object.uri_handler.get_filenames(possible_urls, file_object.file_system_handler)
+            results = file_object.uri_handler.get_filenames(possible_urls, file_object.storage)
 
             if not results:
                 return
@@ -624,7 +626,7 @@ class PathFromURLExtractor(Extractor):
         try:
             possible_urls = kwargs['url']
 
-            paths = file_object.uri_handler.get_paths(possible_urls, file_object.file_system_handler)
+            paths = file_object.uri_handler.get_paths(possible_urls, file_object.storage)
 
             if not paths:
                 return

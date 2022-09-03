@@ -118,7 +118,7 @@ class Renamer:
             # Overwrite File System attribute with File System of File only when running in pipeline.
             # This will alter the File System for the class, any other call to this class will use the altered
             # file system.
-            cls.file_system_handler = object_to_process.file_system_handler
+            cls.file_system_handler = object_to_process.storage
 
             # Get directory from object to be processed.
             path = cls.file_system_handler.sanitize_path(getattr(object_to_process, path_attribute))

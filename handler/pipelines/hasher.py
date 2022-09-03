@@ -162,7 +162,7 @@ class Hasher:
                 'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
                 'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
             ),
-            file_system_handler=object_to_process.file_system_handler
+            file_system_handler=object_to_process.storage
         )
         # Set-up metadata checksum as boolean to indicate whether the source
         # of the hash is a CHECKSUM.hasher_name file (contains multiple files) or not.
@@ -309,7 +309,7 @@ class Hasher:
         # Save current file system handler
         class_file_system_handler = cls.file_system_handler
 
-        cls.file_system_handler = object_to_process.file_system_handler
+        cls.file_system_handler = object_to_process.storage
         path = cls.file_system_handler.sanitize_path(object_to_process.path)
         directory_path = cls.file_system_handler.get_directory_from_path(path)
 
@@ -326,7 +326,7 @@ class Hasher:
             # Restore File System attribute to original.
             cls.file_system_handler = class_file_system_handler
 
-        file_system = object_to_process.file_system_handler
+        file_system = object_to_process.storage
 
         # Add hash to file. The content will be obtained from file pointer.
         hash_file = object_to_process.__class__(
