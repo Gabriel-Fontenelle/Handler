@@ -182,7 +182,7 @@ class Pipeline:
         errors_found = []
 
         for processor in self.pipeline_processors:
-            result = processor.process(object_to_process=object_to_process, **processor.parameters)
+            result = processor.process(object_to_process=object_to_process, **processor.parameters, **parameters)
             ran += 1
 
             if hasattr(processor, 'errors') and processor.errors:
