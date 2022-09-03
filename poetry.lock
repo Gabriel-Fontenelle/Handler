@@ -67,6 +67,17 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "dill"
+version = "0.3.5.1"
+description = "serialize all of python"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, !=3.6.*"
+
+[package.extras]
+graph = ["objgraph (>=1.7.2)"]
+
+[[package]]
 name = "execnet"
 version = "1.9.0"
 description = "execnet: rapid multi-Python deployment"
@@ -114,6 +125,14 @@ check = ["twine", "readme-renderer", "pygments", "isort (>=5.0.3)", "flake8-depr
 name = "iniconfig"
 version = "1.1.1"
 description = "iniconfig: brain-dead simple config-ini parsing"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
+name = "json-tricks"
+version = "3.15.5"
+description = "Extra features for Python's JSON: comments, order, numpy, pandas, datetimes, and many more! Simple but customizable."
 category = "main"
 optional = false
 python-versions = "*"
@@ -429,7 +448,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "34bff7d4924b8a8535cb836f56e6abcd8ce371f13d45183e9ec12bc8986fa18d"
+content-hash = "c69907baeb9a78f0f42cde96ba5efcf34bb5aa177b663ced66f64ab45e1ba3cb"
 
 [metadata.files]
 atomicwrites = []
@@ -439,10 +458,12 @@ brotlicffi = []
 cffi = []
 colorama = []
 contextlib2 = []
+dill = []
 execnet = []
 importlib-metadata = []
 inflate64 = []
 iniconfig = []
+json-tricks = []
 mock = []
 multivolumefile = []
 packaging = []
