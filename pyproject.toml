@@ -23,6 +23,7 @@ py7zr = "^0.20"
 tinytag = "1.6.0"
 dill = "^0.3.5"
 json-tricks = "^3.15"
+rarfile = "^4.0"
 
 [tool.poetry.dev-dependencies]
 

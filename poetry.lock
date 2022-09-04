@@ -370,6 +370,14 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
+name = "rarfile"
+version = "4.0"
+description = "RAR archive reader for Python"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "send2trash"
 version = "1.8.0"
 description = "Send file to trash natively under Mac OS X, Windows and Linux."
@@ -448,7 +456,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "c69907baeb9a78f0f42cde96ba5efcf34bb5aa177b663ced66f64ab45e1ba3cb"
+content-hash = "ecffaba04c1f2e13fb3bbe96f5e6ed7a48d0c8eec712a54be28987ba392aa42a"
 
 [metadata.files]
 atomicwrites = []
@@ -481,6 +489,7 @@ pyppmd = []
 pytest = []
 pytest-shutil = []
 pyzstd = []
+rarfile = []
 send2trash = []
 six = []
 termcolor = []
