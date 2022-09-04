@@ -400,3 +400,7 @@ class AudioMetadataFromContentExtractor(Extractor):
         # Reset buffer to initial location
         if file_object._content.buffer.seekable():
             file_object._content.buffer.seek(0)
+
+
+class MimeTypeFromContentExtractor(Extractor):
+    pass
