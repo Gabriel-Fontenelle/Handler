@@ -13,8 +13,9 @@ from .content import (
     ContentExtractor,
     AudioMetadataFromContentExtractor,
     SevenZipCompressedFilesFromContentExtractor,
-    RARCompressedFilesFromContentExtractor,
-    MimeTypeFromContentExtractor
+    RarCompressedFilesFromContentExtractor,
+    MimeTypeFromContentExtractor,
+    ZipCompressedFilesFromContentExtractor
 )
 
 __all__ = [
@@ -35,6 +36,7 @@ __all__ = [
     # Parsing from Content
     "SevenZipCompressedFilesFromContentExtractor",
     "AudioMetadataFromContentExtractor",
-    "RARCompressedFilesFromContentExtractor",
-    "MimeTypeFromContentExtractor"
+    "RarCompressedFilesFromContentExtractor",
+    "MimeTypeFromContentExtractor",
+    "ZipCompressedFilesFromContentExtractor"
 ]

@@ -40,7 +40,7 @@ __all__ = [
     'ContentExtractor',
     'MimeTypeFromContentExtractor',
     'SevenZipCompressedFilesFromContentExtractor',
-    'RARCompressedFilesFromContentExtractor',
+    'RarCompressedFilesFromContentExtractor',
     'ZipCompressedFilesFromContentExtractor',
 ]
 
