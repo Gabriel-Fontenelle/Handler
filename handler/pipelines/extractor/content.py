@@ -20,11 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
+from datetime import datetime
+from zipfile import BadZipFile, ZipFile
+
 from ..hasher import CRC32Hasher
 from tinytag import TinyTag
 
 from py7zr import SevenZipFile
 from py7zr.exceptions import Bad7zFile
+from rarfile import BadRarFile, RarFile, NotRarFile
 
 from .extractor import Extractor
 from .. import Pipeline
@@ -34,9 +38,10 @@ from ...exception import ValidationError
 __all__ = [
     'AudioMetadataFromContentExtractor',
     'ContentExtractor',
+    'MimeTypeFromContentExtractor',
     'SevenZipCompressedFilesFromContentExtractor',
     'RARCompressedFilesFromContentExtractor',
-    'MimeTypeFromContentExtractor'
+    'ZipCompressedFilesFromContentExtractor',
 ]
 
 
@@ -83,10 +88,164 @@ class PSDLayersFromContentExtractor(ContentExtractor):
     """
 
 
-class RARCompressedFilesFromContentExtractor(ContentExtractor):
+class ZipCompressedFilesFromContentExtractor(ContentExtractor):
     """
     Class to extract internal files from rar files.
     """
+    extensions = ['zip']
+    """
+    Attribute to store allowed extensions to be used in validator.
+    """
+
+    @classmethod
+    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to extract the information necessary from a file_object.
+        """
+        try:
+            cls.validate(file_object)
+
+            # Reset buffer to initial location
+            if file_object._content.buffer.seekable():
+                file_object._content.buffer.seek(0)
+
+            file_system = file_object.storage
+            file_class = file_object.__class__
+
+            filezip = ZipFile(file=file_object._content.buffer)
+
+            for internal_file in filezip.infolist():
+                # Skip directories and symbolic link
+                if internal_file.is_dir() or internal_file.is_symlink():
+                    continue
+
+                # Skip duplicate only if not choosing to override.
+                if internal_file.filename in file_object._content and not overrider:
+                    continue
+
+                # Create file object for internal file
+                internal_file_object = file_class(
+                    path=internal_file.filename,
+                    extract_data_pipeline=Pipeline(
+                        'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                        'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+                    ),
+                    file_system_handler=file_system
+                )
+
+                # Update creation and modified date. Zip don't store the created date, only the modified one.
+                # To avoid problem the created date will be consider the same as modified.
+                internal_file_object.create_date = datetime(*internal_file.date_time)
+                internal_file_object.update_date = internal_file_object.create_date
+
+                # Update size of file
+                internal_file_object.size = internal_file.file_size
+
+                # Update hash generating the hash file and adding its content
+                hash_file = CRC32Hasher.create_hash_file(
+                    object_to_process=file_object,
+                    digested_hex_value=internal_file.CRC
+                )
+                internal_file_object.hashes['crc32'] = internal_file.CRC, hash_file, CRC32Hasher
+
+                # Set up action to be extracted instead of to save.
+                internal_file_object._actions.to_extract()
+
+                # Add internal file as File object to file.
+                file_object._content_files[internal_file.filename] = internal_file_object
+
+            # Reset buffer to initial location
+            if file_object._content.buffer.seekable():
+                file_object._content.buffer.seek(0)
+
+            # Update metadata and actions.
+            file_object.meta.packed = True
+            file_object._actions.listed()
+
+            return True
+
+        except (BadZipFile, ValidationError):
+            return False
+
+
+class RarCompressedFilesFromContentExtractor(ContentExtractor):
+    """
+    Class to extract internal files from rar files.
+    """
+    extensions = ['rar']
+    """
+    Attribute to store allowed extensions to be used in validator.
+    """
+
+    @classmethod
+    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to extract the information necessary from a file_object.
+        """
+        try:
+            cls.validate(file_object)
+
+            # Reset buffer to initial location
+            if file_object._content.buffer.seekable():
+                file_object._content.buffer.seek(0)
+
+            file_system = file_object.storage
+            file_class = file_object.__class__
+
+            filerar = RarFile(file=file_object._content.buffer)
+
+            for internal_file in filerar.infolist():
+                # Skip directories and symbolic link
+                if internal_file.is_dir() or internal_file.is_symlink():
+                    continue
+
+                # Skip duplicate only if not choosing to override.
+                if internal_file.filename in file_object._content and not overrider:
+                    continue
+
+                # Create file object for internal file
+                internal_file_object = file_class(
+                    path=internal_file.filename,
+                    extract_data_pipeline=Pipeline(
+                        'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                        'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+                    ),
+                    file_system_handler=file_system
+                )
+
+                # Update creation and modified date
+                internal_file_object.create_date = internal_file.ctime
+                internal_file_object.update_date = internal_file.mtime
+
+                # Update size of file
+                internal_file_object.size = internal_file.file_size
+
+                # Update hash generating the hash file and adding its content
+                if internal_file.CRC:
+                    hash_file = CRC32Hasher.create_hash_file(
+                        object_to_process=file_object,
+                        digested_hex_value=internal_file.CRC
+                    )
+                    internal_file_object.hashes['crc32'] = internal_file.CRC, hash_file, CRC32Hasher
+
+                # Set up action to be extracted instead of to save.
+                internal_file_object._actions.to_extract()
+
+                # Add internal file as File object to file.
+                file_object._content_files[internal_file.filename] = internal_file_object
+
+            # Reset buffer to initial location
+            if file_object._content.buffer.seekable():
+                file_object._content.buffer.seek(0)
+
+            # Update metadata and actions.
+            file_object.meta.packed = True
+            file_object._actions.listed()
+
+            return True
+
+        except (BadRarFile, NotRarFile, ValidationError):
+            return False
 
 
 class SevenZipCompressedFilesFromContentExtractor(ContentExtractor):
