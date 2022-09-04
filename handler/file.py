@@ -883,7 +883,8 @@ class FilePacket:
     # Pipelines
     extract_data_pipeline = Pipeline(
         'handler.pipelines.extractor.SevenZipCompressedFilesFromContentExtractor',
-        'handler.pipelines.extractor.RARCompressedFilesFromContentExtractor',
+        'handler.pipelines.extractor.RarCompressedFilesFromContentExtractor',
+        'handler.pipelines.extractor.ZipCompressedFilesFromContentExtractor',
     )
     """
     Pipeline to extract data from multiple sources. For it to work, its classes should implement stopper as True.
