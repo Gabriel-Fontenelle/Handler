@@ -844,7 +844,7 @@ class FileContent:
             # Consume content if not loaded
             while True:
                 try:
-                    next(self.buffer)
+                    next(self)
                 except StopIteration:
                     break
 
