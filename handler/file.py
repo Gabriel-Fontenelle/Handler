@@ -1352,7 +1352,6 @@ class BaseFile:
             "_state",
             "_actions",
             "_naming",
-            "_content",
             "_content_files",
             "__version__"
         }
