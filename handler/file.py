@@ -826,11 +826,19 @@ class FileContent:
 
         return {key: getattr(self, key) for key in attributes}
 
-    def load_to_memory(self):
+    @property
+    def should_load_to_memory(self):
+        """
+        Method to indicate whether the current buffer is seekable or not. Not seekable object should
+        """
+        return not self.buffer.seekable() and not self.cached
+
+    @property
+    def content(self):
         """
         Method to load in memory the content of the file.
         This method uses the buffer cached, if the file wasn't cached before this method will cache it, and load
-        the data in memory from the cache.
+        the data in memory from the cache returning the content.
         """
         old_cache_in_memory = self.cache_in_memory
         old_cache_in_file = self.cache_in_file
