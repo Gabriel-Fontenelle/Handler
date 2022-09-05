@@ -27,6 +27,7 @@ from importlib import import_module
 from dill import dumps, loads, HIGHEST_PROTOCOL
 from json_tricks import loads as json_loads, dumps as json_dumps
 
+from .storage import LinuxFileSystem
 
 __all__ = [
     'PickleSerializer',
@@ -94,9 +95,14 @@ class JSONSerializer:
 
             elif isinstance(element, IOBase):
                 # Serialize buffer
+                # TODO: Make storage not dependable from LinuxFileSystem.
                 serialized_content[key] = {
-                    "__buffer__": "{module}.{name}".format(module=element.__module__, name=element.__name__),
-                    "__class__":  "{module}.{name}".format(module=element.__module__, name=element.__name__)
+                    "__buffer__": element.name,
+                    "__mode__": element.mode,
+                    "__storage__": "{module}.{name}".format(
+                        module=LinuxFileSystem.__module__,
+                        name=LinuxFileSystem.__name__
+                    )
                 }
 
             else:
@@ -131,8 +137,16 @@ class JSONSerializer:
                     deserialized_content[key] = cls._instantiate_element(source=element, cache=cache)
 
                 elif "__buffer__" in element:
+                    storage_module, storage_classname = element["__storage__"].rsplit(".", 1)
+                    storage = getattr(import_module(storage_module), storage_classname)
+
                     # Convert element to buffer
-                    pass
+                    if storage.exists(element["__buffer__"]):
+                        deserialized_content[key] = storage.open_file(
+                            file_path=element["__buffer__"],
+                            mode=element["__mode__"]
+                        )
+                        break
 
                 elif "__class__" in element:
                     # Convert element to class
