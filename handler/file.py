@@ -1409,9 +1409,6 @@ class BaseFile:
         """
         Method to set content attribute. This method can be override in child class.
         This method can receive value as string, bytes or buffer.
-
-        TODO: Extract content if self._actions.extract is True or is FileContent with the ability to
-         point to the uncompressed content.
         """
 
         # Storage information if content is being loaded to generator for the first time
