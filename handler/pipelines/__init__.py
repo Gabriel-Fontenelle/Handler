@@ -150,6 +150,12 @@ class Pipeline:
         """
         return self.pipeline_processors[item]
 
+    def __iter__(self):
+        """
+        Method to allow direct usage of `pipeline_processors` in loops from Pipeline object.
+        """
+        return iter(self.pipeline_processors)
+
     @property
     def __serialize__(self):
         """
