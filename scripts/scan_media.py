@@ -1,7 +1,7 @@
 import os
 import pwd
 
-from handler import LinuxFileSystem, WindowsFileSystem
+from handler import LinuxFileSystem, WindowsFileSystem, JSONSerializer
 
 from handler.file import File
 from os import listdir, getcwd
@@ -81,6 +81,7 @@ def process_hash_file(directory, file_path):
 def process_file(directory, file_path):
     # Load file and hashes` files.
     file_object = File(path=file_path)
+    file_object.serializer = JSONSerializer
 
     # Get filename with base in is_content_wholesome attribute that process loaded hashes files.
     filename_to_save = get_filename(file_object)
@@ -100,7 +101,7 @@ def process_file(directory, file_path):
     file_to_save = LinuxFileSystem.join(directory, filename_to_save)
     print(file_to_save)
     with open(file_to_save, mode='a') as fp:
-        content = file_object.to_json()
+        content = file_object.serialize()
         fp.write(content)
         fp.write("\n")
         
@@ -132,10 +133,10 @@ if __name__ == "__main__":
             process_file(destination_directory, file)
             print("File processed")
 
-        except OSError as e:
+        except OSError as error:
             file_to_save = LinuxFileSystem.join(destination_directory, 'error_accessing_file.txt')
-            with open(file_to_save, mode='a') as fp:
-                fp.write(file)
-                fp.write("\n")
-                fp.write(str(e))
-                fp.write("\n\n")
+            with open(file_to_save, mode='a') as fpointer:
+                fpointer.write(file)
+                fpointer.write("\n")
+                fpointer.write(str(error))
+                fpointer.write("\n\n")
