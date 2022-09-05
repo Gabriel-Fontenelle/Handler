@@ -75,6 +75,14 @@ class ContentExtractor(Extractor):
         if file_object.extension not in cls.extensions:
             raise ValidationError(f"Extension {file_object.extension} not allowed in validate for class {cls.__name__}")
 
+    @classmethod
+    def decompress(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to uncompress the content from a file_object.
+        This method must be override in child class.
+        """
+        raise NotImplementedError("Method extract_content must be overwritten on child class.")
+
 
 class MastrokaFilesFromContentExtractor(ContentExtractor):
     """
