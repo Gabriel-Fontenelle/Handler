@@ -1439,6 +1439,17 @@ class BaseFile:
             self._actions.to_list()
 
     @property
+    def buffer(self):
+        """
+        Method to return the current content as buffer to be used for extraction or other code
+        that require IO objects.
+        """
+        if self._content is None:
+            return None
+
+        return self._content.content_as_buffer
+
+    @property
     def files(self):
         """
         Method to return as attribute the internal files that can be present in content.

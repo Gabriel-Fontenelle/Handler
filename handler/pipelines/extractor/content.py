@@ -114,21 +114,21 @@ class ZipCompressedFilesFromContentExtractor(ContentExtractor):
             cls.validate(file_object)
 
             # Reset buffer to initial location
-            if file_object._content.buffer.seekable():
-                file_object._content.buffer.seek(0)
+            if file_object.buffer.seekable():
+                file_object.buffer.seek(0)
 
             file_system = file_object.storage
             file_class = file_object.__class__
 
-            filezip = ZipFile(file=file_object._content.buffer)
+            filezip = ZipFile(file=file_object.buffer)
 
             for internal_file in filezip.infolist():
                 # Skip directories and symbolic link
-                if internal_file.is_dir() or internal_file.is_symlink():
+                if internal_file.is_dir():
                     continue
 
                 # Skip duplicate only if not choosing to override.
-                if internal_file.filename in file_object._content and not overrider:
+                if internal_file.filename in file_object._content_files and not overrider:
                     continue
 
                 # Create file object for internal file
@@ -163,8 +163,8 @@ class ZipCompressedFilesFromContentExtractor(ContentExtractor):
                 file_object._content_files[internal_file.filename] = internal_file_object
 
             # Reset buffer to initial location
-            if file_object._content.buffer.seekable():
-                file_object._content.buffer.seek(0)
+            if file_object.buffer.seekable():
+                file_object.buffer.seek(0)
 
             # Update metadata and actions.
             file_object.meta.packed = True
@@ -194,13 +194,13 @@ class RarCompressedFilesFromContentExtractor(ContentExtractor):
             cls.validate(file_object)
 
             # Reset buffer to initial location
-            if file_object._content.buffer.seekable():
-                file_object._content.buffer.seek(0)
+            if file_object.buffer.seekable():
+                file_object.buffer.seek(0)
 
             file_system = file_object.storage
             file_class = file_object.__class__
 
-            filerar = RarFile(file=file_object._content.buffer)
+            filerar = RarFile(file=file_object.buffer)
 
             for internal_file in filerar.infolist():
                 # Skip directories and symbolic link
@@ -208,7 +208,7 @@ class RarCompressedFilesFromContentExtractor(ContentExtractor):
                     continue
 
                 # Skip duplicate only if not choosing to override.
-                if internal_file.filename in file_object._content and not overrider:
+                if internal_file.filename in file_object._content_files and not overrider:
                     continue
 
                 # Create file object for internal file
@@ -243,8 +243,8 @@ class RarCompressedFilesFromContentExtractor(ContentExtractor):
                 file_object._content_files[internal_file.filename] = internal_file_object
 
             # Reset buffer to initial location
-            if file_object._content.buffer.seekable():
-                file_object._content.buffer.seek(0)
+            if file_object.buffer.seekable():
+                file_object.buffer.seek(0)
 
             # Update metadata and actions.
             file_object.meta.packed = True
@@ -275,13 +275,13 @@ class SevenZipCompressedFilesFromContentExtractor(ContentExtractor):
             cls.validate(file_object)
 
             # Reset buffer to initial location
-            if file_object._content.buffer.seekable():
-                file_object._content.buffer.seek(0)
+            if file_object.buffer.seekable():
+                file_object.buffer.seek(0)
 
             file_system = file_object.storage
             file_class = file_object.__class__
 
-            file7z = SevenZipFile(file=file_object._content.buffer)
+            file7z = SevenZipFile(file=file_object.buffer)
 
             for internal_file in file7z.list():
                 # Skip directories
@@ -289,7 +289,7 @@ class SevenZipCompressedFilesFromContentExtractor(ContentExtractor):
                     continue
 
                 # Skip duplicate only if not choosing to override.
-                if internal_file.filename in file_object._content and not overrider:
+                if internal_file.filename in file_object._content_files and not overrider:
                     continue
 
                 # Create file object for internal file
@@ -323,8 +323,8 @@ class SevenZipCompressedFilesFromContentExtractor(ContentExtractor):
                 file_object._content_files[internal_file.filename] = internal_file_object
 
             # Reset buffer to initial location
-            if file_object._content.buffer.seekable():
-                file_object._content.buffer.seek(0)
+            if file_object.buffer.seekable():
+                file_object.buffer.seek(0)
 
             # Update metadata and actions.
             file_object.meta.packed = True
@@ -372,10 +372,10 @@ class AudioMetadataFromContentExtractor(Extractor):
             )
 
         # Reset buffer to initial location
-        if file_object._content.buffer.seekable():
-            file_object._content.buffer.seek(0)
+        if file_object.buffer.seekable():
+            file_object.buffer.seek(0)
 
-        tinytag = TinyTag(file_object._content.buffer, len(file_object))
+        tinytag = TinyTag(file_object.buffer, len(file_object))
         tinytag.load(tags=True, duration=True, image=False)
         # Same as code in tinytag, it turn default dict into dict so that it can throw KeyError
         tinytag.extra = dict(tinytag.extra)
@@ -406,8 +406,8 @@ class AudioMetadataFromContentExtractor(Extractor):
                 setattr(file_object.meta, attribute, tinytag_attribute)
 
         # Reset buffer to initial location
-        if file_object._content.buffer.seekable():
-            file_object._content.buffer.seek(0)
+        if file_object.buffer.seekable():
+            file_object.buffer.seek(0)
 
 
 class MimeTypeFromContentExtractor(Extractor):
