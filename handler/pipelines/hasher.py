@@ -30,7 +30,7 @@ from zlib import crc32
 from handler.pipelines import Pipeline
 
 # modules
-from handler.handler import FileSystem
+from ..storage import Storage
 
 __all__ = [
     'Hasher',
@@ -45,7 +45,7 @@ class Hasher:
     Base class to be inherent to define class to be used on Hasher pipelines.
     """
 
-    file_system_handler = FileSystem
+    file_system_handler = Storage
     """
     File System Handler currently in use by class.
     """

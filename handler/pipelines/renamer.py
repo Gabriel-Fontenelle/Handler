@@ -27,7 +27,7 @@ from typing import Union
 from uuid import uuid4
 
 # modules
-from handler.handler import FileSystem
+from ..storage import Storage
 
 __all__ = [
     'Renamer',
@@ -47,7 +47,7 @@ class Renamer:
     Variable that define if this class used as processor should stop the pipeline.
     """
 
-    file_system_handler = FileSystem
+    file_system_handler = Storage
     enumeration_pattern = None
     reserved_names = []
 

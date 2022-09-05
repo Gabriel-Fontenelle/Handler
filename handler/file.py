@@ -1202,6 +1202,10 @@ class BaseFile:
         if version == "1":
             """Do nothing, as version 1 don't have incompatibility with this class version."""
 
+        # Set up storage with default based on operational system
+        if not self.storage:
+            self.storage = WindowsFileSystem if name == 'nt' else LinuxFileSystem
+
         additional_kwargs = {}
         for key, value in kwargs.items():
             if hasattr(self, key):
@@ -1241,10 +1245,6 @@ class BaseFile:
             self._naming = FileNaming()
             self._naming.history = []
             self._naming.related_file_object = self
-
-        # Set up storage with default based on operational system
-        if not self.storage:
-            self.storage = WindowsFileSystem if name == 'nt' else LinuxFileSystem
 
         # Get option to run pipeline.
         run_extractor = additional_kwargs.pop('run_extractor', True)
