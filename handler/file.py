@@ -353,7 +353,7 @@ class FileActions:
         Method to set up the action of generate hash for file.
         """
         self.list = True
-        self.was_hashed = False
+        self.was_listed = False
 
     def listed(self):
         """
