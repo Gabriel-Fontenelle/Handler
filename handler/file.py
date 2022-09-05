@@ -1079,11 +1079,6 @@ class BaseFile:
     # Handler
     storage = None
     """
-    FileSystem currently in use for File.
-    It can be LinuxFileSystem, WindowsFileSystem or a custom one.
-    """
-    storage = None
-    """
     Storage or file system currently in use for File.
     It can be LinuxFileSystem, WindowsFileSystem or a custom one.
     """
