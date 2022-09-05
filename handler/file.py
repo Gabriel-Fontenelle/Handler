@@ -1616,6 +1616,26 @@ class BaseFile:
 
         return result
 
+    def extract(self):
+        """
+        Method to extract the content of the file, only if object is packed and extractable.
+        """
+        if self.meta.packed:
+            # Define directory location for extraction of content from path.
+            location = self.storage.join(self.save_to, self.filename)
+            if self.storage.exists(location):
+                location = self.storage.get_renamed_path(path=location)
+
+            # Directly run extractor pipeline by passing method `run`.
+            # The method decompress in extractor determine if this package is extractable.
+            for processor in self._content_files.extract_data_pipeline:
+                try:
+                    if processor.decompress(file_object=self, decompress_to=location):
+                        return True
+
+                except NotImplementedError:
+                    continue
+
     def generate_hashes(self, force=False):
         """
         Method to run the pipeline, to generate hashes, set-up for the file.
