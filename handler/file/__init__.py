@@ -400,13 +400,14 @@ class FileHashes:
         """
         hex_value, hash_file, processor = value
 
-        if not isinstance(hash_file, File):
+        # Make code independent of instance File.
+        if "BaseFile" not in [hash_class.__name__ for hash_class in hash_file.__class__.__mro__]:
             raise ImproperlyConfiguredFile("Tuple for hashes must be the Hexadecimal value and a File Object for the "
                                            "hash.")
 
         self._cache[hasher_name] = hex_value, hash_file, processor
 
-        if hash_file.meta.loaded:
+        if hasattr(hash_file.meta, 'loaded') and hash_file.meta.loaded is True:
             # Add `hash_file` loaded from external source in a list for easy retrieval of loaded hashes.
             self._loaded.append(hasher_name)
 
