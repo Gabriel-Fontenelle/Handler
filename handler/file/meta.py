@@ -50,6 +50,10 @@ class FileMetadata:
     Indicate whether an object can have its hash saved or not. Internal packed files cannot have hash saved to file, 
     it can be generate just not saved in the package.
     """
+    internal = False
+    """
+    Indicate whether an object is a file from a packed container or not.
+    """
 
     # Hasher files
     # loaded = None
