@@ -28,6 +28,7 @@ from os import name
 from .action import FileActions
 from .content import FilePacket, FileContent
 from .descriptor import InternalFilesDescriptor, LoadedDescriptor, CacheDescriptor
+from .hash import FileHashes
 from .meta import FileMetadata
 from .name import FileNaming
 from .state import FileState
@@ -36,7 +37,6 @@ from ..exception import (
     NoInternalContentError,
     OperationNotAllowed,
     ReservedFilenameError,
-    SerializerError,
     ValidationError,
 )
 from ..handler import URI
@@ -51,147 +51,6 @@ __all__ = [
     'File',
     'StreamFile'
 ]
-
-
-class FileHashes:
-    """
-    Class that store file instance digested hashes.
-    """
-
-    _cache = CacheDescriptor()
-    """
-    Descriptor to storage the digested hashes for the file instance.
-    """
-    _loaded = LoadedDescriptor()
-    """
-    Descriptor to storage the digested hashes that were loaded from external source. 
-    """
-
-    related_file_object = None
-    """
-    Variable to work as shortcut for the current related object for the hashes.
-    """
-
-    def __init__(self, **kwargs):
-        """
-        Method to create the current object using the keyword arguments.
-        """
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-            else:
-                raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
-
-    def __setitem__(self, hasher_name, value):
-        """
-        Method to set up values for file hash as dict item.
-        This method expects a tuple as value to set up the hash hexadecimal value and hash file related
-        to the hasher.
-        """
-        hex_value, hash_file, processor = value
-
-        # Make code independent of instance File.
-        if "BaseFile" not in [hash_class.__name__ for hash_class in hash_file.__class__.__mro__]:
-            raise ImproperlyConfiguredFile("Tuple for hashes must be the Hexadecimal value and a File Object for the "
-                                           "hash.")
-
-        self._cache[hasher_name] = hex_value, hash_file, processor
-
-        if hasattr(hash_file.meta, 'loaded') and hash_file.meta.loaded is True:
-            # Add `hash_file` loaded from external source in a list for easy retrieval of loaded hashes.
-            self._loaded.append(hasher_name)
-
-    def __getitem__(self, hasher_name):
-        """
-        Method to get the hasher value and file associated saved in self._cache.
-        """
-        return self._cache[hasher_name]
-
-    def __iter__(self):
-        """
-        Method to return iterable from self._cache instead of current class.
-        """
-        return iter(self._cache)
-
-    def __bool__(self):
-        """
-        Method to check if there is any hash saved in self._cache.
-        """
-        return bool(self._cache)
-
-    @property
-    def __serialize__(self):
-        """
-        Method to allow dir and vars to work with the class simplifying the serialization of object.
-        """
-        attributes = {"_cache", "_loaded", "related_file_object"}
-
-        return {key: getattr(self, key) for key in attributes}
-
-    def rename(self, new_filename):
-        """
-        This method will rename file for each hash file existing in _caches.
-        This method don`t save files, only prepare the filename and content to be correct before saving it.
-        """
-        for hasher_name, value in self._cache.items():
-            hex_value, hash_file, processor = value
-
-            if not hash_file.meta.checksum:
-                # Rename filename if is not `checksum.hasher_name`
-                # complete_filename is a property that will set up additional action to rename the file`s filename if
-                # it was already saved before.
-                hash_file.complete_filename = new_filename, hasher_name
-
-            # Load content from generator.
-            # First we set up content of type binary or string.
-            content = b"" if hash_file.is_binary else ""
-
-            # Then we load content from generator using a loop.
-            for block in hash_file.content:
-                content += block
-
-            # Change file`s filename inside content of hash file.
-            content = content.replace(f"{hash_file.filename}.{hasher_name}", f"{new_filename}.{hasher_name}")
-
-            # Set-up new content after renaming and specify that hash_file was not saved yet.
-            hash_file.content = content
-            hash_file._actions.to_save()
-
-    def validate(self, force=False):
-        """
-        Method to validate the integrity of file comparing hashes`s hex value with file content.
-        This method will only check the first hex value from files loaded, or any cached hash if no hash loaded from
-        external source is available, for efficient sake. If desire to check all hashes in loaded set `force` to True.
-        """
-        if not (self._loaded or self._cache):
-            raise ValueError(f"There is no hash available to compare for file {self.related_file_object}.")
-
-        for hash_name in self._loaded or self._cache.keys():
-            hex_value, hash_file, processor = self._cache[hash_name]
-            # Compare content with hex_value
-            result = processor.check_hash(object=self.related_file_object, compare_to_hex=hex_value)
-
-            if not result:
-                raise ValidationError(f"File {self.related_file_object} don`t pass the integrity check with "
-                                      f"{hash_name}!")
-
-            if not force:
-                break
-
-    def save(self, overwrite=False):
-        """
-        Method to save all hashes files if it was not saved already.
-        """
-        if not self.related_file_object:
-            raise ImproperlyConfiguredFile("A related file object must be specified for hashes before saving.")
-
-        for hex_value, hash_file, processor in self._cache.values():
-            if hash_file._actions.save:
-                if hash_file.meta.checksum:
-                    # If file is CHECKSUM.<hasher_name> we not allow to overwrite.
-                    hash_file.save(overwrite=False, allow_update=overwrite)
-                else:
-                    hash_file.save(overwrite=overwrite, allow_update=overwrite)
 
 
 class BaseFile:
