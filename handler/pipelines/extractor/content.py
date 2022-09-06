@@ -83,6 +83,14 @@ class ContentExtractor(Extractor):
         """
         raise NotImplementedError("Method extract_content must be overwritten on child class.")
 
+    @classmethod
+    def content_buffer(cls, file_object, internal_file_name):
+        """
+        Method to create a buffer pointing to the uncompressed content.
+        This method must work lazily, extracting the content only when the buffer is read.
+        """
+        raise NotImplementedError("Method content_buffer must be overwritten on child class.")
+
 
 class MastrokaFilesFromContentExtractor(ContentExtractor):
     """
