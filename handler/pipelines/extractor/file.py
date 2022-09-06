@@ -24,60 +24,21 @@ Should there be a need for contact the electronic mail
 from datetime import datetime
 from time import strptime, mktime
 
-from tinytag import TinyTag
-from handler.pipelines import ProcessorMixin
-
+from .extractor import Extractor
 
 __all__ = [
-    'AudioMetadataFromContentExtracter',
-    'Extracter',
-    'FileSystemDataExtracter',
-    'FilenameAndExtensionFromPathExtracter',
-    'FilenameFromMetadataExtracter',
-    'HashFileExtracter',
-    'MetadataExtracter',
-    'MimeTypeFromFilenameExtracter',
-    'FilenameFromURLExtracter',
-    'PathFromURLExtracter'
+    'FileSystemDataExtractor',
+    'FilenameAndExtensionFromPathExtractor',
+    'FilenameFromMetadataExtractor',
+    'HashFileExtractor',
+    'MetadataExtractor',
+    'MimeTypeFromFilenameExtractor',
+    'FilenameFromURLExtractor',
+    'PathFromURLExtractor'
 ]
 
 
-class Extracter(ProcessorMixin):
-    """
-    Base class to be inherent to define class to be used on Extracter pipeline.
-    """
-
-    @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
-        """
-        Method to extract the information necessary from a file_object.
-        This method must be override in child class.
-        """
-        raise NotImplementedError("Method extract must be overwritten on child class.")
-
-    @classmethod
-    def process(cls, **kwargs: dict):
-        """
-        Method used to run this class on Processor`s Pipeline for Extracting info from Data.
-        This method and to_processor() is not need to extract info outside a pipeline.
-        This process method is created exclusively to pipeline for objects inherent from BaseFile.
-
-        The processor for renamer uses only one object that must be settled through first argument
-        or through key work `object`.
-
-        """
-        object_to_process = kwargs.pop('object', None)
-
-        try:
-            cls.extract(file_object=object_to_process, **kwargs)
-        except (ValueError, IOError) as e:
-            cls.register_error(e)
-            return False
-
-        return True
-
-
-class FilenameAndExtensionFromPathExtracter(Extracter):
+class FilenameAndExtensionFromPathExtractor(Extractor):
     """
     Class that define the extraction of data from `path` defined in file_object.
     """
@@ -87,7 +48,7 @@ class FilenameAndExtensionFromPathExtracter(Extracter):
         """
         Method to extract the filename and extension information from attribute `path` of file_object.
 
-        This method will required that the following attributes be set-up in `file_object`:
+        This method will require that the following attributes be set-up in `file_object`:
         - path
 
         This method will save data in the following attributes of `file_object`:
@@ -103,14 +64,14 @@ class FilenameAndExtensionFromPathExtracter(Extracter):
         """
         if not file_object.path:
             raise ValueError(
-                "Attribute `path` must be settled before calling `FilenameAndExtensionFromPathExtracter.extract`."
+                "Attribute `path` must be settled before calling `FilenameAndExtensionFromPathExtractor.extract`."
             )
 
-        # Check if has filename and it can be overwritten
+        # Check if it has filename and it can be overwritten
         if not (file_object.filename is None or overrider):
             return
 
-        file_system_handler = file_object.file_system_handler
+        file_system_handler = file_object.storage
 
         # Set-up save_to and relative_path
         file_object.save_to = file_system_handler.get_directory_from_path(file_object.path)
@@ -130,7 +91,7 @@ class FilenameAndExtensionFromPathExtracter(Extracter):
         file_object.extension = ''
 
 
-class FilenameFromMetadataExtracter(Extracter):
+class FilenameFromMetadataExtractor(Extractor):
     """
     Class that define the extraction of filename from metadata passed to extract.
     """
@@ -149,12 +110,12 @@ class FilenameFromMetadataExtracter(Extracter):
 
         This method make use of overrider.
         """
-        # Check if has filename and it can be overwritten
+        # Check if it has filename and it can be overwritten
         if not (file_object.filename is None or overrider):
             return
 
         try:
-            content_disposition = MetadataExtracter.get_content_disposition(kwargs['metadata'])
+            content_disposition = MetadataExtractor.get_content_disposition(kwargs['metadata'])
 
             if not content_disposition:
                 return
@@ -196,20 +157,20 @@ class FilenameFromMetadataExtracter(Extracter):
         except KeyError:
             # kwargs has no parameter metadata
             raise ValueError('Parameter `metadata` must be informed as key argument for '
-                             '`FilenameFromMetadataExtracter.extract`.')
+                             '`FilenameFromMetadataExtractor.extract`.')
         except IndexError:
             # filenames has no index 0, so extension was not set-up either, we just need to return.
             return
 
 
-class FileSystemDataExtracter(Extracter):
+class FileSystemDataExtractor(Extractor):
 
     @classmethod
     def extract(cls, file_object, overrider: bool, **kwargs: dict):
         """
         Method to extract the file system information related a file_object.
 
-        This method will required that the following attributes be set-up in `file_object`:
+        This method will require that the following attributes be set-up in `file_object`:
         - path
         - type
 
@@ -222,12 +183,12 @@ class FileSystemDataExtracter(Extracter):
         """
 
         if not file_object.path:
-            raise ValueError("Attribute `path` must be settled before calling `FileSystemDataExtracter.extract`.")
+            raise ValueError("Attribute `path` must be settled before calling `FileSystemDataExtractor.extract`.")
 
         if not file_object.type:
-            raise ValueError("Attribute `type` must be settled before calling `FileSystemDataExtracter.extract`.")
+            raise ValueError("Attribute `type` must be settled before calling `FileSystemDataExtractor.extract`.")
 
-        file_system_handler = file_object.file_system_handler
+        file_system_handler = file_object.storage
 
         # Check if path exists
         if not file_system_handler.exists(file_object.path):
@@ -259,7 +220,7 @@ class FileSystemDataExtracter(Extracter):
             mode += 'b'
 
         # Get buffer io
-        buffer = file_object.file_system_handler.open_file(file_object.path, mode=mode)
+        buffer = file_object.storage.open_file(file_object.path, mode=mode)
 
         # Set content with buffer, as content is a property it will validate the buffer and
         # add it as a generator allowing to just loop through chunks of content.
@@ -270,7 +231,7 @@ class FileSystemDataExtracter(Extracter):
         file_object._actions.saved()
 
 
-class HashFileExtracter(Extracter):
+class HashFileExtractor(Extractor):
     """
     Class that define the extraction of data from hash files for hashers' processors defined in file_object.
     """
@@ -283,7 +244,7 @@ class HashFileExtracter(Extracter):
         This method use as kwargs `full_check: bool` that determine if `CHECKSUM` file should
         also be searched.
 
-        This method will required that the following attributes be set-up in `file_object`:
+        This method will require that the following attributes be set-up in `file_object`:
         - path
 
         This method will save data in the following attributes of `file_object`:
@@ -292,7 +253,7 @@ class HashFileExtracter(Extracter):
         This method make use of overrider.
         """
         if not file_object.path:
-            raise ValueError("Attribute `path` must be settled before calling `HashFileExtracter.extract`.")
+            raise ValueError("Attribute `path` must be settled before calling `HashFileExtractor.extract`.")
 
         full_check = kwargs.pop('full_check', True)
 
@@ -303,10 +264,10 @@ class HashFileExtracter(Extracter):
                 continue
 
             # Extract from hash file and save to hasher if hash file content found.
-            hasher.process_from_file(object=file_object, full_check=full_check)
+            hasher.process_from_file(object_to_process=file_object, full_check=full_check)
 
 
-class MimeTypeFromFilenameExtracter(Extracter):
+class MimeTypeFromFilenameExtractor(Extractor):
     """
     Class that define the extraction of mimetype data from filename defined in file_object.
     """
@@ -316,7 +277,7 @@ class MimeTypeFromFilenameExtracter(Extracter):
         """
         Method to extract the mimetype information from a file_object.
 
-        This method will required that the following attributes be set-up in `file_object`:
+        This method will require that the following attributes be set-up in `file_object`:
         - extension
 
         This method will save data in the following attributes of `file_object`:
@@ -325,26 +286,34 @@ class MimeTypeFromFilenameExtracter(Extracter):
 
         This method make use of overrider.
         """
-        # Check if already is a extension and mimetype, if exists do nothing.
+        # Check if already is an extension and mimetype, if exists do nothing.
         if file_object.mime_type and not overrider:
             return
 
-        # Check if there is a extension for file else is not possible to extract metadata from it.
+        # Check if there is an extension for file else is not possible to extract metadata from it.
         if not file_object.extension:
             raise ValueError(
-                "Attribute `extension` must be settled before calling `MimeTypeFromFilenameExtracter.extract`."
+                "Attribute `extension` must be settled before calling `MimeTypeFromFilenameExtractor.extract`."
             )
 
         # Save in file_object mimetype and type obtained from mime_type_handler.
         file_object.mime_type = file_object.mime_type_handler.get_mimetype(file_object.extension)
         file_object.type = file_object.mime_type_handler.get_type(file_object.mime_type, file_object.extension)
 
+        # Save additional metadata to file.
+        file_object.meta.compressed = file_object.mime_type_handler.is_extension_compressed(
+            file_object.extension
+        )
+        file_object.meta.lossless = file_object.mime_type_handler.is_extension_lossless(
+            file_object.extension
+        )
+        file_object.meta.packed = file_object.mime_type_handler.is_extension_packed(
+            file_object.extension
+        )
+        file_object._actions.to_list()
 
-class MimeTypeFromContentExtracter(Extracter):
-    pass
 
-
-class MetadataExtracter(Extracter):
+class MetadataExtractor(Extractor):
     """
     Class that define the extraction of multiple file's data from metadata passed to extract.
     """
@@ -408,7 +377,7 @@ class MetadataExtracter(Extracter):
         This method is not making use of time zone `%z`.
         This method return the last modified date if no creation date is provided.
         """
-        last_modified = MetadataExtracter.get_last_modified(metadata)
+        last_modified = MetadataExtractor.get_last_modified(metadata)
 
         try:
             date = datetime.fromtimestamp(mktime(strptime(metadata['Date'], "%a, %d %b %Y %H:%M:%S %z")))
@@ -464,9 +433,9 @@ class MetadataExtracter(Extracter):
     def extract(cls, file_object, overrider: bool, **kwargs: dict):
         """
         Method to extract the information necessary from a file_object.
-        Content-MD5 was deprecated from HTTP because it not allow partial testing.
+        Content-MD5 was deprecated from HTTP because it not allows partial testing.
 
-        This method will required that the following attributes be set-up as kwargs:
+        This method will require that the following attributes be set-up as kwargs:
         - metadata
 
         This method not require any previously save data in `file_object`.
@@ -478,7 +447,7 @@ class MetadataExtracter(Extracter):
         - type
         - create_date
         - update_date
-        - _meta (expire, language)
+        - _meta (expire, language, packed)
 
         This method make use of overrider.
         """
@@ -487,7 +456,7 @@ class MetadataExtracter(Extracter):
 
             if not meta:
                 raise ValueError('Parameter `metadata` must be have value to be extract at '
-                                 '`MetadataExtracter.extract`.')
+                                 '`MetadataExtractor.extract`.')
 
             # Set-up id from Etag
             etag = cls.get_etag(meta)
@@ -503,10 +472,10 @@ class MetadataExtracter(Extracter):
 
             # Set-up extension from mimetype
             if mimetype and (not file_object.extension or overrider):
-                # Get extensions from mimetype, only if mimetype is not stream (because it don't have a extension
+                # Get extensions from mimetype, only if mimetype is not stream (because it doesn't have an extension
                 # associated with stream), and if there is no one valid don't register one.
-                # In order to avoid wrong extension being settled is recommend to use a Extractor of
-                # `FilenameFromURLExtracter` and `FilenameFromMetadataExtracter` before this processor.
+                # In order to avoid wrong extension being settled is recommended to use an Extractor of
+                # `FilenameFromURLExtractor` and `FilenameFromMetadataExtractor` before this processor.
                 if 'stream' not in mimetype:
                     possible_extension = file_object.mime_type_handler.guess_extension_from_mimetype(mimetype)
 
@@ -521,6 +490,11 @@ class MetadataExtracter(Extracter):
                         file_object.meta.lossless = file_object.mime_type_handler.is_extension_lossless(
                             file_object.extension
                         )
+
+                        file_object.meta.packed = file_object.mime_type_handler.is_extension_packed(
+                            file_object.extension
+                        )
+                        file_object._actions.to_list()
 
             # Set-up type from mimetype and extension
             if file_object.mime_type and file_object.extension and (not file_object.type or overrider):
@@ -554,18 +528,18 @@ class MetadataExtracter(Extracter):
 
         except KeyError:
             raise ValueError('Parameter `metadata` must be informed as key argument for '
-                             '`MetadataExtracter.extract`.')
+                             '`MetadataExtractor.extract`.')
 
 
-class FilenameFromURLExtracter(Extracter):
+class FilenameFromURLExtractor(Extractor):
     """
-    Class that define the extraction of complete_filename from URL passed to Extracter Pipeline.
+    Class that define the extraction of complete_filename from URL passed to Extractor Pipeline.
     """
 
     @classmethod
     def extract(cls, file_object, overrider: bool, **kwargs: dict):
         """
-        Method to extract the filename from an URL. The priority will be finding a filename with a
+        Method to extract the filename from a URL. The priority will be finding a filename with a
         registered extension, not founding it will use the last one available.
 
         This method assumes that `url` is already unquoted.
@@ -588,7 +562,7 @@ class FilenameFromURLExtracter(Extracter):
         try:
             possible_urls = kwargs['url']
             processed_uri = None
-            results = file_object.uri_handler.get_filenames(possible_urls, file_object.file_system_handler)
+            results = file_object.uri_handler.get_filenames(possible_urls, file_object.storage)
 
             if not results:
                 return
@@ -619,20 +593,20 @@ class FilenameFromURLExtracter(Extracter):
 
         except KeyError:
             raise ValueError('Parameter `url` must be informed as key argument for '
-                             '`FilenameFromURLExtracter.extract`.')
+                             '`FilenameFromURLExtractor.extract`.')
 
 
-class PathFromURLExtracter(Extracter):
+class PathFromURLExtractor(Extractor):
     """
     Class that define the extraction of relative_path and complete_filename from URL.
-    Its recommend to use this Processor after FilenameFromURLExtracter, else it will not be guarantee that
+    Its recommend to use this Processor after FilenameFromURLExtractor, else it will not be guaranteed that
     the path and filename has the same source or that filename is a valid one.
     """
 
     @classmethod
     def extract(cls, file_object, overrider: bool, **kwargs: dict):
         """
-        Method to extract the information necessary from an URL.
+        Method to extract the information necessary from a URL.
         This method will return the last relative_path found with a filename, regardless of having a valid extension
         said filename.
 
@@ -644,7 +618,7 @@ class PathFromURLExtracter(Extracter):
         - complete_filename
         - relative_path
 
-        This method make use of overrider, but it don't override filename.
+        This method make use of overrider, but it doesn't override filename.
         """
         if file_object.relative_path and not overrider:
             return
@@ -652,7 +626,7 @@ class PathFromURLExtracter(Extracter):
         try:
             possible_urls = kwargs['url']
 
-            paths = file_object.uri_handler.get_paths(possible_urls, file_object.file_system_handler)
+            paths = file_object.uri_handler.get_paths(possible_urls, file_object.storage)
 
             if not paths:
                 return
@@ -673,90 +647,4 @@ class PathFromURLExtracter(Extracter):
 
         except KeyError:
             raise ValueError('Parameter `url` must be informed as key argument for '
-                             '`PathFromURLExtracter.extract`.')
-
-
-class InternalFilesExtracter(Extracter):
-
-    @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
-        """
-        Method to extract the information necessary from a file_object.
-        """
-        pass
-
-        file_object.meta.packed = True
-
-
-class VideoMetadataFromContentExtracter(Extracter):
-
-    @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
-        """
-        Method to extract additional metadata information from content.
-        """
-
-
-class ImageMetadataFromContentExtracter(Extracter):
-
-    @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
-        """
-        Method to extract additional metadata information from content.
-        """
-
-
-class AudioMetadataFromContentExtracter(Extracter):
-
-    @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
-        """
-        Method to extract additional metadata information from content.
-        """
-        # Use tinytag to get additional metadata.
-        if not file_object.content:
-            raise ValueError(
-                "Attribute `content` must be settled before calling `AudioMetadataFromContentExtracter.extract`!"
-            )
-        if not len(file_object):
-            raise ValueError(
-                "Length for file's object must set before calling `AudioMetadataFromContentExtracter.extract`!"
-            )
-
-        # Reset buffer to initial location
-        if file_object._content.buffer.seekable():
-            file_object._content.buffer.seek(0)
-
-        tinytag = TinyTag(file_object._content.buffer, len(file_object))
-        tinytag.load(tags=True, duration=True, image=False)
-        # Same as code in tinytag, it turn default dict into dict so that it can throw KeyError
-        tinytag.extra = dict(tinytag.extra)
-
-        attributes_to_extract = [
-            'album',
-            'albumartist',
-            'artist',
-            'audio_offset',
-            'bitrate',
-            'channels',
-            'comment',
-            'composer',
-            'disc',
-            'disc_total',
-            'duration',
-            'extra',
-            'genre',
-            'samplerate',
-            'title',
-            'track',
-            'track_total',
-            'year'
-        ]
-        for attribute in attributes_to_extract:
-            tinytag_attribute = getattr(tinytag, attribute, None)
-            if tinytag_attribute and (not getattr(file_object.meta, attribute, None) or overrider):
-                setattr(file_object.meta, attribute, tinytag_attribute)
-
-        # Reset buffer to initial location
-        if file_object._content.buffer.seekable():
-            file_object._content.buffer.seek(0)
+                             '`PathFromURLExtractor.extract`.')

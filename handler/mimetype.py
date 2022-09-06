@@ -70,6 +70,14 @@ class BaseMimeTyper:
         """
         raise NotImplementedError("compressed_extensions() method must be overwritten on child class.")
 
+    @property
+    def packed_extensions(self):
+        """
+        Method to return as attribute the extensions that are for containers of compression.
+        This method should be override in child class.
+        """
+        raise NotImplementedError("packed_extensions() method must be overwritten on child class.")
+
     def get_extensions(self, mimetype):
         """
         Method to get all registered extensions for given mimetype.
@@ -128,9 +136,15 @@ class BaseMimeTyper:
 
     def is_extension_compressed(self, extension):
         """
-        Method to check if a extension is related to a file that is container of compression or not.
+        Method to check if an extension is related to a file that is container of compression or not.
         """
         return extension in self.compressed_extensions
+
+    def is_extension_packed(self, extension):
+        """
+        Method to check if an extension is related to a file that is extractable container of some sort.
+        """
+        return extension in self.packed_extensions
 
     def is_mimetype_compressed(self, mimetype):
         """
@@ -253,6 +267,7 @@ class LibraryMimeTyper(BaseMimeTyper):
             'application/vnd.apple.installer+xm',
             'application/vnd.ezpix-album',
             'application/vnd.ezpix-package',
+            'application/x-7z-compressed',
             'application/x-cbr',
             'application/x-debian-package',
             'application/x-dgc-compressed',
@@ -271,6 +286,7 @@ class LibraryMimeTyper(BaseMimeTyper):
         Method to return as attribute the extensions that are for containers of compression.
         """
         return [
+            '7z',
             'abr',
             'cb7',
             'cba',
@@ -290,6 +306,18 @@ class LibraryMimeTyper(BaseMimeTyper):
             'rar',
             'tar',
             'zip',
+        ]
+
+    @property
+    def packed_extensions(self):
+        """
+        Method to return as attribute the extensions that are for extractable containers of some sort.
+        """
+        return self.compressed_extensions + [
+            'psd',
+            'epub',
+            'mkv',
+            'mka',
         ]
 
     def get_extensions(self, mimetype):

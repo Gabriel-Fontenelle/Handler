@@ -22,34 +22,11 @@ Should there be a need for contact the electronic mail
 """
 
 # first-party
-import datetime
-from importlib import import_module
 from io import IOBase, StringIO, BytesIO
 from os import name
 
-from handler.mimetype import LibraryMimeTyper
-from handler.pipelines.comparer import (
-    BinaryCompare,
-    DataCompare,
-    HashCompare,
-    SizeCompare,
-    TypeCompare
-)
 # modules
-from handler.pipelines.extracter import (
-    FileSystemDataExtracter,
-    FilenameAndExtensionFromPathExtracter,
-    FilenameFromMetadataExtracter,
-    FilenameFromURLExtracter,
-    HashFileExtracter,
-    MetadataExtracter,
-    MimeTypeFromContentExtracter,
-    MimeTypeFromFilenameExtracter,
-)
-from handler.pipelines.hasher import (
-    MD5Hasher,
-    SHA256Hasher
-)
+from .mimetype import LibraryMimeTyper
 from .exception import (
     ImproperlyConfiguredFile,
     NoInternalContentError,
@@ -58,10 +35,11 @@ from .exception import (
     SerializerError,
     ValidationError,
 )
-from .handler import LinuxFileSystem, WindowsFileSystem, URI
+from .handler import URI
+from .storage import LinuxFileSystem, WindowsFileSystem
 from .pipelines import Pipeline
-from .pipelines.renamer import WindowsRenamer, UniqueRenamer
-from .serializer import Serializer
+from .pipelines.renamer import UniqueRenamer
+from .serializer import JSONSerializer
 
 __all__ = [
     'BaseFile',
@@ -69,8 +47,6 @@ __all__ = [
     'File',
     'StreamFile'
 ]
-
-
 
 
 class CacheDescriptor:
@@ -81,7 +57,7 @@ class CacheDescriptor:
 
     def __get__(self, instance, owner):
         """
-        Method `get` to automatically set-up empty values in a instance.
+        Method `get` to automatically set-up empty values in an instance.
         """
         if instance is None:
             return self
@@ -98,7 +74,7 @@ class LoadedDescriptor:
 
     def __get__(self, instance, owner):
         """
-        Method `get` to automatically set-up empty values in a instance.
+        Method `get` to automatically set-up empty values in an instance.
         """
         if instance is None:
             return self
@@ -107,7 +83,24 @@ class LoadedDescriptor:
         return res
 
 
-class FileState(Serializer):
+class InternalFilesDescriptor:
+    """
+    Descriptor class to storage data for instance`s internal files' dictionary.
+    This class is used for FileHashes._loaded.
+    """
+
+    def __get__(self, instance, owner):
+        """
+        Method `get` to automatically set-up empty values in an instance.
+        """
+        if instance is None:
+            return self
+
+        res = instance.__dict__['_internal_files'] = {}
+        return res
+
+
+class FileState:
     """
     Class that store file instance state.
     """
@@ -126,24 +119,33 @@ class FileState(Serializer):
     Indicate whether an object has changed or not. If true, we will consider that the current content was
     changed but not saved yet.  
     """
+    processing = True
+    """
+    Indicate whether an object has already run its pipeline of extraction or not. If true, we will consider 
+    this a new object that needs to be process its pipeline.
+    """
 
-    @classmethod
-    def from_dict(cls, encoded_dict, **kwargs):
+    def __init__(self, **kwargs):
         """
-        Method to deserialize a given dictionary to a instance of current child class.
+        Method to create the current object using the keyword arguments.
         """
-        initiated_object = cls()
-        for key, value in encoded_dict.items():
-            if hasattr(initiated_object, key):
-                if isinstance(value, bool):
-                    setattr(initiated_object, key, value)
-                else:
-                    raise SerializerError("In `FileState` only are accepted attributes of type boolean.")
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
 
-        return initiated_object
+    @property
+    def __serialize__(self):
+        """
+        Method to allow dir and vars to work with the class simplifying the serialization of object.
+        """
+        attributes = {"adding", "renaming", "changing", "processing"}
+
+        return {key: getattr(self, key) for key in attributes}
 
 
-class FileMetadata(Serializer):
+class FileMetadata:
     """
     Class that store file instance metadata.
     """
@@ -167,23 +169,55 @@ class FileMetadata(Serializer):
     it can be generate just not saved in the package.
     """
 
-    @classmethod
-    def from_dict(cls, encoded_dict, **kwargs):
+    # Hasher files
+    # loaded = None
+    """
+    Indicate whether an object is a hash file loaded from a file or not.
+    This is mostly used for hash files created with hasher and will be set up only in those files.
+    """
+    # checksum = None
+    """
+    Indicate whether an object is a hash file named CHECKSUM.hasher_name file (contains multiple files) or not.
+    This is mostly used for hash files created with hasher and will be set up only in those files.
+    """
+
+    def __init__(self, **kwargs):
         """
-        Method to deserialize a given dictionary to a instance of current child class.
+        Method to create the current object using the keyword arguments.
         """
-        initiated_object = cls()
-        for key, value in encoded_dict.items():
-            if hasattr(initiated_object, key):
-                if isinstance(value, bool):
-                    setattr(initiated_object, key, value)
-                else:
-                    raise SerializerError("In `FileMetadata` only are accepted attributes of type boolean.")
+        for key, value in kwargs.items():
+            if hasattr(self, key) or key in {"checksum", "loaded"}:
+                setattr(self, key, value)
+            else:
+                raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
 
-        return initiated_object
+    @property
+    def __serialize__(self):
+        """
+        Method to allow dir and vars to work with the class simplifying the serialization of object.
+        """
+
+        attributes = {
+            "packed",
+            "compressed",
+            "lossless",
+            "hashable"
+        }
+        optional_attributes = {
+            "checksum",
+            "loaded"
+        }
+
+        class_vars = {key: getattr(self, key) for key in attributes}
+
+        for attribute in optional_attributes:
+            if hasattr(self, attribute):
+                class_vars[attribute] = getattr(self, attribute)
+
+        return class_vars
 
 
-class FileActions(Serializer):
+class FileActions:
     """
     Class that store file instance actions to be performed.
     """
@@ -205,6 +239,10 @@ class FileActions(Serializer):
     """
     Indicate whether an object should be hashed or not.
     """
+    list = False
+    """
+    Indicate whether an object should have its internal content listed or not.
+    """
     was_saved = False
     """
     Indicate whether an object was successfully saved.
@@ -221,10 +259,42 @@ class FileActions(Serializer):
     """
     Indicate whether an object was successfully hashed.
     """
+    was_listed = False
+    """
+    Indicate whether an object was its internal content listed.
+    """
+
+    def __init__(self, **kwargs):
+        """
+        Method to create the current object using the keyword arguments.
+        """
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
+
+    @property
+    def __serialize__(self):
+        """
+        Method to allow dir and vars to work with the class simplifying the serialization of object.
+        """
+        attributes = {
+            "extract",
+            "hash",
+            "rename",
+            "save",
+            "was_extracted",
+            "was_hashed",
+            "was_renamed",
+            "was_saved",
+        }
+
+        return {key: getattr(self, key) for key in attributes}
 
     def to_extract(self):
         """
-        Method to set-up the action of save file.
+        Method to set up the action of save file.
         """
         self.extract = True
         self.was_extracted = False
@@ -238,7 +308,7 @@ class FileActions(Serializer):
 
     def to_save(self):
         """
-        Method to set-up the action of save file.
+        Method to set up the action of save file.
         """
         self.save = True
         self.was_saved = False
@@ -252,7 +322,7 @@ class FileActions(Serializer):
 
     def to_rename(self):
         """
-        Method to set-up the action of rename file.
+        Method to set up the action of rename file.
         """
         self.rename = True
         self.was_renamed = False
@@ -266,7 +336,7 @@ class FileActions(Serializer):
 
     def to_hash(self):
         """
-        Method to set-up the action of generate hash for file.
+        Method to set up the action of generate hash for file.
         """
         self.hash = True
         self.was_hashed = False
@@ -278,23 +348,22 @@ class FileActions(Serializer):
         self.hash = False
         self.was_hashed = True
 
-    @classmethod
-    def from_dict(cls, encoded_dict, **kwargs):
+    def to_list(self):
         """
-        Method to deserialize a given dictionary to a instance of current child class.
+        Method to set up the action of generate hash for file.
         """
-        initiated_object = cls()
-        for key, value in encoded_dict.items():
-            if hasattr(initiated_object, key):
-                if isinstance(value, bool):
-                    setattr(initiated_object, key, value)
-                else:
-                    raise SerializerError("In `FileActions` only are accepted attributes of type boolean.")
+        self.list = True
+        self.was_listed = False
 
-        return initiated_object
+    def listed(self):
+        """
+        Method to change the status of `to hash` to `hashed` file.
+        """
+        self.list = False
+        self.was_listed = True
 
 
-class FileHashes(Serializer):
+class FileHashes:
     """
     Class that store file instance digested hashes.
     """
@@ -313,10 +382,20 @@ class FileHashes(Serializer):
     Variable to work as shortcut for the current related object for the hashes.
     """
 
+    def __init__(self, **kwargs):
+        """
+        Method to create the current object using the keyword arguments.
+        """
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
+
     def __setitem__(self, hasher_name, value):
         """
-        Method to set-up values for file hash as dict item.
-        This method expects a tuple as value to set-up the hash hexadecimal value and hash file related
+        Method to set up values for file hash as dict item.
+        This method expects a tuple as value to set up the hash hexadecimal value and hash file related
         to the hasher.
         """
         hex_value, hash_file, processor = value
@@ -349,6 +428,15 @@ class FileHashes(Serializer):
         """
         return bool(self._cache)
 
+    @property
+    def __serialize__(self):
+        """
+        Method to allow dir and vars to work with the class simplifying the serialization of object.
+        """
+        attributes = {"_cache", "_loaded", "related_file_object"}
+
+        return {key: getattr(self, key) for key in attributes}
+
     def rename(self, new_filename):
         """
         This method will rename file for each hash file existing in _caches.
@@ -359,12 +447,12 @@ class FileHashes(Serializer):
 
             if not hash_file.meta.checksum:
                 # Rename filename if is not `checksum.hasher_name`
-                # complete_filename is a property that will set-up additional action to rename the file`s filename if
+                # complete_filename is a property that will set up additional action to rename the file`s filename if
                 # it was already saved before.
                 hash_file.complete_filename = new_filename, hasher_name
 
             # Load content from generator.
-            # First we set-up content of type binary or string.
+            # First we set up content of type binary or string.
             content = b"" if hash_file.is_binary else ""
 
             # Then we load content from generator using a loop.
@@ -380,7 +468,7 @@ class FileHashes(Serializer):
 
     def validate(self, force=False):
         """
-        Method to validate integraty of file comparing hashes`s hex value with file content.
+        Method to validate the integrity of file comparing hashes`s hex value with file content.
         This method will only check the first hex value from files loaded, or any cached hash if no hash loaded from
         external source is available, for efficient sake. If desire to check all hashes in loaded set `force` to True.
         """
@@ -409,60 +497,13 @@ class FileHashes(Serializer):
         for hex_value, hash_file, processor in self._cache.values():
             if hash_file._actions.save:
                 if hash_file.meta.checksum:
-                    # If file is CHECKSUM.<hasher_name> we not allow overwrite.
+                    # If file is CHECKSUM.<hasher_name> we not allow to overwrite.
                     hash_file.save(overwrite=False, allow_update=overwrite)
                 else:
                     hash_file.save(overwrite=overwrite, allow_update=overwrite)
 
-    def to_dict(self, ignore_keys=[], **kwargs):
-        """
-        Overwritten of method that serialize the current class object to a dictionary to avoid recursive serialization.
-        """
-        ignore_keys.append('related_file_object')
-        ignore_keys.append('_cache')
 
-        encoded_dict = super(FileHashes, self).to_dict(ignore_keys=ignore_keys, **kwargs)
-
-        cached_objects = {}
-
-        # Process _cache
-        for hash_name, cache_values in self._cache.items():
-            hex_value, dict_file_object, class_hash = cache_values
-            cached_objects[hash_name] = hex_value, dict_file_object.to_dict(), self._serialize_item(class_hash)
-
-        encoded_dict['_cache'] = cached_objects
-
-        return encoded_dict
-
-    @classmethod
-    def from_dict(cls, encoded_dict, **kwargs):
-        """
-        Method to deserialize a given dictionary to a instance of current child class.
-        """
-        initiated_object = cls()
-
-        # Set-up hash`s file from dict in case of _cache
-        if '_cache' in encoded_dict:
-            encoded_cache = encoded_dict.pop('_cache', {})
-            cached_objects = {}
-            for hash_name, cache_values in encoded_cache.items():
-                hex_value, dict_file_object, class_dict = cache_values
-                class_object = getattr(import_module(class_dict['import_path']), class_dict['classname'])
-                cached_objects[hash_name] = hex_value, File.from_dict(dict_file_object), class_object
-
-            initiated_object._cache = cached_objects
-
-        for key, value in encoded_dict.items():
-            if hasattr(initiated_object, key):
-                if isinstance(value, dict):
-                    setattr(initiated_object, key, value)
-                else:
-                    raise SerializerError("In `FileActions` only are accepted attributes of type dict.")
-
-        return initiated_object
-
-
-class FileNaming(Serializer):
+class FileNaming:
     """
     Class that store file instance filenames and related names content.
     """
@@ -496,6 +537,33 @@ class FileNaming(Serializer):
     Storage the previous saved extension to allow `save` method of file to verify if its changing its `extension`. 
     """
 
+    def __init__(self, **kwargs):
+        """
+        Method to create the current object using the keyword arguments.
+        """
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
+
+    @property
+    def __serialize__(self):
+        """
+        Method to allow dir and vars to work with the class simplifying the serialization of object.
+        """
+
+        # We avoid storing information from `reserved_index` and `reserved_filenames` as those should reflect
+        # the runtime and can be extensive.
+        attributes = {
+            "history",
+            "on_conflict_rename",
+            "related_file_object",
+            "previous_saved_extension"
+        }
+
+        return {key: getattr(self, key) for key in attributes}
+
     def remove_reserved_filename(self, old_filename):
         """
         This method remove old filename from list of reserved filenames.
@@ -521,7 +589,7 @@ class FileNaming(Serializer):
         object_reserved = reserved_folder.get(complete_filename, None) if reserved_folder else None
 
         # Check if filename already reserved name. Reserved names cannot be renamed even if overwrite is used in save,
-        # so the only option is the have a new filename created, but only if `on_conflict_rename` is `True`.
+        # so the only option is to have a new filename created, but only if `on_conflict_rename` is `True`.
         if reserved_folder and object_reserved and object_reserved is not self.related_file_object:
             if not self.on_conflict_rename:
                 raise ReservedFilenameError(f"Rename cannot be made, because the filename {complete_filename} is "
@@ -535,11 +603,12 @@ class FileNaming(Serializer):
                 # The pipeline will update `complete_filename` of file to reflect new one. We shouldn`t change `path`
                 # of file; `complete_filename` will add the new filename to `history` and remove the old one from
                 # `reserved_filenames`.
-                self.related_file_object.rename_pipeline.run(
-                    object=self.related_file_object,
-                    path_attribute='save_to',
-                    reserved_names=reserved_names
-                )
+                # Set path_attribute and reserved_names in processors before running the pipeline.
+                for processor in self.related_file_object.rename_pipeline:
+                    processor.parameters['path_attribute'] = 'save_to',
+                    processor.parameters['reserved_names'] = reserved_names,
+
+                self.related_file_object.rename_pipeline.run(object_to_process=self.related_file_object)
 
                 # Rename hash_files if there is any. This method not save the hash files giving the responsibility to
                 # `save` method.
@@ -551,7 +620,7 @@ class FileNaming(Serializer):
         elif not object_reserved:
             self.reserved_filenames[save_to][complete_filename] = self.related_file_object
 
-        # Update reserved index to current filename. This allow for easy finding of filename and object at
+        # Update reserved index to current filename. This allows for easy finding of filename and object at
         # `self.reserved_filenames`.
         if complete_filename not in self.reserved_index:
             # Pass reference of dict `save_to` to index of reserved names.
@@ -559,41 +628,12 @@ class FileNaming(Serializer):
         else:
             self.reserved_index[complete_filename][self] = self.reserved_filenames[save_to]
 
-    def to_dict(self, ignore_keys=[], **kwargs):
+    def clean_history(self):
         """
-        Overwritten of method that serialize the current class object to a dictionary to avoid serializing
-        `reserved_filenames` and `reserved_index`.
+        Method to clean the history of internal_files.
+        The data will still be in memory while the Garbage Collector don't remove it.
         """
-        ignore_keys.append('related_file_object')
-        encoded_dict = super(FileNaming, self).to_dict(ignore_keys=ignore_keys, **kwargs)
-
-        for not_allow_key in ('reserved_filenames', 'reserved_index'):
-            if not_allow_key in encoded_dict:
-                del encoded_dict[not_allow_key]
-
-        return encoded_dict
-
-    @classmethod
-    def from_dict(cls, encoded_dict, **kwargs):
-        """
-        Method to deserialize a given dictionary to a instance of current child class.
-        """
-        initiated_object = cls()
-
-        # We don`t set reserved_filenames and reserved_index because those should be set when renaming a file only.
-        for not_allow_key in ('reserved_filenames', 'reserved_index'):
-            if not_allow_key in encoded_dict:
-                del encoded_dict[not_allow_key]
-
-        for key, value in encoded_dict.items():
-            if hasattr(initiated_object, key):
-                if isinstance(value, (type(None), str, bool, list, dict)):
-                    setattr(initiated_object, key, value)
-                else:
-                    raise SerializerError("In `FileNaming` only are accepted attributes of type None, list, "
-                                          f"dict, string and boolean. Not of type {type(value)}!")
-
-        return initiated_object
+        self.history = []
 
 
 class FileContent:
@@ -605,10 +645,6 @@ class FileContent:
     """
     Type of stream used in buffer for content. 
     """
-    is_internal_content = False
-    """
-    
-    """
 
     # Buffer handles
     buffer = None
@@ -617,7 +653,7 @@ class FileContent:
     """
     related_file_object = None
     """
-    Variable to work as shortcut for the current related object for the hashes.
+    Variable to work as shortcut for the current related object for the hashes and other data.
     """
     _block_size = 256
     """
@@ -655,11 +691,23 @@ class FileContent:
     Complete path for temporary file used as cache. 
     """
 
-    def __init__(self, raw_value, force=False):
+    def __init__(self, raw_value, force=False, **kwargs):
         """
-        Initial method that set-up the buffer to be used.
+        Initial method that set up the buffer to be used.
         The parameter `force` when True will force usage of cache even if is IO is seekable.
         """
+        # Process kwargs before anything, because buffer can be already set up in kwargs, as this
+        # init can be used for serialization and deserialization.
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
+
+        if "buffer" in kwargs:
+            # We already set up buffer, so we don't need to set up it from raw_value
+            return
+
         if not raw_value:
             raise ValueError(f"Value pass to FileContent must not be empty!")
 
@@ -716,7 +764,7 @@ class FileContent:
                 elif self.cache_in_file:
                     # Buffer receive stream from file
                     mode = 'r' if self.is_binary else 'rb'
-                    self.buffer = self.related_file_object.file_system_handler.open_file(self._cached_path, mode=mode)
+                    self.buffer = self.related_file_object.storage.open_file(self._cached_path, mode=mode)
                     self.cached = True
 
             # Reset buffer to begin from first position
@@ -738,30 +786,59 @@ class FileContent:
                 if not self._cached_path:
                     # Create new temporary file using renamer pipeline to obtain
                     # a unique filename for temporary file.
-                    temp = self.related_file_object.file_system_handler.get_temp_directory()
+                    temp = self.related_file_object.storage.get_temp_directory()
                     filename, extension = UniqueRenamer.get_name(
                         directory_path=temp,
                         filename=self.related_file_object.filename,
                         extension=self.related_file_object.extension
                     )
                     formatted_extension = f'.{extension}' if extension else ''
-                    if temp[-1] != self.related_file_object.file_system_handler.sep:
-                        temp += self.related_file_object.file_system_handler.sep
+                    if temp[-1] != self.related_file_object.storage.sep:
+                        temp += self.related_file_object.storage.sep
 
                     self._cached_path = temp + filename + formatted_extension
 
                 # Open file, append block to file and close file.
                 write_mode = 'b' if self.is_binary else ''
-                self.related_file_object.file_system_handler.save_file(self._cached_path, block, file_mode='a',
-                                                                       write_mode=write_mode)
+                self.related_file_object.storage.save_file(self._cached_path, block, file_mode='a',
+                                                           write_mode=write_mode)
 
         return block
 
-    def _consume_buffer_in_memory(self):
+    @property
+    def __serialize__(self):
+        """
+        Method to allow dir and vars to work with the class simplifying the serialization of object.
+        """
+        attributes = {
+            "is_binary",
+            "buffer",
+            "related_file_object",
+            "_block_size",
+            "_buffer_encoding",
+            "cache_content",
+            "cache_in_memory",
+            "cache_in_file",
+            "cached",
+            "_cached_buffer",
+            "_cached_path",
+        }
+
+        return {key: getattr(self, key) for key in attributes}
+
+    @property
+    def should_load_to_memory(self):
+        """
+        Method to indicate whether the current buffer is seekable or not. Not seekable object should
+        """
+        return not self.buffer.seekable() and not self.cached
+
+    @property
+    def content(self):
         """
         Method to load in memory the content of the file.
-        This method uses the buffer cached, it the file wasn't cached before, this method will cache it and load
-        the data in memory from the cache.
+        This method uses the buffer cached, if the file wasn't cached before this method will cache it, and load
+        the data in memory from the cache returning the content.
         """
         old_cache_in_memory = self.cache_in_memory
         old_cache_in_file = self.cache_in_file
@@ -775,7 +852,7 @@ class FileContent:
             # Consume content if not loaded
             while True:
                 try:
-                    next(self.buffer)
+                    next(self)
                 except StopIteration:
                     break
 
@@ -785,111 +862,151 @@ class FileContent:
         # Override `content` with content from file.
         if self.cache_in_file:
             mode = 'rb' if self.is_binary else 'r'
-            buffer = self.related_file_object.file_system_handler.open_file(self._cached_path, mode=mode)
+            buffer = self.related_file_object.storage.open_file(self._cached_path, mode=mode)
             content = buffer.read()
-            self.related_file_object.file_system_handler.close_file(buffer)
+            self.related_file_object.storage.close_file(buffer)
 
         self.cache_in_memory = old_cache_in_memory
         self.cache_in_file = old_cache_in_file
 
         return content
 
-    def to_dict(self, ignore_keys=[], use_buffer=False, **kwargs):
+    @property
+    def content_as_buffer(self):
         """
-        Overwritten method that serialize the current class object to a dictionary.
-        This method should not serialize the buffers.
+        Method to obtain the content as a buffer, loading it in memory if it is allowed and is not loaded already.
         """
-        encoded_dict = {
-            '_block_size': self._block_size,
-            'cache_content': self.cache_content,
-            'cache_in_file': self.cache_in_file,
-            'cache_in_memory': self.cache_in_memory,
-            'cached': False,
-            'is_binary': self.is_binary,
-            'is_internal_content': self.is_internal_content,
-            '_cached_path': None if not self.cached or not self.cache_in_file else self._cached_path
-        }
+        if self.should_load_to_memory:
+            # We should load the current buffer to memory before using it.
+            # Load content to memory with `self.content` and return the adequate buffer.
+            buffer_class = BytesIO if self.is_binary else StringIO
+            return buffer_class(self.content)
+        else:
+            # Should not reach here if object is not seekable, but
+            # to avoid problems with override of `should_load_to_memory` property
+            # we check before using seek to reset the content.
+            if self.buffer.seekable():
+                self.buffer.seek(0)
 
-        if use_buffer:
-            # Convert buffer to str and add it to `enconded_dict`
-            buffer_loaded = self._consume_buffer_in_memory()
-            if self.is_binary:
-                buffer_loaded = str(buffer_loaded, encoding=self._buffer_encoding)
+            return self.buffer
 
-            encoded_dict['buffer'] = buffer_loaded
 
-        for key in ignore_keys:
-            if key in encoded_dict:
-                del encoded_dict[key]
+class FilePacket:
+    """
+    Class that store internal files from file instance content.
+    """
 
-        return encoded_dict
+    _internal_files = InternalFilesDescriptor()
+    """
+    Dictionary used for storing the internal files data. Each file is reserved through its <directory>/<name> inside
+    the package.
+    """
 
-    @classmethod
-    def from_dict(cls, encoded_dict, **kwargs):
+    history = None
+    """
+    Storage internal files to allow browsing old ones for current BaseFile.
+    """
+
+    # Pipelines
+    extract_data_pipeline = Pipeline(
+        'handler.pipelines.extractor.SevenZipCompressedFilesFromContentExtractor',
+        'handler.pipelines.extractor.RarCompressedFilesFromContentExtractor',
+        'handler.pipelines.extractor.ZipCompressedFilesFromContentExtractor',
+    )
+    """
+    Pipeline to extract data from multiple sources. For it to work, its classes should implement stopper as True.
+    """
+
+    def __init__(self, **kwargs):
         """
-        Method to deserialize a given dictionary to a instance of current child class.
-
-        If `initiated_object` is provided in `encoded_dict`, we will not initiate a new one.
-
-        For initialization of FileContent a stream, str or byte must be provided in `encoded_dict['stream']` or a
-        encoded string must be provided in `encoded_dict['buffer']`.
-
-        There is a side effect to this method that occur when providing `encoded_dict['buffer']`: The buffer will be
-        saved in memory when `initiated_object` is created in this method, even when `cache_in_file` is available
-        and the `_cached_path` exists in the file system. This could result in lost of space in disk in the
-        filesystem if old cached files are not removed.
+        Method to create the current object using the keyword arguments.
         """
-        content = encoded_dict.pop('stream', None)
-        initiated_object = encoded_dict.pop('initiated_object', None)
-        cache_content = encoded_dict.pop('cache_content', False)
-        buffer = encoded_dict.pop('buffer', None)
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
 
-        if not (content or initiated_object or buffer):
-            raise SerializerError("There is no `stream`, `initiated_object` or `buffer` passed as parameter in "
-                                  "`FileContent` to be serialized!")
+    def __getitem__(self, item):
+        """
+        Method to serve as shortcut to allow return of item in _internal_files in instance of FilePacket.
+        """
+        return self._internal_files[item]
 
-        # Instantiating `initiated_object` from `buffer` will save the content in memory and not in a cached file,
-        # this imply in caching the file in memory, even when `cache_in_file` is available and the `_cached_path`
-        # exists in the file system. As a side effect a new file, with unique filename, will be created and saved in
-        # `_cached_path`, which could result in lost of space in disk in the filesystem if old cached files are not
-        # removed.
-        if buffer:
-            is_binary = encoded_dict.get('is_binary', False)
-            content = bytes(buffer, encoding=cls._buffer_encoding) if is_binary else buffer
+    def __contains__(self, item):
+        """
+        Method to serve as shortcut to allow verification if item contains in _internal_files in instance of FilePacket.
+        """
+        return item in self._internal_files
 
-        if not initiated_object:
-            initiated_object = cls(content, force=cache_content)
+    def __setitem__(self, key, value):
+        """
+        Method to serve as shortcut to allow adding an item in _internal_files in instance of FilePacket.
+        """
+        self._internal_files[key] = value
 
-        # We don`t set buffers as BaseIO because those should be set when the object was initialized.
-        for not_allow_key in ('buffer', '_cached_buffer'):
-            if not_allow_key in encoded_dict:
-                del encoded_dict[not_allow_key]
+    def __len__(self):
+        """
+        Method that defines the size of current object. We will consider the size as being the same of
+        `_internal_files`
+        """
+        return len(self._internal_files)
 
-        for key, value in encoded_dict.items():
-            if hasattr(initiated_object, key):
-                if isinstance(value, (type(None), str, bool, int, float)):
-                    setattr(initiated_object, key, value)
-                else:
-                    raise SerializerError("In `FileContent` only are accepted attributes of type None, string, int, "
-                                          f"float and boolean. Not of type {type(value)}!")
+    def __iter__(self):
+        """
+        Method to return current object as iterator. As it already implements __next__ we just return the current
+        object.
+        """
+        return iter(self._internal_files.items())
 
-        return initiated_object
+    @property
+    def __serialize__(self):
+        """
+        Method to allow dir and vars to work with the class simplifying the serialization of object.
+        """
+        attributes = {"_internal_files", "extract_data_pipeline", "history"}
+
+        return {key: getattr(self, key) for key in attributes}
+
+    def clean_history(self):
+        """
+        Method to clean the history of internal_files.
+        The data will still be in memory while the Garbage Collector don't remove it.
+        """
+        self.history = []
+
+    def files(self):
+        """
+        Method to obtain the list of objects File stored at `_internal_files`.
+        """
+        return self._internal_files.values()
+
+    def names(self):
+        """
+        Method to obtain the list of names of internal files stored at `_internal_files`.
+        """
+        return self._internal_files.keys()
+
+    def reset(self):
+        """
+        Method to clean the internal files keeping a historic of changes.
+        """
+        if self.history is None:
+            self.history = []
+
+        # Add current internal files to memory
+        self.history.append(self._internal_files)
+
+        # Reset the internal files
+        self._internal_files = {}
 
 
-class FileInternalContent(FileContent):
-    _content_list = None
-
-    def get_internal_content(self):
-        raise NoInternalContentError(f"This file {repr(self)} don't have a internal content.")
-
-
-class BaseFile(Serializer):
+class BaseFile:
     """
     Base class for handle File. This class will be used in Files of type Image, Rar, etc.
     This class will behave like Django Model with methods save(), delete(), etc.
 
     TODO: Add support to moving and copying file avoiding conflict on moving or copying.
-    TODO: Add support to packed files and its internal content.
     """
 
     # Filesystem data
@@ -960,18 +1077,15 @@ class BaseFile(Serializer):
     """
 
     # Handler
-    linux_file_system_handler = LinuxFileSystem
+    storage = None
     """
-    FileSystem for Linux.
-    """
-    windows_file_system_handler = WindowsFileSystem
-    """
-    FileSystem for Windows.
-    """
-    file_system_handler = None
-    """
-    FileSystem currently in use for File.
+    Storage or file system currently in use for File.
     It can be LinuxFileSystem, WindowsFileSystem or a custom one.
+    """
+    serializer = JSONSerializer
+    """
+    Serializer available to make the object portable. 
+    This can be changed to any class that implements serialize and deserialize method.
     """
     mime_type_handler = LibraryMimeTyper()
     """
@@ -991,24 +1105,24 @@ class BaseFile(Serializer):
     `extract_data_pipeline.errors`.
     """
     compare_pipeline = Pipeline(
-        TypeCompare.to_processor(stopper=True, stop_value=False),
-        SizeCompare.to_processor(stopper=True, stop_value=False),
-        BinaryCompare.to_processor(stopper=True, stop_value=False),
-        HashCompare.to_processor(stopper=True, stop_value=(True, False)),
-        DataCompare.to_processor(stopper=True, stop_value=(True, False))
+        'handler.pipelines.comparer.TypeCompare',
+        'handler.pipelines.comparer.SizeCompare',
+        'handler.pipelines.comparer.BinaryCompare',
+        'handler.pipelines.comparer.HashCompare',
+        'handler.pipelines.comparer.DataCompare'
     )
     """
     Pipeline to compare two files.
     """
     hasher_pipeline = Pipeline(
-        MD5Hasher.to_processor(),
-        SHA256Hasher.to_processor()
+        ('handler.pipelines.hasher.MD5Hasher', {'full_check': True}),
+        ('handler.pipelines.hasher.SHA256Hasher', {'full_check': True}),
     )
     """
     Pipeline to generate hashes from content.
     """
     rename_pipeline = Pipeline(
-        WindowsRenamer.to_processor(stopper=True)
+        'handler.pipelines.renamer.WindowsRenamer'
     )
     """
     Pipeline to rename file when saving. This pipeline can be 
@@ -1032,6 +1146,10 @@ class BaseFile(Serializer):
     _content = None
     """
     Controller for how the content of file will be handled. 
+    """
+    _content_files = None
+    """
+    Controller for how the internal files packet in content of file will be handled.
     """
 
     # Common Exceptions shortcut
@@ -1059,182 +1177,81 @@ class BaseFile(Serializer):
     """
 
     @classmethod
-    def from_dict(cls, encoded_dict, **kwargs):
+    def deserialize(cls, source):
         """
-        Class method that allow the creation of a BaseFile instance from a dictionary.
-        This method is useful for creating BaseFile`s objects from JSON files.
+        Class method to deserialize the source and return the instance object.
         """
-
-        class_dict = {
-            '_actions': FileActions,
-            '_state': FileState,
-            '_meta': FileMetadata,
-            '_naming': FileNaming,
-            'hashes': FileHashes,
-            '_content': FileContent
-        }
-        pipeline_list = [
-            'extract_data_pipeline',
-            'compare_pipeline',
-            'hasher_pipeline',
-            'rename_pipeline'
-        ]
-        handler_class_list = [
-            'linux_file_system_handler',
-            'windows_file_system_handler',
-            'file_system_handler',
-            'mime_type_handler',
-            'uri_handler'
-        ]
-        options = {}
-
-        content_dict = encoded_dict.pop('_content')
-
-        # Set-up attributes that are classes to inform to init method.
-        for key, value in class_dict.items():
-            if key in encoded_dict:
-                # Remove related file`s object from dict to be provided to `from_dict`.
-                if 'related_file_object' in encoded_dict[key]:
-                    del encoded_dict[key]['related_file_object']
-
-                options[key] = value.from_dict(encoded_dict[key])
-                del encoded_dict[key]
-
-        # Convert attributes that should not be string before informing the init method.
-        if 'create_date' in encoded_dict:
-            options['create_date'] = datetime.datetime.strptime(encoded_dict['create_date'], "%m-%d-%Y %H:%M:%S")
-            del encoded_dict['create_date']
-
-        if 'update_date' in encoded_dict:
-            options['update_date'] = datetime.datetime.strptime(encoded_dict['update_date'], "%m-%d-%Y %H:%M:%S")
-            del encoded_dict['update_date']
-
-        # Set-up class methods that can be external from library. Those class must be installed
-        # in project environment else a ImportError will be throw by `import_module`.
-        for key in handler_class_list:
-            if key in encoded_dict:
-                # Import module before using its class.
-                module = import_module(encoded_dict[key]['import_path'])
-                # Set class without initializing it.
-                classname = getattr(module, encoded_dict[key]['classname'])
-                options[key] = classname() if encoded_dict[key]['object'] else classname
-                del encoded_dict[key]
-
-        # Set-up additional options
-        options.update(encoded_dict)
-
-        object_init = cls(**options, run_extractor=False)
-
-        # Set-up pipelines for the object instead of class.
-        for pipeline_attribute in pipeline_list:
-            if pipeline_attribute in encoded_dict:
-                setattr(object_init, pipeline_attribute, Pipeline.from_dict(encoded_dict[pipeline_attribute]))
-
-        # Set-up related_file_object for classes that support it.
-        for attribute in vars(object_init):
-            if hasattr(attribute, 'related_file_object'):
-                attribute.related_file_object = object_init
-
-        # Set-up FileContent after having related_file_object and only if file was saved.
-        # We set it using `FileContent.from_dict` passing the initiated object loaded from
-        # either temporary cache file or from saved path to file.
-        if object_init._actions.was_saved and content_dict:
-            # Remove is_binary from FileContent dict because the `FileContent.__init__` will check
-            # if is binary or not.
-            if 'is_binary' in content_dict:
-                del content_dict['is_binary']
-
-            old_path = object_init.path
-
-            try:
-                # Set temporary path to object_init because it is required to load data
-                # with FileSystemDataExtracter.
-                object_init.path = content_dict['_cached_path']
-                # Use extractor to load content from file.
-                FileSystemDataExtracter.extract(file_object=object_init, overrider=False)
-
-            except (AttributeError, KeyError, FileNotFoundError, ValueError):
-                # Try again with saved path instead of _cached_path.
-                object_init.path = object_init.sanitize_path or old_path
-                FileSystemDataExtracter.extract(file_object=object_init, overrider=False)
-
-            finally:
-                # Restore old path
-                object_init.path = old_path
-
-            # Set-up attribute to FileContent
-            file_content = object_init._content
-            if file_content:
-                content_dict['initiated_object'] = file_content
-                setattr(object_init, '_content', FileContent.from_dict(content_dict))
-
-        return object_init
+        return cls.serializer.deserialize(source=source)
 
     def __init__(self, **kwargs):
         """
         Method to instantiate BaseFile. This method can be used for any child class, ony needing
         to change the extract_data_pipeline to be suited for each class.
 
-        Keyword argument `file_system_handler` allow to specified a custom file system handler.
-        Keyword argument `extract_data_pipeline` allow to specified a custom file extractor pipeline.
+        Keyword argument `storage` allow to specify a custom file system handler.
+        Keyword argument `extract_data_pipeline` allow to specify a custom file extractor pipeline.
         """
-        # Validate class creation
-        if self.extract_data_pipeline is None and not 'extract_data_pipeline' in kwargs:
-            raise self.ImproperlyConfiguredFile("File object must set-up a pipeline for data`s extraction.")
+        # In order to allow multiple versions of the serialized object to be correctly parsed with
+        # the last version we should make conversions of attributes here.
+        version = kwargs.pop("__version__", None)
+        if version == "1":
+            """Do nothing, as version 1 don't have incompatibility with this class version."""
 
-        # Get custom file system.
-        file_system_handler = kwargs.pop('file_system_handler', None)
-        # Get custom pipeline
-        extract_data_pipeline = kwargs.pop('extract_data_pipeline', None)
-        # Get option to run pipeline
-        run_extract_pipeline = kwargs.pop('run_extractor', True)
+        # Set up storage with default based on operational system
+        if not self.storage:
+            self.storage = WindowsFileSystem if name == 'nt' else LinuxFileSystem
 
-        self.file_system_handler = file_system_handler or (
-            self.windows_file_system_handler
-            if name == 'nt'
-            else self.linux_file_system_handler
-        )
-
-        new_kwargs = {}
-        # Set-up attributes from kwargs like `file_system_handler` or `path`
+        additional_kwargs = {}
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
             else:
-                new_kwargs[key] = value
+                additional_kwargs[key] = value
 
-        self._keyword_arguments = new_kwargs
+        # Validate class creation
+        if self.extract_data_pipeline is None:
+            raise self.ImproperlyConfiguredFile(
+                f"{self.__class__.__name__} object must set up a pipeline for data`s extraction."
+            )
 
-        # Set-up resources used for `save` and `update` methods.
+        # Set up resources used for `save` and `update` methods.
         if not self._actions:
             self._actions = FileActions()
 
-        # Set-up resources used for controlling the state of file.
+        # Set up resources used for controlling the state of file.
         if not self._state:
             self._state = FileState()
 
-        # Set-up metadata of file
+        # Set up metadata of file
         if not self._meta:
             self._meta = FileMetadata()
 
-        # Set-up resources used for handling hashes and hash files.
+        # Set up resources used for handling internal files
+        if not self._content_files:
+            self._content_files = FilePacket()
+
+        # Set up resources used for handling hashes and hash files.
         if not self.hashes:
             self.hashes = FileHashes()
             self.hashes.related_file_object = self
 
-        # Set-up resources used for filename renaming control.
+        # Set up resources used for filename renaming control.
         if not self._naming:
             self._naming = FileNaming()
             self._naming.history = []
             self._naming.related_file_object = self
 
-        # Set-up custom pipeline if there is any.
-        if extract_data_pipeline:
-            self.extract_data_pipeline = extract_data_pipeline
+        # Get option to run pipeline.
+        run_extractor = additional_kwargs.pop('run_extractor', True)
 
-        # Process extractor pipeline
-        if run_extract_pipeline:
-            self.extract_data_pipeline.run(object=self, **new_kwargs)
+        # Set up keyword arguments to be used in processor.
+        self._keyword_arguments = additional_kwargs
+
+        # Process extractor pipeline. We only run the pipeline if the criterion below is accomplished:
+        # It should not come from the serializer (don't have version)
+        # and option run_extractor should not be false.
+        if version is None and run_extractor:
+            self.refresh_from_pipeline()
 
     def __len__(self):
         """
@@ -1247,7 +1264,7 @@ class BaseFile(Serializer):
         """
         Method to allow comparison < to work between BaseFiles.
         TODO: Compare metadata resolution for when type is image, video and bitrate when type
-        is audio and sequence when type is chemical.
+         is audio and sequence when type is chemical.
         """
         # Check if size is lower than.
         return len(self) < len(other_instance)
@@ -1261,6 +1278,7 @@ class BaseFile(Serializer):
     def __eq__(self, other_instance):
         """
         Method to allow comparison == to work between BaseFiles.
+        `other_instance` can be an object or a list of objects to be compared.
         """
         # Run compare pipeline
         try:
@@ -1279,7 +1297,7 @@ class BaseFile(Serializer):
         """
         Method to allow comparison > to work between BaseFiles.
         TODO: Compare metadata resolution for when type is image, video and bitrate when type
-        is audio and sequence when type is chemical.
+         is audio and sequence when type is chemical.
         """
         # Check if size is greater than.
         return len(self) > len(other_instance)
@@ -1289,6 +1307,51 @@ class BaseFile(Serializer):
         Method to allow comparison >= to work between BaseFiles.
         """
         return self.__gt__(other_instance) or self.__eq__(other_instance)
+
+    @property
+    def __version__(self):
+        """
+        Method to indicate the current version of BaseFile in order to allow changes between serialization
+        to be handled by `__init__()`
+        """
+        return "1"
+
+    @property
+    def __serialize__(self):
+        """
+        Method to allow dir and vars to work with the class simplifying the serialization of object.
+        """
+        attributes = {
+            "id",
+            "filename",
+            "extension",
+            "create_date",
+            "update_date",
+            "_path",
+            "_save_to",
+            "relative_path",
+            "length",
+            "mime_type",
+            "type",
+            "_meta",
+            "hashes",
+            "_keyword_arguments",
+            "storage",
+            "serializer",
+            "mime_type_handler",
+            "uri_handler",
+            "extract_data_pipeline",
+            "compare_pipeline",
+            "hasher_pipeline",
+            "rename_pipeline",
+            "_state",
+            "_actions",
+            "_naming",
+            "_content_files",
+            "__version__"
+        }
+
+        return {key: getattr(self, key) for key in attributes}
 
     @property
     def complete_filename(self):
@@ -1329,10 +1392,10 @@ class BaseFile(Serializer):
         """
         Method to return as attribute the content that can be previous loaded from content,
         or a stream_content or need to be load from file system.
-        This method can be override in child class and it should always return a generator.
+        This method can be override in child class, and it should always return a generator.
         """
-        if not self._content:
-            raise ValueError(f"There is no content to use for file {self}.")
+        if self._content is None:
+            return None
 
         return iter(self._content)
 
@@ -1347,7 +1410,7 @@ class BaseFile(Serializer):
         loading_content = self._content is None
 
         try:
-            self._content = FileContent(value)
+            self._content = FileContent(value, related_file_object=self)
 
         except ValueError:
             return
@@ -1362,10 +1425,43 @@ class BaseFile(Serializer):
         self._actions.to_save()
         self._actions.to_hash()
 
+        if self.meta.packed:
+            # Update file action to be listed only if file allow listing of content.
+            self._actions.to_list()
+
+    @property
+    def buffer(self):
+        """
+        Method to return the current content as buffer to be used for extraction or other code
+        that require IO objects.
+        """
+        if self._content is None:
+            return None
+
+        return self._content.content_as_buffer
+
+    @property
+    def files(self):
+        """
+        Method to return as attribute the internal files that can be present in content.
+        This method can be override in child class, and it should always return a generator.
+        """
+        if self._actions.list:
+            # Reset internal files' dictionary while keeping historic.
+            self._content_files.reset()
+
+            # Extract data from content
+            self._content_files.extract_data_pipeline.run(object_to_process=self)
+
+            # Mark as concluded the was_listed option
+            self._actions.listed()
+
+        return iter(self._content_files)
+
     @property
     def is_binary(self) -> [bool, None]:
         """
-        Method to return as attribute if file is binary or not. This information is obtain from `is_binary` from
+        Method to return as attribute if file is binary or not. This information is obtained from `is_binary` from
         `FileContent` that should be set-up when data is loaded to content.
 
         There is no setter method, because the 'binarility' of file is determined by its content.
@@ -1414,10 +1510,10 @@ class BaseFile(Serializer):
         if value is None:
             raise ValueError("Attribute `path` informed for File cannot be None.")
 
-        self._path = self.file_system_handler.sanitize_path(value)
+        self._path = self.storage.sanitize_path(value)
 
         # Validate if path is really a file.
-        if self.file_system_handler.is_dir(self._path):
+        if self.storage.is_dir(self._path):
             raise ValueError("Attribute `path` informed for File cannot be a directory.")
 
     @property
@@ -1434,13 +1530,13 @@ class BaseFile(Serializer):
         """
 
         # We convert the sanitized path to its absolute version to avoid problems when saving.
-        self._save_to = self.file_system_handler.get_absolute_path(
-            self.file_system_handler.sanitize_path(value)
+        self._save_to = self.storage.get_absolute_path(
+            self.storage.sanitize_path(value)
         )
 
         # Validate if path is really a directory. `is_dir` will convert the path to its absolute form before checking
         # it to avoid a bug where `~/` is not interpreted as existing.
-        if not self.file_system_handler.is_dir(self._save_to):
+        if not self.storage.is_dir(self._save_to):
             raise ValueError("Attribute `save_to` informed for File must be a directory.")
 
     @property
@@ -1448,7 +1544,11 @@ class BaseFile(Serializer):
         """
         Method to return as attribute full sanitized path of file.
         """
-        return self.file_system_handler.join(self.save_to, self.relative_path, self.complete_filename)
+        save_to = self.save_to or ""
+        relative_path = self.relative_path or ""
+        complete_filename = self.complete_filename or ""
+
+        return self.storage.join(save_to, relative_path, complete_filename)
 
     def add_valid_filename(self, complete_filename, enforce_mimetype=False) -> bool:
         """
@@ -1459,7 +1559,7 @@ class BaseFile(Serializer):
 
         The following attributes are set for file:
         - complete_filename (filename, extension)
-        - _meta (compressed, lossless)
+        - _meta (compressed, lossless, packed)
 
         TODO: we could change add_valid_filename to also search for extension
          in mime_type of file, case there is any, for more efficient search
@@ -1479,12 +1579,16 @@ class BaseFile(Serializer):
                     return False
 
             # Use first class Renamer declared in pipeline because `prepare_filename` is a class method from base
-            # Renamer class and we don't require any other specialized methods from Renamer children.
+            # Renamer class, and we don't require any other specialized methods from Renamer children.
             self.complete_filename = self.rename_pipeline[0].prepare_filename(complete_filename, possible_extension)
 
             # Save additional metadata to file.
             self._meta.compressed = self.mime_type_handler.is_extension_compressed(self.extension)
             self._meta.lossless = self.mime_type_handler.is_extension_lossless(self.extension)
+            self._meta.packed = self.mime_type_handler.is_extension_packed(self.extension)
+
+            if self._meta.packed:
+                self._actions.to_list()
 
             return True
 
@@ -1498,17 +1602,39 @@ class BaseFile(Serializer):
         if not files:
             raise ValueError("There must be at least one file to be compared in `BaseFile.compare_to` method.")
 
-        # Add current object to be compared mixed with others in files before any other
-        files.insert(0, self)
+        # Set the objects_to_compare parameter in processors
+        for processor in self.compare_pipeline:
+            processor.parameters['objects_to_compare'] = files
 
         # Run pipeline passing objects to be compared
-        self.compare_pipeline.run(objects=files)
+        self.compare_pipeline.run(object_to_process=self)
+
         result = self.compare_pipeline.last_result
 
         if result is None:
             raise ValueError("There is not enough data in files for comparison at `File.compare_to`.")
 
         return result
+
+    def extract(self):
+        """
+        Method to extract the content of the file, only if object is packed and extractable.
+        """
+        if self.meta.packed:
+            # Define directory location for extraction of content from path.
+            location = self.storage.join(self.save_to, self.filename)
+            if self.storage.exists(location):
+                location = self.storage.get_renamed_path(path=location)
+
+            # Directly run extractor pipeline by passing method `run`.
+            # The method decompress in extractor determine if this package is extractable.
+            for processor in self._content_files.extract_data_pipeline:
+                try:
+                    if processor.decompress(file_object=self, decompress_to=location):
+                        return True
+
+                except NotImplementedError:
+                    continue
 
     def generate_hashes(self, force=False):
         """
@@ -1520,25 +1646,44 @@ class BaseFile(Serializer):
             # If content is being changed a new hash need to be generated instead of load from hash files.
             try_loading_from_file = False if self._state.changing or force else self._actions.was_saved
 
-            self.hasher_pipeline.run(object=self, try_loading_from_file=try_loading_from_file)
+            # Reset `try_loading_from_file` in pipeline.
+            for processor in self.hasher_pipeline:
+                processor.parameters['try_loading_from_file'] = try_loading_from_file
+
+            self.hasher_pipeline.run(object_to_process=self)
 
             self._actions.hashed()
 
     def refresh_from_disk(self):
         """
         This method will reset all attributes, calling the pipeline to extract data again from disk.
-        Both the content and metadata will be reload from disk.
+        Both the content and metadata will be reloaded from disk.
         """
         # Set-up pipeline to extract data from.
         pipeline = Pipeline(
-            FilenameAndExtensionFromPathExtracter.to_processor(),
-            MimeTypeFromFilenameExtracter.to_processor(),
-            FileSystemDataExtracter.to_processor(),
-            HashFileExtracter.to_processor(),
+            'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+            'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+            'handler.pipelines.extractor.FileSystemDataExtractor',
+            'handler.pipelines.extractor.HashFileExtractor'
         )
 
         # Run the pipeline.
-        pipeline.run(object=self, **self._keyword_arguments)
+        pipeline.run(object_to_process=self, overrider=True, **self._keyword_arguments)
+
+        # Set up its processing state to False
+        self._state.processing = False
+
+    def refresh_from_pipeline(self):
+        """
+        This method will load all attributes, calling the pipeline to extract data. By default, this method will
+        not overwrite data already loaded.
+        """
+        # Call pipeline with keyword_arguments saved in file object
+        self.extract_data_pipeline.run(object_to_process=self, **self._keyword_arguments)
+
+        # Mark the file object as run its pipeline for extraction.
+        # Set up its processing state to False
+        self._state.processing = False
 
     def save(self, **options):
         """
@@ -1558,7 +1703,7 @@ class BaseFile(Serializer):
         This method basically do three things:
         1. Create file and its hashes files (if exists option `overwrite` must be `True`).
         2. Update content if was changed (`allow_update` or `create_backup` must be `True` for this method
-        to overwritten the content).
+        to overwrite the content).
         3. Rename filename and its hashes filenames (if new filename already exists in filesystem, `allow_rename`
         must be `True` for this method to change the renaming state).
         """
@@ -1576,7 +1721,7 @@ class BaseFile(Serializer):
         create_backup = options.pop('create_backup', False)
 
         # If overwrite is False and file exists a new filename must be created before renaming.
-        file_exists = self.file_system_handler.exists(self.sanitize_path)
+        file_exists = self.storage.exists(self.sanitize_path)
 
         # Verify which actions are allowed to perform while saving.
         if self._state.adding and file_exists and not overwrite:
@@ -1603,12 +1748,12 @@ class BaseFile(Serializer):
 
         # Create new filename to avoid overwrite if allow_rename is set to `True`.
         if self._state.renaming:
-            self._naming.on_conflict_rename=allow_rename
+            self._naming.on_conflict_rename = allow_rename
             self._naming.rename()
 
         # Copy current file to be .bak before updating content.
         if self._state.changing and create_backup:
-            self.file_system_handler.backup(self.sanitize_path)
+            self.storage.backup(self.sanitize_path)
 
         # Save file using iterable content if there is content to be saved
         if self._state.adding or self._state.changing:
@@ -1623,7 +1768,7 @@ class BaseFile(Serializer):
 
         # Get id after saving.
         if not self.id:
-            self.id = self.file_system_handler.get_path_id(self.sanitize_path)
+            self.id = self.storage.get_path_id(self.sanitize_path)
 
         # Update BaseFile internal status and controllers.
         self._actions.saved()
@@ -1632,6 +1777,12 @@ class BaseFile(Serializer):
         self._state.changing = False
         self._state.renaming = False
         self._naming.previous_saved_extension = self.extension
+
+    def serialize(self):
+        """
+        Method to serialize the current object using the serializer declared in attribute `serializer`.
+        """
+        return self.serializer.serialize(source=self)
 
     def validate(self):
         """
@@ -1642,7 +1793,7 @@ class BaseFile(Serializer):
         if not self.filename and not self.extension:
             raise self.ValidationError("The attribute `filename` or `extension` must be set for the file!")
 
-        # Raise if not save_to provided.
+        # Raise if not save_to is provided.
         if not self.save_to:
             raise self.ValidationError("The attribute `save_to` must be set for the file!")
 
@@ -1662,21 +1813,21 @@ class BaseFile(Serializer):
         """
         write_mode = 'b' if self.is_binary else 't'
 
-        self.file_system_handler.save_file(path, self.content, file_mode='w', write_mode=write_mode)
+        self.storage.save_file(path, self.content, file_mode='w', write_mode=write_mode)
 
 
 class ContentFile(BaseFile):
     """
-    Class to create a file from a in memory content.
+    Class to create a file from an in memory content.
     It can load a file already saved as BaseFile allow it, but is recommended to use `File` instead
     because it will have a more complete pipeline for data extraction.
     a new one from memory using `ContentFile`.
     """
 
     extract_data_pipeline = Pipeline(
-        FilenameFromMetadataExtracter.to_processor(),
-        MimeTypeFromFilenameExtracter.to_processor(),
-        MimeTypeFromContentExtracter.to_processor(),
+        'handler.pipelines.extractor.FilenameFromMetadataExtractor',
+        'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+        'handler.pipelines.extractor.MimeTypeFromContentExtractor',
     )
     """
     Pipeline to extract data from multiple sources.
@@ -1685,15 +1836,15 @@ class ContentFile(BaseFile):
 
 class StreamFile(BaseFile):
     """
-    Class to create a file from a HTTP stream that has a header with metadata.
+    Class to create a file from an HTTP stream that has a header with metadata.
     """
 
     extract_data_pipeline = Pipeline(
-        FilenameFromMetadataExtracter.to_processor(),
-        FilenameFromURLExtracter.to_processor(),
-        MimeTypeFromFilenameExtracter.to_processor(),
-        MimeTypeFromContentExtracter.to_processor(),
-        MetadataExtracter.to_processor()
+        'handler.pipelines.extractor.FilenameFromMetadataExtractor',
+        'handler.pipelines.extractor.FilenameFromURLExtractor',
+        'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+        'handler.pipelines.extractor.MimeTypeFromContentExtractor',
+        'handler.pipelines.extractor.MetadataExtractor'
     )
     """
     Pipeline to extract data from multiple sources.
@@ -1702,16 +1853,16 @@ class StreamFile(BaseFile):
 
 class File(BaseFile):
     """
-    Class to create a file from a already saved path in filesystem.
+    Class to create a file from an already saved path in filesystem.
     It can create a new file as BaseFile allow it, but is recommended to create
     a new one from memory using `ContentFile`.
     """
 
     extract_data_pipeline = Pipeline(
-        FilenameAndExtensionFromPathExtracter.to_processor(),
-        MimeTypeFromFilenameExtracter.to_processor(),
-        FileSystemDataExtracter.to_processor(),
-        HashFileExtracter.to_processor(),
+        'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+        'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+        'handler.pipelines.extractor.FileSystemDataExtractor',
+        'handler.pipelines.extractor.HashFileExtractor',
     )
     """
     Pipeline to extract data from multiple sources.

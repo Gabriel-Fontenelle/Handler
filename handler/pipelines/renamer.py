@@ -26,11 +26,8 @@ import re
 from typing import Union
 from uuid import uuid4
 
-# core modules
-from handler.pipelines import ProcessorMixin
-
 # modules
-from handler.handler import FileSystem
+from ..storage import Storage
 
 __all__ = [
     'Renamer',
@@ -40,12 +37,17 @@ __all__ = [
 ]
 
 
-class Renamer(ProcessorMixin):
+class Renamer:
     """
     Base class to be inherent to define class to be used on Renamer pipeline.
     """
 
-    file_system_handler = FileSystem
+    stopper = True
+    """
+    Variable that define if this class used as processor should stop the pipeline.
+    """
+
+    file_system_handler = Storage
     enumeration_pattern = None
     reserved_names = []
 
@@ -94,7 +96,7 @@ class Renamer(ProcessorMixin):
         This processors return boolean to indicate that process was ran successfully.
         """
         # Get default values from keywords arguments
-        object_to_process = kwargs.pop('object')
+        object_to_process = kwargs.pop('object_to_process')
         path_attribute = kwargs.pop('path_attribute', 'path')
         reserved_names = kwargs.pop('reserved_names', None)
 
@@ -116,7 +118,7 @@ class Renamer(ProcessorMixin):
             # Overwrite File System attribute with File System of File only when running in pipeline.
             # This will alter the File System for the class, any other call to this class will use the altered
             # file system.
-            cls.file_system_handler = object_to_process.file_system_handler
+            cls.file_system_handler = object_to_process.storage
 
             # Get directory from object to be processed.
             path = cls.file_system_handler.sanitize_path(getattr(object_to_process, path_attribute))

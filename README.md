@@ -198,7 +198,9 @@ Soon... I didn't create any automated test yet, but I intend to.
 
 ## Contributing
 
-Soon...
+Contributions, issues and feature requests are welcome!
+
+- Feel free to check [issues page](https://github.com/Gabriel-Fontenelle/Handler/issues). 
 
 ## Related Projects
 

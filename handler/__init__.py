@@ -29,13 +29,16 @@ from .exception import (
     ReservedFilenameError,
     ValidationError,
 )
-from .handler import FileSystem, WindowsFileSystem, LinuxFileSystem, System, URI
+from .handler import System, URI
+from .storage import WindowsFileSystem, LinuxFileSystem, Storage
 from .mimetype import LibraryMimeTyper, APIMimeTyper
-from .serializer import Serializer
+
+# Module with classes for serializing/deserializing objects.
+from .serializer import PickleSerializer, JSONSerializer
 
 # Module with classes that define the pipelines and its processors classes.
 # A Pipeline is a sequence that loop processors to be run.
-from .pipelines import Processor, ProcessorMixin, Pipeline
+from .pipelines import Processor, Pipeline
 
 # Module with pipeline classes for comparing Files.
 from .pipelines.comparer import (
@@ -50,36 +53,41 @@ from .pipelines.comparer import (
     TypeCompare
 )
 # Module with pipeline classes for extracting data for files from multiple sources.
-from .pipelines.extracter import (
-    AudioMetadataFromContentExtracter,
-    Extracter,
-    FileSystemDataExtracter,
-    FilenameAndExtensionFromPathExtracter,
-    FilenameFromMetadataExtracter,
-    HashFileExtracter,
-    MetadataExtracter,
-    MimeTypeFromFilenameExtracter,
-    FilenameFromURLExtracter,
-    PathFromURLExtracter
+from .pipelines.extractor import (
+    Extractor,
+    ContentExtractor,
+    FileSystemDataExtractor,
+    FilenameAndExtensionFromPathExtractor,
+    MimeTypeFromFilenameExtractor,
+    HashFileExtractor,
+    FilenameFromURLExtractor,
+    PathFromURLExtractor,
+    FilenameFromMetadataExtractor,
+    MetadataExtractor,
+    SevenZipCompressedFilesFromContentExtractor,
+    AudioMetadataFromContentExtractor,
+    RarCompressedFilesFromContentExtractor,
+    ZipCompressedFilesFromContentExtractor,
+    MimeTypeFromContentExtractor
 )
 # Module with pipeline classes for generating or extracting hashed data related to file.
-from .pipelines.hasher import Hasher, MD5Hasher, SHA256Hasher
+from .pipelines.hasher import Hasher, CRC32Hasher, MD5Hasher, SHA256Hasher
 # Module with pipeline classes for renaming files.
 from .pipelines.renamer import Renamer, WindowsRenamer, LinuxRenamer, UniqueRenamer
 
 
 __all__ = [
-    'APIMimeTyper', 'AudioMetadataFromContentExtracter', 'BaseFile', 'BinaryCompare',
-    'Comparer', 'ContentFile', 'DataCompare',
-    'Extracter', 'File', 'FileSystem', 'FileSystemDataExtracter',
-    'FilenameAndExtensionFromPathExtracter', 'FilenameFromMetadataExtracter',
-    'FilenameFromURLExtracter', 'HashCompare', 'HashFileExtracter',
-    'Hasher', 'ImproperlyConfiguredFile', 'LibraryMimeTyper',
+    'APIMimeTyper', 'AudioMetadataFromContentExtractor', 'BaseFile', 'BinaryCompare',
+    'Comparer', 'ContentExtractor', 'ContentFile', 'CRC32Hasher', 'DataCompare',
+    'Extractor', 'File', 'FileSystemDataExtractor', 'FilenameAndExtensionFromPathExtractor',
+    'FilenameFromMetadataExtractor', 'FilenameFromURLExtractor', 'HashCompare', 'HashFileExtractor',
+    'Hasher', 'ImproperlyConfiguredFile', 'JSONSerializer', 'LibraryMimeTyper',
     'LinuxFileSystem',  'LinuxRenamer', 'LousyNameCompare', 'MD5Hasher',
-    'MetadataExtracter', 'MimeTypeCompare', 'MimeTypeFromFilenameExtracter',
-    'NameCompare', 'NoInternalContentError', 'OperationNotAllowed',
-    'PathFromURLExtracter', 'Pipeline', 'Processor', 'ProcessorMixin', 'Renamer',
-    'ReservedFilenameError', 'Serializer', 'SHA256Hasher', 'SizeCompare',
-    'StreamFile', 'System', 'TypeCompare', 'URI', 'UniqueRenamer', 'ValidationError',
-    'WindowsFileSystem', 'WindowsRenamer'
+    'MetadataExtractor', 'MimeTypeCompare', 'MimeTypeFromContentExtractor',
+    'MimeTypeFromFilenameExtractor', 'NameCompare', 'NoInternalContentError',
+    'OperationNotAllowed', 'PathFromURLExtractor', 'PickleSerializer', 'Pipeline', 'Processor',
+    'RarCompressedFilesFromContentExtractor', 'Renamer', 'ReservedFilenameError',
+    'SHA256Hasher', 'SevenZipCompressedFilesFromContentExtractor',
+    'SizeCompare', 'Storage', 'StreamFile', 'System', 'TypeCompare', 'URI', 'UniqueRenamer',
+    'ValidationError', 'WindowsFileSystem', 'WindowsRenamer', 'ZipCompressedFilesFromContentExtractor'
 ]

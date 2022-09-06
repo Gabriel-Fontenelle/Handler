@@ -20,56 +20,52 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
+from inspect import isclass
+from importlib import import_module
 
-from inspect import ismethod
-from ..serializer import Serializer
+from ..exception import ValidationError
 
 __all__ = [
     'Processor',
-    'ProcessorMixin',
     'Pipeline'
 ]
 
 
-class Processor(Serializer):
+class Processor:
     """
     Class to initiate a processor to be used on Pipeline.
     Processors are intermediate class between the pipelines manager (Pipeline)
     and the class with the methods to be run on pipelines.
     """
 
-    verbose_name = None
-    """
-    Verbose name for processor.
-    """
     classname = None
     """
-    The class for the processor, this is the class that will be instantiated
-    to run the processor.
+    The class for the processor, this is the class that actually run the processor`s method for pipeline.
     """
-    method_name = None
+    parameters = None
     """
-    Name of method that must be called when run this processor.
-    This method must be have a @classmethod attribute.
-    """
-    stopper = False
-    """
-    If this processor stops the pipelines or not.
-    """
-    overrider = False
-    """
-    If this processor should be allow to overwritten data or not.
-    """
-    stop_value = True
-    """
-    The value that should stop the processor when stopper is True.
+    The parameters informed when instantiating Processor to be passed for the processor`s method.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, source, **kwargs):
         """
         Method to instantiate the Processor object.
         """
-        # Set-up attributes from kwargs like `classname` or `verbose_name`
+        # Validate processor reference being inputted.
+        if isinstance(source, str):
+            self.classname = self.get_classname(source)
+        elif isclass(source):
+            self.classname = source
+        else:
+            raise ValidationError(f"Source parameter at Processor should be a string of dotted path or a class not"
+                                  f" {type(source)}!")
+
+        # Validate if classname has the method `process` to allow it to be used in pipeline.
+        if not hasattr(self.classname, 'process'):
+            raise ValidationError(f"Class {self.classname.__name__} should implement the method `process` to be a "
+                                  f"valid processor class.")
+
+        # Set-up attributes from kwargs like `classname` or `parameters`
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
@@ -77,101 +73,44 @@ class Processor(Serializer):
     def __getattr__(self, item):
         """
         Method to return classname.<item> if no attribute is found in current object.
-        This method only work with attributes of classname, not attributes of classname object.
         """
+        if item in self.__dict__:
+            return self.__dict__[item]
+
         return getattr(self.classname, item)
 
-    @property
-    def errors(self):
+    @staticmethod
+    def get_classname(dotted_path):
         """
-        Method to return list of errors found in class that will be processed by method `run`. The class will always
-        be one that inherent from `ProcessorMixin`.
+        Method to obtain and import the processor`s class from the path informed at `dotted_path`.
         """
-        return getattr(self.classname, 'errors_found')
-
-    def run(self, **kwargs):
-        """
-        Method to run method_name from classname and return boolean. Thus running the processor logic.
-        For this method to work method_name should return boolean whether it as successful or not.
-        """
-        object_to_process = kwargs.pop('object')
-
-        # Get method
-        method = getattr(self.classname, self.method_name)
-
-        # Check if method of method_name has `classmethod` decorator being bound to class
-        # If not, properly instantiate the class to run the method.
-        if not ismethod(method):
-            class_to_use = self.classname()
-            method = getattr(class_to_use, self.method_name)
-            return method(object=object_to_process, overrider=self.overrider, **kwargs)
-
-        # Run method_name (`classmethod` or class function) passing args and kwargs to it
-        # and return boolean result from processor
-        return method(object=object_to_process, overrider=self.overrider, **kwargs)
+        try:
+            module_path, class_name = dotted_path.rsplit('.', 1)
+            module = import_module(module_path)
+            return getattr(module, class_name)
+        except (ValueError, AttributeError):
+            raise ImportError(f"Was not possible to import processor {dotted_path}. Make sure that "
+                              f"{dotted_path} is a python string with dotted path to a processor class.")
 
 
-class ProcessorMixin:
-    """
-    Class to add required methods of pipelines to the class of processor.classname.
-    """
-
-    method_name_to_process = "process"
-    """
-    Name of the method that will be called when running a pipeline.
-    """
-    errors_found = []
-    """
-    List of errors found to allow non-blocking pipelines to register occurrence of errors.
-    """
-
-    @classmethod
-    def to_processor(cls, stopper=False, stop_value=True, overrider=False):
-        """
-        Method used to return a processor from class.
-        This method can be overwritten in child class. Valid return are Processor object or
-        dict containing classname, verbose_name, stopper, stop_value.
-        """
-        processor = Processor(
-            classname=cls,
-            verbose_name=cls.__name__,
-            stopper=stopper,
-            stop_value=stop_value,
-            overrider=overrider,
-            method_name=cls.method_name_to_process,
-        )
-        return processor
-
-    @classmethod
-    def process(cls, *args, **kwargs):
-        """
-        Method used to run this class on Processor`s Pipeline.
-        This method and to_processor() is not need to compare files
-        outside a pipelines.
-        Inside the pipeline this method will call to_processor() and run custom logic to
-        process the current pipeline that could be a extracter, renamer, hasher, etc.
-        """
-        raise NotImplementedError("The process method must be overwrite on child class.")
-
-    @classmethod
-    def register_error(cls, error):
-        """
-        Method to save in memory a error found by the processor.
-        """
-        cls.errors_found.append(error)
-
-
-class Pipeline(Serializer):
+class Pipeline:
     """
     Class to initiate a pipelines with given processors to be run.
     """
 
-    def __init__(self, *processors):
+    def __init__(self, *processors_candidate, **kwargs):
         """
-        This method can receive a single Processor object,
-        or a list of Processor objects or a tuple with classname, verbose_name
+        This method can receive multiples
+        This method can receive a single path to a class in string format that implement methods
+        for processing the pipeline or a list, or tuple, of class` paths and parameters that will be passed to those
+         class.
+        objects
+        or a tuple with classname, verbose_name
         and stopper configuration.
         """
+        if not processors_candidate and "processors_candidate" not in kwargs:
+            raise ValueError("A processor candidate must be informed for pipeline to be initialized")
+
         self.processors_ran = 0
         """
         Variable to register the amount of processors ran for this pipelines.
@@ -188,67 +127,60 @@ class Pipeline(Serializer):
         """
         Variable to register the errors found by processors for the current pipeline object.
         """
+        self.processors_candidate = kwargs.get("processors_candidate", processors_candidate)
+        """
+        Variable to register the original input that instantiate the Pipeline`s object.
+        """
 
-        for processor in processors:
-            # Check if processor is a dict containing classname, verbose_name and stopper
-            if isinstance(processor, dict):
-                if not ('classname' in processor or 'stopper' in processor):
-                    raise ValueError("Processor dict for pipelines need at least classname and stopper set.")
+        for candidate in self.processors_candidate:
+            try:
+                # Get parameters if there is any besides processor in list or tuple.
+                if isinstance(candidate, (tuple, list)):
+                    parameters, processor_candidate = candidate[1], candidate[0]
+                else:
+                    parameters, processor_candidate = {}, candidate
 
-                self.add_new_processor(
-                    classname=processor.pop('classname'),
-                    stopper=processor.pop('stopper'),
-                    verbose_name=processor.pop('verbose_name', None),
-                )
-
-            # Check if processor is an object from Processor
-            # As the code `elif isinstance(processor, Processor):` was not working, we change it to
-            # be the class name.
-            elif type(processor).__name__ == Processor.__name__:
-                self.add_processor(processor)
-
-            else:
-                raise ValueError(f"{processor} is not a valid processor. Expecting a dict or Processor object.")
+                self.add_processor(Processor(source=processor_candidate, parameters=parameters))
+            except ValidationError:
+                continue
 
     def __getitem__(self, item):
         """
-        Method to allow extraction of processor from pipeline_processors directly from Pipeline object.
+        Method to allow extraction of processor class from pipeline_processors directly from Pipeline object.
         """
         return self.pipeline_processors[item]
 
-    def add_new_processor(self, classname, verbose_name, stopper):
+    def __iter__(self):
         """
-        Method to instantiate a new processor from parameters and
-        add it to list of processors.
+        Method to allow direct usage of `pipeline_processors` in loops from Pipeline object.
         """
-        self.pipeline_processors.append(
-            Processor(
-                classname=classname,
-                verbose_name=verbose_name,
-                stopper=stopper
-            )
-        )
+        return iter(self.pipeline_processors)
+
+    @property
+    def __serialize__(self):
+        """
+        Method to allow dir and vars to work with the class simplifying the serialization of object.
+
+        This method only return processors_candidate because the pipeline should be clean before serializing and reset
+        before being used from a deserialization.
+        """
+        return {
+            "processors_candidate": self.processors_candidate
+        }
 
     def add_processor(self, processor):
         """
-        Method add a processor object to list of processors.
+        Method adds a processor object to list of processors.
         """
-        self.pipeline_processors.append(
-            processor
-        )
+        self.pipeline_processors.append(processor)
 
-    def run(self, **kwargs):
+    def run(self, object_to_process, **parameters):
         """
         Method to run the entire pipelines.
         The processor will define if method will stop or not the pipelines.
-        Either args or kwargs must have the object to be processed.
 
         Not all pipelines are required to run this method, as example, Hasher Pipeline avoid
         its use when loading hashes from files.
-
-        :param args:
-        :param kwargs:
-
         """
         # For each processor
         ran = 0
@@ -256,35 +188,29 @@ class Pipeline(Serializer):
         errors_found = []
 
         for processor in self.pipeline_processors:
-            result = processor.run(**kwargs)
+            result = processor.process(object_to_process=object_to_process, **processor.parameters, **parameters)
             ran += 1
 
-            if processor.errors:
+            if hasattr(processor, 'errors') and processor.errors:
                 errors_found += processor.errors
 
-            if processor.stopper:
+            if hasattr(processor, 'stopper') and processor.stopper:
                 # If processor is a step that should stop the whole pipeline
                 # we verify if we reach the condition to it stop. By default that
                 # condition is True, but can be any value set-up in stop_value and
                 # returned by processor.
-                if (
-                    result in processor.stop_value
-                    if isinstance(processor.stop_value, (list, tuple))
-                    else result is processor.stop_value
-                ):
+                try:
+                    stop_value = processor.stop_value
+                except AttributeError:
+                    # Don`t have stop value, so we consider the default `True`.
+                    stop_value = True
+
+                should_stop = result in stop_value if isinstance(stop_value, (list, tuple)) else result == stop_value
+
+                if should_stop:
                     break
 
         # register statical data about pipelines.
         self.processors_ran = ran
         self.last_result = result
         self.errors = errors_found
-
-    def to_dict(self, ignore_keys=[], **kwargs):
-        """
-        Overwritten of method that serialize the current class object to a dictionary to avoid recursive serialization.
-        """
-        ignore_keys.append('processors_ran')
-        ignore_keys.append('last_result')
-        ignore_keys.append('errors')
-
-        return super(Pipeline, self).to_dict(ignore_keys=ignore_keys, **kwargs)
