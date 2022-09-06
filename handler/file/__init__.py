@@ -28,6 +28,7 @@ from os import name
 # modules
 from .action import FileActions
 from .descriptor import InternalFilesDescriptor, LoadedDescriptor, CacheDescriptor
+from .state import FileState
 from ..exception import (
     ImproperlyConfiguredFile,
     NoInternalContentError,
@@ -49,51 +50,6 @@ __all__ = [
     'File',
     'StreamFile'
 ]
-
-
-class FileState:
-    """
-    Class that store file instance state.
-    """
-
-    adding = True
-    """
-    Indicate whether an object was already saved or not. If true, we will consider this a new, unsaved
-    object in the current file`s filesystem.
-    """
-    renaming = False
-    """
-    Indicate whether an object is schedule to being renamed in the current file`s filesystem.
-    """
-    changing = False
-    """
-    Indicate whether an object has changed or not. If true, we will consider that the current content was
-    changed but not saved yet.  
-    """
-    processing = True
-    """
-    Indicate whether an object has already run its pipeline of extraction or not. If true, we will consider 
-    this a new object that needs to be process its pipeline.
-    """
-
-    def __init__(self, **kwargs):
-        """
-        Method to create the current object using the keyword arguments.
-        """
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-            else:
-                raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
-
-    @property
-    def __serialize__(self):
-        """
-        Method to allow dir and vars to work with the class simplifying the serialization of object.
-        """
-        attributes = {"adding", "renaming", "changing", "processing"}
-
-        return {key: getattr(self, key) for key in attributes}
 
 
 class FileMetadata:
