@@ -26,8 +26,8 @@ from io import IOBase, StringIO, BytesIO
 from os import name
 
 # modules
-from .mimetype import LibraryMimeTyper
-from .exception import (
+from .descriptor import InternalFilesDescriptor, LoadedDescriptor, CacheDescriptor
+from ..exception import (
     ImproperlyConfiguredFile,
     NoInternalContentError,
     OperationNotAllowed,
@@ -35,11 +35,12 @@ from .exception import (
     SerializerError,
     ValidationError,
 )
-from .handler import URI
-from .storage import LinuxFileSystem, WindowsFileSystem
-from .pipelines import Pipeline
-from .pipelines.renamer import UniqueRenamer
-from .serializer import JSONSerializer
+from ..handler import URI
+from ..mimetype import LibraryMimeTyper
+from ..pipelines import Pipeline
+from ..pipelines.renamer import UniqueRenamer
+from ..serializer import JSONSerializer
+from ..storage import LinuxFileSystem, WindowsFileSystem
 
 __all__ = [
     'BaseFile',
@@ -47,57 +48,6 @@ __all__ = [
     'File',
     'StreamFile'
 ]
-
-
-class CacheDescriptor:
-    """
-    Descriptor class to storage data for instance`s cache.
-    This class is used for FileHashes._cache.
-    """
-
-    def __get__(self, instance, owner):
-        """
-        Method `get` to automatically set-up empty values in an instance.
-        """
-        if instance is None:
-            return self
-
-        res = instance.__dict__['_cache'] = {}
-        return res
-
-
-class LoadedDescriptor:
-    """
-    Descriptor class to storage data for instance`s loaded.
-    This class is used for FileHashes._loaded.
-    """
-
-    def __get__(self, instance, owner):
-        """
-        Method `get` to automatically set-up empty values in an instance.
-        """
-        if instance is None:
-            return self
-
-        res = instance.__dict__['_loaded'] = []
-        return res
-
-
-class InternalFilesDescriptor:
-    """
-    Descriptor class to storage data for instance`s internal files' dictionary.
-    This class is used for FileHashes._loaded.
-    """
-
-    def __get__(self, instance, owner):
-        """
-        Method `get` to automatically set-up empty values in an instance.
-        """
-        if instance is None:
-            return self
-
-        res = instance.__dict__['_internal_files'] = {}
-        return res
 
 
 class FileState:
