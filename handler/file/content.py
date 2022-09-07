@@ -166,8 +166,7 @@ class FileContent:
                     self.cached = True
 
             # Reset buffer to begin from first position
-            if self.buffer.seekable():
-                self.buffer.seek(0)
+            self.reset()
 
             raise StopIteration()
 
@@ -283,10 +282,16 @@ class FileContent:
             # Should not reach here if object is not seekable, but
             # to avoid problems with override of `should_load_to_memory` property
             # we check before using seek to reset the content.
-            if self.buffer.seekable():
-                self.buffer.seek(0)
+            self.reset()
 
             return self.buffer
+
+    def reset(self):
+        """
+        Method to reset the content cached or buffer if allowed.
+        """
+        if self.buffer.seekable():
+            self.buffer.seek(0)
 
 
 class FilePacket:
