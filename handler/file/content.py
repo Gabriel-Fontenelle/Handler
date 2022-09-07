@@ -61,6 +61,10 @@ class FileContent:
     """
     Encoding default used to convert the buffer to string.
     """
+    _iterable_in_use = False
+    """
+    Indicate whether the method next is currently being used to consume the buffer.
+    """
 
     # Cache handles
     cache_content = False
@@ -149,6 +153,9 @@ class FileContent:
         This method will cache content in file or in memory depending on value of `cache_content`, `cache_in_memory` and
         `cache_in_file`. For caching in file, it will generate a unique filename in a temporary directory.
         """
+        # Flag to avoid calling this method with self.read()
+        self._iterable_in_use = True
+
         block = self.buffer.read(self._block_size)
 
         # This end the loop if block is None, b'' or ''.
@@ -167,6 +174,8 @@ class FileContent:
 
             # Reset buffer to begin from first position
             self.reset()
+
+            self._iterable_in_use = False
 
             raise StopIteration()
 
@@ -292,6 +301,33 @@ class FileContent:
         """
         if self.buffer.seekable():
             self.buffer.seek(0)
+
+    def read(self, size=None):
+        """
+        Method to return part or whole content cached or buffered.
+        This method should not be used while the iter(self) is being consumed in a loop, due to concurrency problem
+        that may arise calling multiple times buffer.read(), which can lead to data loss.
+        """
+
+        if self._iterable_in_use:
+            raise RecursionError(f"Method read cannot be used while the iterable of {self} is being consumed.")
+
+        if not size:
+            # Read the whole content
+            return self.content
+
+        # Save original buffer size to allow restoring it after calling __next__()
+        original_block_size = self._block_size
+        self._block_size = size
+
+        content = self.__next__()
+        # Reset the size of buffer to original one
+        self._block_size = original_block_size
+
+        # Disable flag _iterable_in_use active because of calling __next__()
+        self._iterable_in_use = False
+
+        return content
 
 
 class FilePacket:
