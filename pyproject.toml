@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "Handler"
-version = "0.8.3"
+version = "0.9.0"
 description = "Package for abstracting file system handler in an oriented-object style."
 authors = ["Gabriel <contato@gabrielfontenelle.com>"]
 license = "GNU GENERAL PUBLIC LICENSE v3"
@@ -24,8 +24,10 @@ tinytag = "1.6.0"
 dill = "^0.3.5"
 json-tricks = "^3.15"
 rarfile = "^4.0"
+tox-poetry = "^0.4"
 
 [tool.poetry.dev-dependencies]
+pytest = "*"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
