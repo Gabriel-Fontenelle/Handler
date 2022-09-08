@@ -515,7 +515,7 @@ class WindowsFileSystem(Storage):
         """
         # TODO: Conclude function after testing on Windows.
         file = r"C:\Users\Grandmaster\Desktop\testing.py"
-        output = popen(fr"fsutil file queryfileid {file}").read()
+        output = os.popen(fr"fsutil file queryfileid {file}").read()
 
     @classmethod
     def get_created_date(cls, path):
@@ -561,7 +561,7 @@ class LinuxFileSystem(Storage):
         Method to get the file system id for a path.
         Path can be both a directory or file.
         """
-        return stat(path, follow_symlinks=False).st_ino
+        return os.stat(path, follow_symlinks=False).st_ino
 
     @classmethod
     def get_created_date(cls, path):
@@ -571,7 +571,7 @@ class LinuxFileSystem(Storage):
         See https://stackoverflow.com/a/39501288/1709587 for explanation.
         Source: https://stackoverflow.com/a/39501288
         """
-        stats = stat(path)
+        stats = os.stat(path)
         try:
             time = stats.st_birthtime
         except AttributeError:
