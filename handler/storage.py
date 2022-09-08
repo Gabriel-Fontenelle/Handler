@@ -89,6 +89,8 @@ class Storage:
     Define the location of temporary content in filesystem.
     """
 
+    # High-end methods to use with files and directories.
+    # Those methods were created to be used by BaseFile.
     @classmethod
     def is_dir(cls, path):
         """
@@ -344,6 +346,16 @@ class Storage:
                 yield file
 
     @classmethod
+    def list_files_and_directories(cls, path):
+        """
+        Method used to list directories and files.
+        """
+        if version_info.major == 3 and version_info.minor > 9:
+            return iglob("*", root_dir=path)
+        else:
+            return iglob(f"{path}")
+
+    @classmethod
     def get_filename_from_path(cls, path):
         """
         Method used to get the filename from a complete path.
@@ -490,6 +502,41 @@ class Storage:
         """
         return normpath(path.replace('/', cls.sep))
 
+    # Low-end methods to use with Path
+    # Those methods were created to be used by pathlib.Path, tough
+    # they can be used by BaseFile.
+    @classmethod
+    def get_accessor(cls):
+        """
+        Method to obtain the related Accessor customized for use in pathlib.Path.
+        """
+        class CustomAccessor(_NormalAccessor):
+            stat = os.stat
+            lstat = os.lstat
+            open = cls.open_file
+            listdir = cls.list_files_and_directories
+            scandir = os.scandir
+            chmod = os.chmod
+            # lchmod = lchmod
+            mkdir = cls.create_directory
+            unlink = os.unlink
+            rmdir = cls.delete
+            rename = cls.rename
+            replace = cls.replace
+            # symlink
+            utime = os.utime
+            # readlink
+
+        return CustomAccessor()
+
+    @classmethod
+    def get_pathlib_path(cls, path):
+        """
+        Method to get the custom Path class with accessor override.
+        This method should be overwritten in child specific for Operational System.
+        """
+        raise NotImplementedError("Method get_pathlib_path(path) should be accessed through inherent class.")
+
 
 class WindowsFileSystem(Storage):
     """
@@ -538,6 +585,20 @@ class WindowsFileSystem(Storage):
         """
         return normpath(normcase(path))
 
+    @classmethod
+    def get_pathlib_path(cls, path):
+        """
+        Method to get the custom Path class with accessor override.
+        """
+        class CustomPath(Path):
+            _flavour = _WindowsFlavour()
+
+            def _init(self):
+                self._closed = False
+                self._accessor = cls.get_accessor()
+
+        return CustomPath(path)
+
 
 class LinuxFileSystem(Storage):
     """
@@ -580,3 +641,18 @@ class LinuxFileSystem(Storage):
             time = stats.st_mtime
 
         return datetime.fromtimestamp(time)
+
+    @classmethod
+    def get_pathlib_path(cls, path):
+        """
+        Method to get the custom Path class with accessor override.
+        """
+
+        class CustomPath(Path):
+            _flavour = _PosixFlavour()
+
+            def _init(self):
+                self._closed = False
+                self._accessor = cls.get_accessor()
+
+        return CustomPath(path)
