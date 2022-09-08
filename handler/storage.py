@@ -255,6 +255,14 @@ class Storage:
         return cls.move(source, destination)
 
     @classmethod
+    def replace(cls, source, destination):
+        """
+        Method to rename a file from origin to destination.
+        This method will replace the destination path if already exists.
+        """
+        return cls.move(source, destination, force=True)
+
+    @classmethod
     def clone(cls, source, destination):
         """
         Method to copy a file from origin to destination avoiding override of destination file.
