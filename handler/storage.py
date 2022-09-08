@@ -22,18 +22,12 @@ Should there be a need for contact the electronic mail
 """
 
 # Python internals
+import os
 import re
 from datetime import datetime
 from filecmp import cmp
 from glob import iglob
-from shutil import copyfile
-
-from os import (
-    makedirs,
-    popen,
-    sep as os_sep, remove, fsync,
-    stat
-)
+from io import open
 from os.path import (
     abspath,
     basename,
@@ -47,14 +41,18 @@ from os.path import (
     normcase,
     normpath,
 )
-from io import open
-
+from pathlib import (
+    _NormalAccessor,
+    Path,
+    _PosixFlavour,
+    _WindowsFlavour
+)
+from shutil import copyfile
 # third-party
 from shutil import rmtree
 from sys import version_info
 
 from send2trash import send2trash
-
 
 __all__ = [
     'Storage',
@@ -67,7 +65,8 @@ class Storage:
     """
     Class that standardized methods of different file systems.
     """
-    sep = os_sep
+
+    sep = os.sep
     """
     Directory separator in the filesystem.
     """
@@ -115,48 +114,48 @@ class Storage:
         return getsize(path) == 0
 
     @classmethod
-    def create_directory(cls, directory_path):
+    def create_directory(cls, path):
         """
         Method to create directory in the file system.
         This method will try to create a directory only if it not exists already.
         Override this method if that’s not appropriate for your storage.
         """
         # Create Directory
-        if not directory_path:
+        if not path:
             raise ValueError("Is necessary the receive a folder name on create_directory method.")
 
-        if not cls.exists(directory_path):
-            makedirs(directory_path)
+        if not cls.exists(path):
+            os.makedirs(path)
             return True
 
         return False
 
     @classmethod
-    def create_file(cls, file_path):
+    def create_file(cls, path):
         """
         Method to create an empty file.
         This method will try to create a file only if it not exists already.
         Override this method if that’s not appropriate for your storage.
         """
         # Check if file exists.
-        if cls.exists(file_path):
+        if cls.exists(path):
             return False
 
-        basedir = dirname(file_path)
+        basedir = dirname(path)
 
         cls.create_directory(basedir)
 
-        open(file_path, 'a').close()
+        open(path, 'a').close()
 
         return True
 
     @classmethod
-    def open_file(cls, file_path, mode='rb'):
+    def open_file(cls, path, mode='rb'):
         """
         Method to return a buffer to a file. This method don't automatically closes file buffer.
         Override this method if that’s not appropriate for your storage.
         """
-        return open(file_path, mode=mode)
+        return open(path, mode=mode)
 
     @classmethod
     def close_file(cls, file_buffer):
@@ -167,7 +166,7 @@ class Storage:
         return file_buffer.close()
 
     @classmethod
-    def save_file(cls, file_path, content, **kwargs):
+    def save_file(cls, path, content, **kwargs):
         """
         Method to save content on file.
         This method will throw an exception if content is not iterable.
@@ -181,11 +180,11 @@ class Storage:
         if 'write_mode' not in kwargs:
             kwargs['write_mode'] = 'b'
 
-        with open(file_path, kwargs['file_mode'] + kwargs['write_mode']) as file_pointer:
+        with open(path, kwargs['file_mode'] + kwargs['write_mode']) as file_pointer:
             for chunk in content:
                 file_pointer.write(chunk)
                 file_pointer.flush()
-                fsync(file_pointer.fileno())
+                os.fsync(file_pointer.fileno())
 
     @classmethod
     def backup(cls, file_path_origin, force=False):
@@ -243,22 +242,20 @@ class Storage:
         return False
 
     @classmethod
-    def rename(cls, file_path_origin, file_path_destination, force=False):
+    def rename(cls, source, destination):
         """
         Method to rename a file from origin to destination.
         This method try to find a new filename if one already exists.
-        This method will overwrite destination file if force is True
-        if the destination file already exists.
         """
         i = 1
-        while cls.exists(file_path_destination) and not force:
-            file_path_destination = cls.get_renamed_path(path=file_path_destination, sequence=i)
+        while cls.exists(destination):
+            destination = cls.get_renamed_path(path=destination, sequence=i)
             i += 1
 
-        return cls.move(file_path_origin, file_path_destination, force)
+        return cls.move(source, destination)
 
     @classmethod
-    def clone(cls, file_path_origin, file_path_destination):
+    def clone(cls, source, destination):
         """
         Method to copy a file from origin to destination avoiding override of destination file.
         This method try to find a new filename if one already exists before copying the file.
@@ -266,11 +263,11 @@ class Storage:
         for destination file before trying to copy to destination path.
         """
         i = 1
-        while cls.exists(file_path_destination):
-            file_path_destination = cls.get_renamed_path(path=file_path_destination, sequence=i)
+        while cls.exists(destination):
+            destination = cls.get_renamed_path(path=destination, sequence=i)
             i += 1
 
-        return cls.copy(file_path_origin, file_path_destination, force=False)
+        return cls.copy(source, destination, force=False)
 
     @classmethod
     def delete(cls, path, force=False):
@@ -288,7 +285,7 @@ class Storage:
             send2trash(path)
 
         elif cls.is_file(path):
-            remove(path)
+            os.remove(path)
 
         else:
             rmtree(path)
@@ -322,7 +319,7 @@ class Storage:
         return join(*paths)
 
     @classmethod
-    def list_files(cls, directory_path, filter="*"):
+    def list_files(cls, path, filter_pattern="*"):
         """
         Method used to list files following pattern in filter.
         Override this method if that’s not appropriate for your storage.
@@ -330,12 +327,12 @@ class Storage:
         `filter` should accept wildcards.
         """
         if version_info.major == 3 and version_info.minor > 9:
-            iter_glob = iglob(filter, root_dir=directory_path)
+            iter_glob = iglob(filter_pattern, root_dir=path)
         else:
-            iter_glob = iglob(f"{directory_path}{cls.sep}{filter}")
+            iter_glob = iglob(f"{path}{cls.sep}{filter_pattern}")
 
         for file in iter_glob:
-            if cls.is_file(cls.join(directory_path, file)):
+            if cls.is_file(cls.join(path, file)):
                 yield file
 
     @classmethod
