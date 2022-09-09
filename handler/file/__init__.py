@@ -668,21 +668,19 @@ class BaseFile:
 
         return result
 
-    def extract(self):
+    def extract(self, destination=None, force=False):
         """
         Method to extract the content of the file, only if object is packed and extractable.
         """
         if self.meta.packed:
             # Define directory location for extraction of content from path.
-            location = self.storage.join(self.save_to, self.filename)
-            if self.storage.exists(location):
-                location = self.storage.get_renamed_path(path=location)
+            destination = destination or self.storage.join(self.save_to, self.filename)
 
             # Directly run extractor pipeline by passing method `run`.
             # The method decompress in extractor determine if this package is extractable.
             for processor in self._content_files.extract_data_pipeline:
                 try:
-                    if processor.decompress(file_object=self, decompress_to=location):
+                    if processor.decompress(file_object=self, decompress_to=destination, overrider=force):
                         return True
 
                 except NotImplementedError:
