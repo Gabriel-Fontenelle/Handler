@@ -188,9 +188,14 @@ class RarCompressedFilesFromContentExtractor(ContentExtractor):
     """
     Class to extract internal files from rar files.
     """
+
     extensions = ['rar']
     """
-    Attribute to store allowed extensions to be used in validator.
+    Attribute to store allowed extensions for use in `validator`.
+    """
+    compressor = RarFile
+    """
+    Attribute to store the current class of compressor for use in `content_buffer` and `decompress` methods.
     """
 
     @classmethod
@@ -201,58 +206,59 @@ class RarCompressedFilesFromContentExtractor(ContentExtractor):
         try:
             cls.validate(file_object)
 
-            # Reset buffer to initial location
-            if file_object.buffer.seekable():
-                file_object.buffer.seek(0)
-
             file_system = file_object.storage
             file_class = file_object.__class__
 
-            filerar = RarFile(file=file_object.buffer)
+            # We don't need to reset the buffer before calling it, because it will be reset
+            # if already cached. The next time property buffer is called it will reset again.
+            with cls.compressor(file=file_object.buffer) as compressed_object:
 
-            for internal_file in filerar.infolist():
-                # Skip directories and symbolic link
-                if internal_file.is_dir() or internal_file.is_symlink():
-                    continue
+                for internal_file in compressed_object.infolist():
+                    # Skip directories and symbolic link
+                    if internal_file.is_dir() or internal_file.is_symlink():
+                        continue
 
-                # Skip duplicate only if not choosing to override.
-                if internal_file.filename in file_object._content_files and not overrider:
-                    continue
+                    # Skip duplicate only if not choosing to override.
+                    if internal_file.filename in file_object._content_files and not overrider:
+                        continue
 
-                # Create file object for internal file
-                internal_file_object = file_class(
-                    path=internal_file.filename,
-                    extract_data_pipeline=Pipeline(
-                        'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
-                        'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
-                    ),
-                    file_system_handler=file_system
-                )
-
-                # Update creation and modified date
-                internal_file_object.create_date = internal_file.ctime
-                internal_file_object.update_date = internal_file.mtime
-
-                # Update size of file
-                internal_file_object.size = internal_file.file_size
-
-                # Update hash generating the hash file and adding its content
-                if internal_file.CRC:
-                    hash_file = CRC32Hasher.create_hash_file(
-                        object_to_process=file_object,
-                        digested_hex_value=internal_file.CRC
+                    # Create file object for internal file
+                    internal_file_object = file_class(
+                        path=internal_file.filename,
+                        extract_data_pipeline=Pipeline(
+                            'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                            'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+                        ),
+                        file_system_handler=file_system
                     )
-                    internal_file_object.hashes['crc32'] = internal_file.CRC, hash_file, CRC32Hasher
 
-                # Set up action to be extracted instead of to save.
-                internal_file_object._actions.to_extract()
+                    # Update creation and modified date
+                    internal_file_object.create_date = internal_file.ctime
+                    internal_file_object.update_date = internal_file.mtime
 
-                # Add internal file as File object to file.
-                file_object._content_files[internal_file.filename] = internal_file_object
+                    # Update size of file
+                    internal_file_object.size = internal_file.file_size
 
-            # Reset buffer to initial location
-            if file_object.buffer.seekable():
-                file_object.buffer.seek(0)
+                    # Update hash generating the hash file and adding its content
+                    if internal_file.CRC:
+                        hash_file = CRC32Hasher.create_hash_file(
+                            object_to_process=file_object,
+                            digested_hex_value=internal_file.CRC
+                        )
+                        internal_file_object.hashes['crc32'] = internal_file.CRC, hash_file, CRC32Hasher
+
+                    # Set up action to be extracted instead of to save.
+                    internal_file_object._actions.to_extract()
+
+                    # Set up content pointer to internal file using content_buffer
+                    internal_file_object.content = cls.content_buffer(file_object, internal_file.filename)
+
+                    # Set up metadata for internal file
+                    internal_file_object.meta.hashable = False
+                    internal_file_object.meta.internal = True
+
+                    # Add internal file as File object to file.
+                    file_object._content_files[internal_file.filename] = internal_file_object
 
             # Update metadata and actions.
             file_object.meta.packed = True
