@@ -116,7 +116,7 @@ class Storage:
         return getsize(path) == 0
 
     @classmethod
-    def create_directory(cls, path):
+    def create_directory(cls, path, mode=0o777):
         """
         Method to create directory in the file system.
         This method will try to create a directory only if it not exists already.
@@ -127,7 +127,7 @@ class Storage:
             raise ValueError("Is necessary the receive a folder name on create_directory method.")
 
         if not cls.exists(path):
-            os.makedirs(path)
+            os.makedirs(path, mode)
             return True
 
         return False
