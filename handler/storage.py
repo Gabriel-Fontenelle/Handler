@@ -506,6 +506,14 @@ class Storage:
     # Those methods were created to be used by pathlib.Path, tough
     # they can be used by BaseFile.
     @classmethod
+    def opener(cls, *args, **kwargs):
+        """
+        Method to open the file as a file pointer compatible with os.open.
+        This method should not be used, it exists only for usage with get_accessor.
+        """
+        return os.open(*args, **kwargs)
+
+    @classmethod
     def get_accessor(cls):
         """
         Method to obtain the related Accessor customized for use in pathlib.Path.
@@ -513,7 +521,7 @@ class Storage:
         class CustomAccessor(_NormalAccessor):
             stat = os.stat
             lstat = os.lstat
-            open = cls.open_file
+            open = cls.opener
             listdir = cls.list_files_and_directories
             scandir = os.scandir
             chmod = os.chmod
