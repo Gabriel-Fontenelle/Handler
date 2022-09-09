@@ -21,6 +21,8 @@ Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
 from datetime import datetime
+from io import IOBase
+from tarfile import TarFile, TarError
 from zipfile import BadZipFile, ZipFile
 
 from ..hasher import CRC32Hasher
@@ -41,6 +43,7 @@ __all__ = [
     'MimeTypeFromContentExtractor',
     'SevenZipCompressedFilesFromContentExtractor',
     'RarCompressedFilesFromContentExtractor',
+    'TarCompressedFilesFromContentExtractor',
     'ZipCompressedFilesFromContentExtractor',
 ]
 
@@ -179,6 +182,164 @@ class PSDLayersFromContentExtractor(ContentExtractor):
     """
 
 
+class TarCompressedFilesFromContentExtractor(ContentExtractor):
+    """
+    Class to extract internal files from tar.gz or tar.bz files.
+    As gzip and bzip compression don`t provide a manifest, as it is not an archive format just a compression algorithm,
+    the tarfile library should be used to try to extract information of files with compression .bz and .gz as its the
+    most common usage of tar with those compressors.
+    """
+
+    extensions = ['gz', 'tar', 'bz']
+    """
+    Attribute to store allowed extensions for use in `validator`.
+    """
+    compressor = TarFile
+    """
+    Attribute to store the current class of compressor for use in `content_buffer` and `decompress` methods.
+    """
+
+    @classmethod
+    def content_buffer(cls, file_object, internal_file_name):
+        """
+        Method to create a buffer pointing to the uncompressed content.
+        This method must work lazily, extracting the content only when the buffer is read.
+        """
+
+        class TarContentBuffer(cls.ContentBuffer):
+            """
+            Class to allow consumption of buffer in a lazy way.
+            """
+
+            def read(self, *args, **kwargs) -> str:
+                """
+                Method to read the content of the object initiating the buffer if not exists.
+                """
+                if not hasattr(self, "buffer"):
+                    # Instantiate the buffer of inner content
+                    compressed = self.compressor(fileobj=self.source_file_object.buffer)
+
+                    self.buffer = compressed.extractfile(member=self.filename)
+
+                return self.buffer.read(*args, **kwargs)
+
+        return TarContentBuffer(file_object, cls.compressor_class, internal_file_name)
+
+    @classmethod
+    def decompress(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to uncompress the content from a file_object.
+        """
+        try:
+            cls.validate(file_object)
+
+            # We don't need to create the directory because the extractor will create it if not exists.
+            extraction_path = kwargs.pop("decompress_to")
+
+            # We don't need to reset the buffer before calling it, because it will be reset
+            # if already cached. The next time property buffer is called it will reset again.
+            with cls.compressor(fileobj=file_object.buffer) as compressed_file:
+
+                # targets as None will extract all data, overwriting existing ones.
+                targets = None
+
+                if not overrider:
+                    targets = []
+                    for filename in compressed_file.getnames():
+                        # Avoid files beginning with `..` or `/` for security reason.
+                        if filename[0] == '/' or filename[0:2] == '..':
+                            continue
+
+                        if not file_object.storage.exists(
+                                file_object.storage.join(extraction_path, filename)
+                        ):
+                            targets.append(filename)
+
+                    # Avoid calling the extractor if the list is empty.
+                    if not targets:
+                        return True
+
+                # Concurrent extract file in external file system using a custom pathlib.Path
+                # with accessor informed by storage of file_object.
+                compressed_file.extractall(path=file_object.storage.get_pathlib_path(extraction_path), members=targets)
+
+        except (BadZipFile, ValidationError):
+            return False
+
+        return True
+
+    @classmethod
+    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to extract the information necessary from a file_object.
+        """
+        try:
+            cls.validate(file_object)
+
+            file_system = file_object.storage
+            file_class = file_object.__class__
+
+            # We don't need to reset the buffer before calling it, because it will be reset
+            # if already cached. The next time property buffer is called it will reset again.
+            with cls.compressor(fileobj=file_object.buffer) as compressed_object:
+
+                for internal_file in compressed_object.getmembers():
+                    # Skip directories
+                    if internal_file.isdir():
+                        continue
+
+                    # Skip duplicate only if not choosing to override.
+                    if internal_file.name in file_object._content_files and not overrider:
+                        continue
+
+                    # Create file object for internal file
+                    internal_file_object = file_class(
+                        path=internal_file.name,
+                        extract_data_pipeline=Pipeline(
+                            'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                            'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+                        ),
+                        file_system_handler=file_system
+                    )
+
+                    # Update creation and modified date
+                    internal_file_object.create_date = internal_file.mtime
+                    internal_file_object.update_date = internal_file.mtime
+
+                    # Update size of file
+                    internal_file_object.size = internal_file.size
+
+                    # Update hash generating the hash file and adding its content
+                    if internal_file.chksum:
+                        hash_file = CRC32Hasher.create_hash_file(
+                            object_to_process=file_object,
+                            digested_hex_value=internal_file.chksum
+                        )
+                        internal_file_object.hashes['crc32'] = internal_file.chksum, hash_file, CRC32Hasher
+
+                    # Set up action to be extracted instead of to save.
+                    internal_file_object._actions.to_extract()
+
+                    # Set up content pointer to internal file using content_buffer
+                    internal_file_object.content = cls.content_buffer(file_object, internal_file.name)
+
+                    # Set up metadata for internal file
+                    internal_file_object.meta.hashable = False
+                    internal_file_object.meta.internal = True
+
+                    # Add internal file as File object to file.
+                    file_object._content_files[internal_file.name] = internal_file_object
+
+            # Update metadata and actions.
+            file_object.meta.packed = True
+            file_object._actions.listed()
+
+            return True
+
+        except (TarError, ValidationError):
+            return False
+
+
 class ZipCompressedFilesFromContentExtractor(ContentExtractor):
     """
     Class to extract internal files from rar files.
@@ -192,6 +353,75 @@ class ZipCompressedFilesFromContentExtractor(ContentExtractor):
     """
     Attribute to store the current class of compressor for use in `content_buffer` and `decompress` methods.
     """
+
+    @classmethod
+    def content_buffer(cls, file_object, internal_file_name):
+        """
+        Method to create a buffer pointing to the uncompressed content.
+        This method must work lazily, extracting the content only when the buffer is read.
+        """
+
+        class ZipContentBuffer(cls.ContentBuffer):
+            """
+            Class to allow consumption of buffer in a lazy way.
+            """
+
+            def read(self, *args, **kwargs) -> str:
+                """
+                Method to read the content of the object initiating the buffer if not exists.
+                """
+                if not hasattr(self, "buffer"):
+                    # Instantiate the buffer of inner content
+                    compressed = self.compressor(file=self.source_file_object.buffer)
+
+                    self.buffer = compressed.open(name=self.filename)
+
+                return self.buffer.read(*args, **kwargs)
+
+        return ZipContentBuffer(file_object, cls.compressor_class, internal_file_name)
+
+    @classmethod
+    def decompress(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to uncompress the content from a file_object.
+        """
+        try:
+            cls.validate(file_object)
+
+            # We don't need to create the directory because the extractor will create it if not exists.
+            extraction_path = kwargs.pop("decompress_to")
+
+            # We don't need to reset the buffer before calling it, because it will be reset
+            # if already cached. The next time property buffer is called it will reset again.
+            with cls.compressor(file=file_object.buffer) as compressed_file:
+
+                # targets as None will extract all data, overwriting existing ones.
+                targets = None
+
+                if not overrider:
+                    targets = []
+                    for filename in compressed_file.namelist():
+                        # Avoid files beginning with `..` or `/` for security reason.
+                        if filename[0] == '/' or filename[0:2] == '..':
+                            continue
+
+                        if not file_object.storage.exists(
+                            file_object.storage.join(extraction_path, filename)
+                        ):
+                            targets.append(filename)
+
+                    # Avoid calling the extractor if the list is empty.
+                    if not targets:
+                        return True
+
+                # Concurrent extract file in external file system using a custom pathlib.Path
+                # with accessor informed by storage of file_object.
+                compressed_file.extractall(path=file_object.storage.get_pathlib_path(extraction_path), members=targets)
+
+        except (BadZipFile, ValidationError):
+            return False
+
+        return True
 
     @classmethod
     def extract(cls, file_object, overrider: bool, **kwargs: dict):
@@ -280,6 +510,75 @@ class RarCompressedFilesFromContentExtractor(ContentExtractor):
     """
 
     @classmethod
+    def content_buffer(cls, file_object, internal_file_name):
+        """
+        Method to create a buffer pointing to the uncompressed content.
+        This method must work lazily, extracting the content only when the buffer is read.
+        """
+
+        class RarContentBuffer(cls.ContentBuffer):
+            """
+            Class to allow consumption of buffer in a lazy way.
+            """
+
+            def read(self, *args, **kwargs) -> str:
+                """
+                Method to read the content of the object initiating the buffer if not exists.
+                """
+                if not hasattr(self, "buffer"):
+                    # Instantiate the buffer of inner content
+                    compressed = self.compressor(file=self.source_file_object.buffer)
+
+                    self.buffer = compressed.open(name=self.filename)
+
+                return self.buffer.read(*args, **kwargs)
+
+        return RarContentBuffer(file_object, cls.compressor_class, internal_file_name)
+
+    @classmethod
+    def decompress(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to uncompress the content from a file_object.
+        """
+        try:
+            cls.validate(file_object)
+
+            # We don't need to create the directory because the extractor will create it if not exists.
+            extraction_path = kwargs.pop("decompress_to")
+
+            # We don't need to reset the buffer before calling it, because it will be reset
+            # if already cached. The next time property buffer is called it will reset again.
+            with cls.compressor(file=file_object.buffer) as compressed_file:
+
+                # targets as None will extract all data, overwriting existing ones.
+                targets = None
+
+                if not overrider:
+                    targets = []
+                    for filename in compressed_file.namelist():
+                        # Avoid files beginning with `..` or `/` for security reason.
+                        if filename[0] == '/' or filename[0:2] == '..':
+                            continue
+
+                        if not file_object.storage.exists(
+                            file_object.storage.join(extraction_path, filename)
+                        ):
+                            targets.append(filename)
+
+                    # Avoid calling the extractor if the list is empty.
+                    if not targets:
+                        return True
+
+                # Concurrent extract file in external file system using a custom pathlib.Path
+                # with accessor informed by storage of file_object.
+                compressed_file.extractall(path=file_object.storage.get_pathlib_path(extraction_path), members=targets)
+
+        except (BadRarFile, NotRarFile, ValidationError):
+            return False
+
+        return True
+
+    @classmethod
     def extract(cls, file_object, overrider: bool, **kwargs: dict):
         """
         Method to extract the information necessary from a file_object.
@@ -364,6 +663,74 @@ class SevenZipCompressedFilesFromContentExtractor(ContentExtractor):
     """
     Attribute to store the current class of compressor for use in `content_buffer` and `decompress` methods.
     """
+
+    @classmethod
+    def content_buffer(cls, file_object, internal_file_name):
+        """
+        Method to create a buffer pointing to the uncompressed content.
+        This method must work lazily, extracting the content only when the buffer is read.
+        """
+        class SevenZipContentBuffer(cls.ContentBuffer):
+            """
+            Class to allow consumption of buffer in a lazy way.
+            """
+
+            def read(self, *args, **kwargs) -> str:
+                """
+                Method to read the content of the object initiating the buffer if not exists.
+                """
+                if not hasattr(self, "buffer"):
+                    # Instantiate the buffer of inner content
+                    compressed = self.compressor(file=self.source_file_object.buffer)
+
+                    self.buffer = next(iter(compressed.read(targets=[self.filename]).values()))
+
+                return self.buffer.read(*args, **kwargs)
+
+        return SevenZipContentBuffer(file_object, cls.compressor_class, internal_file_name)
+
+    @classmethod
+    def decompress(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to uncompress the content from a file_object.
+        """
+        try:
+            cls.validate(file_object)
+
+            # We don't need to create the directory because the extractor will create it if not exists.
+            extraction_path = kwargs.pop("decompress_to")
+
+            # We don't need to reset the buffer before calling it, because it will be reset
+            # if already cached. The next time property buffer is called it will reset again.
+            with cls.compressor(file=file_object.buffer) as compressed_file:
+
+                # targets as None will extract all data, overwriting existing ones.
+                targets = None
+
+                if not overrider:
+                    targets = []
+                    for filename in compressed_file.getnames():
+                        # Avoid files beginning with `..` or `/` for security reason.
+                        if filename[0] == '/' or filename[0:2] == '..':
+                            continue
+
+                        if not file_object.storage.exists(
+                            file_object.storage.join(extraction_path, filename)
+                        ):
+                            targets.append(filename)
+
+                    # Avoid calling the extractor if the list is empty.
+                    if not targets:
+                        return True
+
+                # Concurrent extract file in external file system using a custom pathlib.Path
+                # with accessor informed by storage of file_object.
+                compressed_file.extract(path=file_object.storage.get_pathlib_path(extraction_path), targets=targets)
+
+        except (ValidationError, Bad7zFile):
+            return False
+
+        return True
 
     @classmethod
     def extract(cls, file_object, overrider: bool, **kwargs: dict):
@@ -471,10 +838,8 @@ class AudioMetadataFromContentExtractor(Extractor):
                 "Length for file's object must set before calling `AudioMetadataFromContentExtractor.extract`!"
             )
 
-        # Reset buffer to initial location
-        if file_object.buffer.seekable():
-            file_object.buffer.seek(0)
-
+        # We don't need to reset the buffer before calling it, because it will be reset
+        # if already cached. The next time property buffer is called it will reset again.
         tinytag = TinyTag(file_object.buffer, len(file_object))
         tinytag.load(tags=True, duration=True, image=False)
         # Same as code in tinytag, it turn default dict into dict so that it can throw KeyError
@@ -504,10 +869,6 @@ class AudioMetadataFromContentExtractor(Extractor):
             tinytag_attribute = getattr(tinytag, attribute, None)
             if tinytag_attribute and (not getattr(file_object.meta, attribute, None) or overrider):
                 setattr(file_object.meta, attribute, tinytag_attribute)
-
-        # Reset buffer to initial location
-        if file_object.buffer.seekable():
-            file_object.buffer.seek(0)
 
 
 class MimeTypeFromContentExtractor(Extractor):
