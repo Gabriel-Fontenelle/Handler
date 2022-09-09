@@ -82,9 +82,9 @@ class FileContent:
     cached = False
     """
     Whether the content as whole was cached. Being True the current buffer will point to a stream
-    of `_cached_buffer`.
+    of `_cached_content`.
     """
-    _cached_buffer = None
+    _cached_content = None
     """
     Stream for file`s content cached.
     """
@@ -135,7 +135,7 @@ class FileContent:
             self.cached = False
 
         # Default buffer for cache
-        self._cached_buffer = None
+        self._cached_content = None
 
     def __iter__(self):
         """
@@ -164,7 +164,7 @@ class FileContent:
             if self.cache_content and not self.cached:
                 if self.cache_in_memory:
                     class_name = BytesIO if self.is_binary else StringIO
-                    self.buffer = class_name(self._cached_buffer)
+                    self.buffer = class_name(self._cached_content)
                     self.cached = True
                 elif self.cache_in_file:
                     # Buffer receive stream from file
@@ -183,10 +183,10 @@ class FileContent:
         if self.cache_content and not self.cached:
             # Cache content in memory only
             if self.cache_in_memory:
-                if self._cached_buffer is None:
-                    self._cached_buffer = block
+                if self._cached_content is None:
+                    self._cached_content = block
                 else:
-                    self._cached_buffer += block
+                    self._cached_content += block
             # Cache content in temporary file
             elif self.cache_in_file:
                 if not self._cached_path:
@@ -226,7 +226,7 @@ class FileContent:
             "cache_in_memory",
             "cache_in_file",
             "cached",
-            "_cached_buffer",
+            "_cached_content",
             "_cached_path",
         }
 
@@ -254,8 +254,8 @@ class FileContent:
             self.cache_in_memory = True
             self.cache_in_file = False
 
-        if self._cached_buffer is None or self._cached_path is None:
-            # Consume content if not loaded
+        if self._cached_content is None or self._cached_path is None:
+            # Consume content if not loaded and cache it
             while True:
                 try:
                     next(self)
@@ -263,10 +263,10 @@ class FileContent:
                     break
 
         # Content in case that it was loaded in memory. If not, it will be None and override below.
-        content = self._cached_buffer
+        content = self._cached_content
 
         # Override `content` with content from file.
-        if self.cache_in_file:
+        if self.cache_in_file and self._cached_path:
             mode = 'rb' if self.is_binary else 'r'
             buffer = self.related_file_object.storage.open_file(self._cached_path, mode=mode)
             content = buffer.read()
