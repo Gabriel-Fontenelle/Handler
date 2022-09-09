@@ -54,7 +54,12 @@ class ContentExtractor(Extractor):
 
     extensions = None
     """
-    Attribute to store allowed extensions to be used in validator.
+    Attribute to store allowed extensions for use in `validator`.
+    This attribute should be override in children classes.
+    """
+    compressor_class = None
+    """
+    Attribute to store the current class of compressor for use in `content_buffer` and `decompress` methods.
     This attribute should be override in children classes.
     """
     stopper = True
@@ -88,6 +93,7 @@ class ContentExtractor(Extractor):
         """
         Method to create a buffer pointing to the uncompressed content.
         This method must work lazily, extracting the content only when the buffer is read.
+        This method must be override in child class.
         """
         raise NotImplementedError("Method content_buffer must be overwritten on child class.")
 
