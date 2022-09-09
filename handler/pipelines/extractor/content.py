@@ -67,6 +67,75 @@ class ContentExtractor(Extractor):
     Variable that define if this class used as processor should stop the pipeline.
     """
 
+    class ContentBuffer(IOBase):
+        """
+        Class to allow consumption of buffer in a lazy way.
+        This class should be override in children of ContentExtractor to
+        implementation of method read().
+        """
+
+        source_file_object = None
+        """
+        Attribute to store the related file object that has the buffer for the compressed content.
+        """
+        compressor = None
+        """
+        Attribute to store the class of the compressor able to uncompress the content.  
+        """
+        filename = None
+        """
+        Attribute to store the name of file that should be extract for this content.
+        """
+
+        def __init__(self, source_file_object, compressor_class, internal_file_filename):
+            """
+            Method to initiate the object saving the data required to allow decompressing and reading content
+            for specific file.
+            """
+            self.source_file_object = source_file_object
+            self.compressor = compressor_class
+            self.filename = internal_file_filename
+
+        def read(self, *args, **kwargs) -> str:
+            """
+            Method to read the content of the object initiating the buffer if not exists.
+            This method should be overwritten in child class.
+            """
+            raise NotImplementedError(f"Method read of ContentBuffer should be override in child class "
+                                      f"{self.__class__.__name__}.")
+
+        def seek(self, *args, **kwargs):
+            """
+            Method to seek the content in the buffer.
+            Buffer must exist for this method to work, else no action will be taken.
+            """
+            if not hasattr(self, "buffer"):
+                return
+
+            return self.buffer.seek(*args, **kwargs)
+
+        def seekable(self):
+            """
+            Method to verify if buffer is seekable.
+            Buffer must exist for this method to work, else no action will be taken.
+            """
+
+            if not hasattr(self, "buffer"):
+                return False
+
+            return self.buffer.seekable()
+
+        def close(self):
+            """
+            Method to close the buffer.
+            Buffer must exist for this method to work, else no action will be taken.
+            """
+            if not hasattr(self, "buffer"):
+                return
+
+            self.buffer.close()
+            delattr(self, "buffer")
+
     @classmethod
     def validate(cls, file_object):
         """
