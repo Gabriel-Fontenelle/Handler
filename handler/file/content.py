@@ -41,7 +41,7 @@ class FileContent:
     # Properties
     is_binary = False
     """
-    Type of stream used in buffer for content. 
+    Type of stream used in buffer for content.
     """
 
     # Buffer handles
@@ -90,7 +90,7 @@ class FileContent:
     """
     _cached_path = None
     """
-    Complete path for temporary file used as cache. 
+    Complete path for temporary file used as cache.
     """
 
     def __init__(self, raw_value, force=False, **kwargs):
@@ -348,9 +348,10 @@ class FilePacket:
 
     # Pipelines
     extract_data_pipeline = Pipeline(
-        'handler.pipelines.extractor.SevenZipCompressedFilesFromContentExtractor',
-        'handler.pipelines.extractor.RarCompressedFilesFromContentExtractor',
-        'handler.pipelines.extractor.ZipCompressedFilesFromContentExtractor',
+        'handler.pipelines.extractor.SevenZipCompressedFilesFromPackageExtractor',
+        'handler.pipelines.extractor.RarCompressedFilesFromPackageExtractor',
+        'handler.pipelines.extractor.TarCompressedFilesFromPackageExtractor',
+        'handler.pipelines.extractor.ZipCompressedFilesFromPackageExtractor',
     )
     """
     Pipeline to extract data from multiple sources. For it to work, its classes should implement stopper as True.
