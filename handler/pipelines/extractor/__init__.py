@@ -1,5 +1,5 @@
 from .extractor import Extractor
-from .file import (
+from .external_data import (
     FileSystemDataExtractor,
     FilenameAndExtensionFromPathExtractor,
     FilenameFromMetadataExtractor,
@@ -10,18 +10,22 @@ from .file import (
     PathFromURLExtractor
 )
 from .content import (
-    ContentExtractor,
-    AudioMetadataFromContentExtractor,
-    SevenZipCompressedFilesFromContentExtractor,
-    RarCompressedFilesFromContentExtractor,
     MimeTypeFromContentExtractor,
-    ZipCompressedFilesFromContentExtractor
+    AudioMetadataFromContentExtractor
+)
+
+from .package import (
+    PackageExtractor,
+    SevenZipCompressedFilesFromPackageExtractor,
+    RarCompressedFilesFromPackageExtractor,
+    ZipCompressedFilesFromPackageExtractor,
+    TarCompressedFilesFromPackageExtractor,
 )
 
 __all__ = [
     # Parent classes
     "Extractor",
-    "ContentExtractor",
+    "PackageExtractor",
     # Parsing from storage
     "FileSystemDataExtractor",
     "FilenameAndExtensionFromPathExtractor",
@@ -34,9 +38,11 @@ __all__ = [
     "FilenameFromMetadataExtractor",
     "MetadataExtractor",
     # Parsing from Content
-    "SevenZipCompressedFilesFromContentExtractor",
     "AudioMetadataFromContentExtractor",
-    "RarCompressedFilesFromContentExtractor",
     "MimeTypeFromContentExtractor",
-    "ZipCompressedFilesFromContentExtractor"
+    # Parsing from Package
+    "SevenZipCompressedFilesFromPackageExtractor",
+    "RarCompressedFilesFromPackageExtractor",
+    "TarCompressedFilesFromPackageExtractor",
+    "ZipCompressedFilesFromPackageExtractor"
 ]
