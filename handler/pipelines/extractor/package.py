@@ -86,8 +86,12 @@ class PackageExtractor(Extractor):
         """
         Attribute to store the name of file that should be extract for this content.
         """
+        mode = None
+        """
+        Attribute to store the mode of read for the uncompressed content. 
+        """
 
-        def __init__(self, source_file_object, compressor_class, internal_file_filename):
+        def __init__(self, source_file_object, compressor_class, internal_file_filename, mode):
             """
             Method to initiate the object saving the data required to allow decompressing and reading content
             for specific file.
@@ -95,6 +99,7 @@ class PackageExtractor(Extractor):
             self.source_file_object = source_file_object
             self.compressor = compressor_class
             self.filename = internal_file_filename
+            self.mode = mode
 
         def read(self, *args, **kwargs) -> str:
             """
@@ -158,7 +163,7 @@ class PackageExtractor(Extractor):
         raise NotImplementedError("Method extract_content must be overwritten on child class.")
 
     @classmethod
-    def content_buffer(cls, file_object, internal_file_name):
+    def content_buffer(cls, file_object, internal_file_name, mode='rb'):
         """
         Method to create a buffer pointing to the uncompressed content.
         This method must work lazily, extracting the content only when the buffer is read.
@@ -197,7 +202,7 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
     """
 
     @classmethod
-    def content_buffer(cls, file_object, internal_file_name):
+    def content_buffer(cls, file_object, internal_file_name, mode='rb'):
         """
         Method to create a buffer pointing to the uncompressed content.
         This method must work lazily, extracting the content only when the buffer is read.
@@ -220,7 +225,7 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
 
                 return self.buffer.read(*args, **kwargs)
 
-        return TarContentBuffer(file_object, cls.compressor_class, internal_file_name)
+        return TarContentBuffer(file_object, cls.compressor_class, internal_file_name, mode)
 
     @classmethod
     def decompress(cls, file_object, overrider: bool, **kwargs: dict):
@@ -317,8 +322,14 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Set up action to be extracted instead of to save.
                     internal_file_object._actions.to_extract()
 
+                    # Get mode from type
+                    mode = "r" if internal_file_object.type == "text" else "rb"
+
                     # Set up content pointer to internal file using content_buffer
-                    internal_file_object.content = cls.content_buffer(file_object, internal_file.name)
+                    internal_file_object.content = cls.content_buffer(
+                        file_object=file_object,
+                        internal_file_name=internal_file.filename,
+                        mode=mode)
 
                     # Set up metadata for internal file
                     internal_file_object.meta.hashable = False
@@ -352,7 +363,7 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
     """
 
     @classmethod
-    def content_buffer(cls, file_object, internal_file_name):
+    def content_buffer(cls, file_object, internal_file_name, mode='rb'):
         """
         Method to create a buffer pointing to the uncompressed content.
         This method must work lazily, extracting the content only when the buffer is read.
@@ -369,13 +380,13 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
                 """
                 if not hasattr(self, "buffer"):
                     # Instantiate the buffer of inner content
-                    compressed = self.compressor(file=self.source_file_object.buffer)
+                    compressed = cls.compressor(file=self.source_file_object.buffer)
 
                     self.buffer = compressed.open(name=self.filename)
 
                 return self.buffer.read(*args, **kwargs)
 
-        return ZipContentBuffer(file_object, cls.compressor_class, internal_file_name)
+        return ZipContentBuffer(file_object, cls.compressor_class, internal_file_name, mode)
 
     @classmethod
     def decompress(cls, file_object, overrider: bool, **kwargs: dict):
@@ -472,8 +483,14 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Set up action to be extracted instead of to save.
                     internal_file_object._actions.to_extract()
 
+                    # Get mode from type
+                    mode = "r" if internal_file_object.type == "text" else "rb"
+
                     # Set up content pointer to internal file using content_buffer
-                    internal_file_object.content = cls.content_buffer(file_object, internal_file.filename)
+                    internal_file_object.content = cls.content_buffer(
+                        file_object=file_object,
+                        internal_file_name=internal_file.filename,
+                        mode=mode)
 
                     # Set up metadata for internal file
                     internal_file_object.meta.hashable = False
@@ -507,7 +524,7 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
     """
 
     @classmethod
-    def content_buffer(cls, file_object, internal_file_name):
+    def content_buffer(cls, file_object, internal_file_name, mode='rb'):
         """
         Method to create a buffer pointing to the uncompressed content.
         This method must work lazily, extracting the content only when the buffer is read.
@@ -524,13 +541,13 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
                 """
                 if not hasattr(self, "buffer"):
                     # Instantiate the buffer of inner content
-                    compressed = self.compressor(file=self.source_file_object.buffer)
+                    compressed = cls.compressor(file=self.source_file_object.buffer)
 
                     self.buffer = compressed.open(name=self.filename)
 
                 return self.buffer.read(*args, **kwargs)
 
-        return RarContentBuffer(file_object, cls.compressor_class, internal_file_name)
+        return RarContentBuffer(file_object, cls.compressor_class, internal_file_name, mode)
 
     @classmethod
     def decompress(cls, file_object, overrider: bool, **kwargs: dict):
@@ -627,8 +644,14 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Set up action to be extracted instead of to save.
                     internal_file_object._actions.to_extract()
 
+                    # Get mode from type
+                    mode = "r" if internal_file_object.type == "text" else "rb"
+
                     # Set up content pointer to internal file using content_buffer
-                    internal_file_object.content = cls.content_buffer(file_object, internal_file.filename)
+                    internal_file_object.content = cls.content_buffer(
+                        file_object=file_object,
+                        internal_file_name=internal_file.filename,
+                        mode=mode)
 
                     # Set up metadata for internal file
                     internal_file_object.meta.hashable = False
@@ -662,7 +685,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
     """
 
     @classmethod
-    def content_buffer(cls, file_object, internal_file_name):
+    def content_buffer(cls, file_object, internal_file_name, mode='rb'):
         """
         Method to create a buffer pointing to the uncompressed content.
         This method must work lazily, extracting the content only when the buffer is read.
@@ -678,13 +701,13 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
                 """
                 if not hasattr(self, "buffer"):
                     # Instantiate the buffer of inner content
-                    compressed = self.compressor(file=self.source_file_object.buffer)
+                    compressed = cls.compressor(file=self.source_file_object.buffer)
 
                     self.buffer = next(iter(compressed.read(targets=[self.filename]).values()))
 
                 return self.buffer.read(*args, **kwargs)
 
-        return SevenZipContentBuffer(file_object, cls.compressor_class, internal_file_name)
+        return SevenZipContentBuffer(file_object, cls.compressor_class, internal_file_name, mode)
 
     @classmethod
     def decompress(cls, file_object, overrider: bool, **kwargs: dict):
@@ -780,8 +803,14 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Set up action to be extracted instead of to save.
                     internal_file_object._actions.to_extract()
 
+                    # Get mode from type
+                    mode = "r" if internal_file_object.type == "text" else "rb"
+
                     # Set up content pointer to internal file using content_buffer
-                    internal_file_object.content = cls.content_buffer(file_object, internal_file.filename)
+                    internal_file_object.content = cls.content_buffer(
+                        file_object=file_object,
+                        internal_file_name=internal_file.filename,
+                        mode=mode)
 
                     # Set up metadata for internal file
                     internal_file_object.meta.hashable = False

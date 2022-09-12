@@ -113,13 +113,17 @@ class FileContent:
         if not raw_value:
             raise ValueError(f"Value pass to FileContent must not be empty!")
 
-        if isinstance(raw_value, (str, bytes)):
-            try:
-                raw_value = StringIO(raw_value)
-            except TypeError:
-                raw_value = BytesIO(raw_value)
-
-        elif not isinstance(raw_value, IOBase):
+        # Binary value of related_file_object should be be set up here, as it came from attribute is_binary from
+        # content.
+        if isinstance(raw_value, str):
+            raw_value = StringIO(raw_value)
+        elif isinstance(raw_value, bytes):
+            raw_value = BytesIO(raw_value)
+        elif isinstance(raw_value, IOBase):
+            if not hasattr(raw_value, "mode"):
+                raise ValueError(f"The value specified for content of type {type(raw_value)} don't have the attribute"
+                                 f"mode that allow for identification of type of content: binary or text.")
+        else:
             raise ValueError(f"parameter `value` informed in FileContent is not a valid type"
                              f" {type(raw_value)}! We were expecting str, bytes or IOBase.")
 
