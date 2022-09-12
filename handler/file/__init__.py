@@ -704,6 +704,22 @@ class BaseFile:
 
             self._actions.hashed()
 
+    def get_content(self, item):
+        """
+        Method to return an internal content by index or filename.
+        """
+        if self._actions.list:
+            # Reset internal files' dictionary while keeping historic.
+            self._content_files.reset()
+
+            # Extract data from content
+            self._content_files.extract_data_pipeline.run(object_to_process=self)
+
+            # Mark as concluded the was_listed option
+            self._actions.listed()
+
+        return self._content_files[item]
+
     def refresh_from_disk(self):
         """
         This method will reset all attributes, calling the pipeline to extract data again from disk.

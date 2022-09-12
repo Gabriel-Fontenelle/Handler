@@ -374,7 +374,11 @@ class FilePacket:
     def __getitem__(self, item):
         """
         Method to serve as shortcut to allow return of item in _internal_files in instance of FilePacket.
+        This method will try to retrieve an element from the dictionary by index if item is numeric.
         """
+        if isinstance(item, int):
+            return list(self.files())[item]
+
         return self._internal_files[item]
 
     def __contains__(self, item):
@@ -387,6 +391,11 @@ class FilePacket:
         """
         Method to serve as shortcut to allow adding an item in _internal_files in instance of FilePacket.
         """
+        # Restrict type of key being insert to allow __getitem__ to return from list when using
+        # a numeric value.
+        if isinstance(key, int):
+            raise ValueError("Parameter key to __setitem__ in class FilePacket cannot be numeric.")
+
         self._internal_files[key] = value
 
     def __len__(self):
