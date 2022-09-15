@@ -25,6 +25,9 @@ dill = "^0.3.5"
 json-tricks = "^3.15"
 rarfile = "^4.0"
 tox-poetry = "^0.4"
+Wand = "^0.6"
+pillow = "^9.2"
+opencv-python = "^4.6"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
