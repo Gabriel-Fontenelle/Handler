@@ -413,7 +413,7 @@ class WandImage(ImageEngine):
         """
         Method to scale the current image object without implementing additional logic.
         """
-        self.image.sample(width, height)
+        self.image.resize(width, height, filter="lanczos2sharp")
 
     def show(self):
         """
