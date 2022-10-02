@@ -53,6 +53,15 @@ class FileActions:
     """
     Indicate whether an object should have its internal content listed or not.
     """
+    preview = False
+    """
+    Indicate whether an object should have its preview image processed.
+    """
+    thumbnail = False
+    """
+    Indicate whether an object should have its thumbnail image processed.
+    """
+
     was_saved = False
     """
     Indicate whether an object was successfully saved.
@@ -72,6 +81,14 @@ class FileActions:
     was_listed = False
     """
     Indicate whether an object was its internal content listed.
+    """
+    was_previewed = False
+    """
+    Indicate whether an object has successfully generate its preview image.
+    """
+    was_thumbnailed = False
+    """
+    Indicate whether an object has successfully generate its thumbnail image.
     """
 
     def __init__(self, **kwargs):
@@ -171,3 +188,31 @@ class FileActions:
         """
         self.list = False
         self.was_listed = True
+
+    def to_preview(self):
+        """
+        Method to set up the action of generate preview image for file.
+        """
+        self.preview = True
+        self.was_previewed = False
+
+    def previewed(self):
+        """
+        Method to change the satus of `to preview` to `previewed` file.
+        """
+        self.preview = False
+        self.was_previewed = True
+
+    def to_thumbnail(self):
+        """
+        Method to set up the action of generate thumbnail image for file.
+        """
+        self.thumbnail = True
+        self.was_thumbnailed = False
+
+    def thumbnailed(self):
+        """
+        Method to change the satus of `to thumbnail` to `thumbnailed` file.
+        """
+        self.thumbnail = False
+        self.was_thumbnailed = True
