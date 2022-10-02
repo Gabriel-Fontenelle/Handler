@@ -442,13 +442,14 @@ class FilePacket:
 
     def reset(self):
         """
-        Method to clean the internal files keeping a historic of changes.
+        Method to clean the internal files keeping a history of changes.
         """
         if self.history is None:
-            self.history = []
+            self.clean_history()
 
-        # Add current internal files to memory
-        self.history.append(self._internal_files)
+        if self._internal_files:
+            # Add current internal files to memory
+            self.history.append(self._internal_files)
 
-        # Reset the internal files
-        self._internal_files = {}
+            # Reset the internal files
+            self._internal_files = {}
