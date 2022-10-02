@@ -44,6 +44,7 @@ class ImageEngine:
     """
     image = None
     """
+    Attribute where the current image converted from buffer is stored.
     """
 
     def __init__(self, buffer):
@@ -282,6 +283,9 @@ class OpenCVImage(ImageEngine):
 
 
 class PillowImage(ImageEngine):
+    """
+    Class that standardized methods of Pillow library.
+    """
 
     def change_color(self, colorspace="gray"):
         """
