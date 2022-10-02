@@ -296,7 +296,7 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
 
                     # Create file object for internal file
                     internal_file_object = file_class(
-                        path=internal_file.name,
+                        path=file_system.join(file_object.save_to, internal_file.name),
                         extract_data_pipeline=Pipeline(
                             'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
                             'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
@@ -457,7 +457,7 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
 
                     # Create file object for internal file
                     internal_file_object = file_class(
-                        path=internal_file.filename,
+                        path=file_system.join(file_object.save_to, path=internal_file.filename),
                         extract_data_pipeline=Pipeline(
                             'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
                             'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
@@ -618,7 +618,7 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
 
                     # Create file object for internal file
                     internal_file_object = file_class(
-                        path=internal_file.filename,
+                        path=file_system.join(file_object.save_to, internal_file.filename),
                         extract_data_pipeline=Pipeline(
                             'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
                             'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
@@ -778,7 +778,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
 
                     # Create file object for internal file
                     internal_file_object = file_class(
-                        path=internal_file.filename,
+                        path=file_system.join(file_object.save_to, internal_file.filename),
                         extract_data_pipeline=Pipeline(
                             'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
                             'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
