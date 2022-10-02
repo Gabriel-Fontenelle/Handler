@@ -171,6 +171,23 @@ class PackageExtractor(Extractor):
         """
         raise NotImplementedError("Method content_buffer must be overwritten on child class.")
 
+    @classmethod
+    def process(cls, **kwargs: dict):
+        """
+        Method used to run this class on Processor`s Pipeline for Extracting info from Data.
+        This process method is created exclusively to pipeline for objects inherent from BaseFile.
+
+        The processor for package extraction override the method `Extractor.process` in order to validate
+        the extension before processing the `object_to_process`.
+        """
+        try:
+            object_to_process = kwargs.get('object_to_process', None)
+            cls.validate(file_object=object_to_process)
+        except (ValidationError, KeyError) as e:
+            return False
+
+        return super().process(**kwargs)
+
 
 class MastrokaFilesFromPackageExtractor(PackageExtractor):
     """
@@ -233,8 +250,6 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
         Method to uncompress the content from a file_object.
         """
         try:
-            cls.validate(file_object)
-
             # We don't need to create the directory because the extractor will create it if not exists.
             extraction_path = kwargs.pop("decompress_to")
 
@@ -265,7 +280,7 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
                 # with accessor informed by storage of file_object.
                 compressed_file.extractall(path=file_object.storage.get_pathlib_path(extraction_path), members=targets)
 
-        except (BadZipFile, ValidationError):
+        except BadZipFile:
             return False
 
         return True
@@ -276,8 +291,6 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
         Method to extract the information necessary from a file_object.
         """
         try:
-            cls.validate(file_object)
-
             file_system = file_object.storage
             file_class = file_object.__class__
 
@@ -342,10 +355,10 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
             file_object.meta.packed = True
             file_object._actions.listed()
 
-            return True
-
-        except (TarError, ValidationError):
+        except TarError:
             return False
+
+        return True
 
 
 class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
@@ -394,8 +407,6 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
         Method to uncompress the content from a file_object.
         """
         try:
-            cls.validate(file_object)
-
             # We don't need to create the directory because the extractor will create it if not exists.
             extraction_path = kwargs.pop("decompress_to")
 
@@ -414,7 +425,7 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
                             continue
 
                         if not file_object.storage.exists(
-                            file_object.storage.join(extraction_path, filename)
+                                file_object.storage.join(extraction_path, filename)
                         ):
                             targets.append(filename)
 
@@ -426,7 +437,7 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
                 # with accessor informed by storage of file_object.
                 compressed_file.extractall(path=file_object.storage.get_pathlib_path(extraction_path), members=targets)
 
-        except (BadZipFile, ValidationError):
+        except BadZipFile:
             return False
 
         return True
@@ -437,8 +448,6 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
         Method to extract the information necessary from a file_object.
         """
         try:
-            cls.validate(file_object)
-
             file_system = file_object.storage
             file_class = file_object.__class__
 
@@ -503,10 +512,10 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
             file_object.meta.packed = True
             file_object._actions.listed()
 
-            return True
-
-        except (BadZipFile, ValidationError):
+        except BadZipFile:
             return False
+
+        return True
 
 
 class RarCompressedFilesFromPackageExtractor(PackageExtractor):
@@ -555,8 +564,6 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
         Method to uncompress the content from a file_object.
         """
         try:
-            cls.validate(file_object)
-
             # We don't need to create the directory because the extractor will create it if not exists.
             extraction_path = kwargs.pop("decompress_to")
 
@@ -587,7 +594,7 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
                 # with accessor informed by storage of file_object.
                 compressed_file.extractall(path=file_object.storage.get_pathlib_path(extraction_path), members=targets)
 
-        except (BadRarFile, NotRarFile, ValidationError):
+        except (BadRarFile, NotRarFile):
             return False
 
         return True
@@ -598,8 +605,6 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
         Method to extract the information necessary from a file_object.
         """
         try:
-            cls.validate(file_object)
-
             file_system = file_object.storage
             file_class = file_object.__class__
 
@@ -664,10 +669,10 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
             file_object.meta.packed = True
             file_object._actions.listed()
 
-            return True
-
-        except (BadRarFile, NotRarFile, ValidationError):
+        except (BadRarFile, NotRarFile):
             return False
+
+        return True
 
 
 class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
@@ -715,8 +720,6 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
         Method to uncompress the content from a file_object.
         """
         try:
-            cls.validate(file_object)
-
             # We don't need to create the directory because the extractor will create it if not exists.
             extraction_path = kwargs.pop("decompress_to")
 
@@ -747,7 +750,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
                 # with accessor informed by storage of file_object.
                 compressed_file.extract(path=file_object.storage.get_pathlib_path(extraction_path), targets=targets)
 
-        except (ValidationError, Bad7zFile):
+        except Bad7zFile:
             return False
 
         return True
@@ -823,7 +826,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
             file_object.meta.packed = True
             file_object._actions.listed()
 
-            return True
-
-        except (Bad7zFile, ValidationError):
+        except Bad7zFile:
             return False
+
+        return True
