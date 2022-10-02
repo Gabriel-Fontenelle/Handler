@@ -120,7 +120,7 @@ class FileContent:
         elif isinstance(raw_value, bytes):
             raw_value = BytesIO(raw_value)
         elif isinstance(raw_value, IOBase):
-            if not hasattr(raw_value, "mode"):
+            if not hasattr(raw_value, "mode") and not isinstance(raw_value, (StringIO, BytesIO)):
                 raise ValueError(f"The value specified for content of type {type(raw_value)} don't have the attribute"
                                  f"mode that allow for identification of type of content: binary or text.")
         else:
