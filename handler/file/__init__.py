@@ -32,6 +32,7 @@ from .hash import FileHashes
 from .meta import FileMetadata
 from .name import FileNaming
 from .state import FileState
+from .thumbnail import FileThumbnail
 from ..exception import (
     ImproperlyConfiguredFile,
     NoInternalContentError,
@@ -203,6 +204,10 @@ class BaseFile:
     """
     Controller for how the internal files packet in content of file will be handled.
     """
+    _thumbnail = None
+    """
+    Controller for the thumbnail representation of file. 
+    """
 
     # Common Exceptions shortcut
     ImproperlyConfiguredFile = ImproperlyConfiguredFile
@@ -290,8 +295,15 @@ class BaseFile:
         # Set up resources used for filename renaming control.
         if not self._naming:
             self._naming = FileNaming()
-            self._naming.history = []
             self._naming.related_file_object = self
+            # Instantiate the history list calling the clean_history method.
+            self._naming.clean_history()
+
+        if not self._thumbnail:
+            self._thumbnail = FileThumbnail()
+            self._thumbnail.related_file_object = self
+            # Instantiate the history dictionary calling the clean_history method.
+            self._thumbnail.clean_history()
 
         # Get option to run pipeline.
         run_extractor = additional_kwargs.pop('run_extractor', True)
@@ -476,6 +488,8 @@ class BaseFile:
         # Update file actions to be saved and hashed.
         self._actions.to_save()
         self._actions.to_hash()
+        self._actions.to_preview()
+        self._actions.to_thumbnail()
 
         if self.meta.packed:
             # Update file action to be listed only if file allow listing of content.
@@ -601,6 +615,26 @@ class BaseFile:
         complete_filename = self.complete_filename or ""
 
         return self.storage.join(save_to, relative_path, complete_filename)
+
+    @property
+    def thumbnail(self):
+        """
+        Method to return as attribute the file object for the thumbnail representation of current content.
+        """
+        if self._content is None:
+            return None
+
+        return self._thumbnail.thumbnail
+
+    @property
+    def preview(self):
+        """
+        Method to return as attribute the file object for the animated preview of current content.
+        """
+        if self._content is None:
+            return None
+
+        return self._thumbnail.preview
 
     def add_valid_filename(self, complete_filename, enforce_mimetype=False) -> bool:
         """
