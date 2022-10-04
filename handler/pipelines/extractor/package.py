@@ -268,7 +268,7 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
                             continue
 
                         if not file_object.storage.exists(
-                                file_object.storage.join(extraction_path, filename)
+                            file_object.storage.join(extraction_path, filename)
                         ):
                             targets.append(filename)
 
