@@ -21,23 +21,24 @@ Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
 from datetime import datetime
-from io import IOBase
+from io import IOBase, BytesIO
+from sys import getsizeof
 from tarfile import TarFile, TarError
 from zipfile import BadZipFile, ZipFile
 
-from ..hasher import CRC32Hasher
-
+from psd_tools import PSDImage
 from py7zr import SevenZipFile
 from py7zr.exceptions import Bad7zFile
 from rarfile import BadRarFile, RarFile, NotRarFile
 
 from .extractor import Extractor
 from .. import Pipeline
-
+from ..hasher import CRC32Hasher
 from ...exception import ValidationError
 
 __all__ = [
     'PackageExtractor',
+    'PSDLayersFromPackageExtractor',
     'SevenZipCompressedFilesFromPackageExtractor',
     'RarCompressedFilesFromPackageExtractor',
     'TarCompressedFilesFromPackageExtractor',
@@ -199,6 +200,148 @@ class PSDLayersFromPackageExtractor(PackageExtractor):
     """
     Class to extract internal files from PSD files.
     """
+
+    extensions = ['psd', 'psb']
+    """
+    Attribute to store allowed extensions for use in `validator`.
+    """
+    compressor = PSDImage
+    """
+    Attribute to store the current class of compressor for use in `content_buffer` and `decompress` methods.
+    """
+
+    @classmethod
+    def content_buffer(cls, file_object, internal_file_name, mode='rb'):
+        """
+        Method to create a buffer pointing to the uncompressed content.
+        This method must work lazily, extracting the content only when the buffer is read.
+        """
+
+        class PSDContentBuffer(cls.ContentBuffer):
+            """
+            Class to allow consumption of buffer in a lazy way.
+            """
+
+            def read(self, *args, **kwargs) -> str:
+                """
+                Method to read the content of the object initiating the buffer if not exists.
+                """
+                if not hasattr(self, "buffer"):
+                    # Instantiate the buffer of inner content
+                    compressed = self.compressor.open(fp=self.source_file_object.buffer)
+
+                    self.buffer = BytesIO()
+
+                    # Save PSD content for layer in buffer.
+                    compressed[self.filename].save(fp=self.buffer)
+
+                    # Reset buffer to allow read.
+                    self.buffer.seek(0)
+
+                return self.buffer.read(*args, **kwargs)
+
+        return PSDContentBuffer(file_object, cls.compressor_class, internal_file_name, mode)
+
+    @classmethod
+    def decompress(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to uncompress the content from a file_object.
+        """
+        try:
+            # We need to create the directory because there is no extractor for handling PSD.
+            extraction_path = kwargs.pop("decompress_to")
+
+            # We don't need to reset the buffer before calling it, because it will be reset
+            # if already cached. The next time property buffer is called it will reset again.
+            compressed_file = cls.compressor.open(fp=file_object.buffer)
+
+            for index, internal_file in compressed_file:
+                filename = f"{index}-{internal_file.name or internal_file.layer_id}.psd"
+
+                path = file_object.storage.join(extraction_path, filename)
+                if not file_object.storage.exists(
+                    path
+                ) or overrider:
+
+                    # Create directory if not exists
+                    file_object.storage.create_directory(extraction_path)
+
+                    # Save content buffer for file
+                    buffer = BytesIO()
+                    internal_file.save(fp=buffer)
+
+                    # Reset pointer to initial point.
+                    buffer.seek(0)
+
+                    # Save buffer
+                    file_object.storage.save_file(path=path, content=buffer, file_mode='w', write_mode='b')
+
+        except (OSError, ValueError):
+            return False
+
+        return True
+
+    @classmethod
+    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to extract the information necessary from a file_object.
+        """
+        try:
+            file_system = file_object.storage
+            file_class = file_object.__class__
+
+            # We don't need to reset the buffer before calling it, because it will be reset
+            # if already cached. The next time property buffer is called it will reset again.
+            compressed_object = PSDImage.open(fp=file_object.buffer)
+
+            for index, internal_file in enumerate(compressed_object):
+                filename = f"{index}-{internal_file.name or internal_file.layer_id}.psd"
+
+                # Skip duplicate only if not choosing to override.
+                if filename in file_object._content_files and not overrider:
+                    continue
+
+                # Create file object for internal file
+                internal_file_object = file_class(
+                    path=file_system.join(file_object.save_to, file_object.filename, filename),
+                    extract_data_pipeline=Pipeline(
+                        'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                        'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+                    ),
+                    file_system_handler=file_system
+                )
+
+                # Update size of file
+                internal_file_object.size = getsizeof(internal_file.tobytes())
+
+                # Set up action to be extracted instead of to save.
+                internal_file_object._actions.to_extract()
+
+                # Set mode
+                mode = "rb"
+
+                # Set up content pointer to internal file using content_buffer
+                internal_file_object.content = cls.content_buffer(
+                    file_object=file_object,
+                    internal_file_name=index,
+                    mode=mode
+                )
+
+                # Set up metadata for internal file
+                internal_file_object.meta.hashable = False
+                internal_file_object.meta.internal = True
+
+                # Add internal file as File object to file.
+                file_object._content_files[filename] = internal_file_object
+
+            # Update metadata and actions.
+            file_object.meta.packed = True
+            file_object._actions.listed()
+
+        except OSError:
+            return False
+
+        return True
 
 
 class TarCompressedFilesFromPackageExtractor(PackageExtractor):
