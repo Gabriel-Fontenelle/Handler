@@ -522,7 +522,8 @@ class BaseFile:
             # Mark as concluded the was_listed option
             self._actions.listed()
 
-        return iter(self._content_files)
+        # Return only the list of file objects and not filename and file objects.
+        return self._content_files.files()
 
     @property
     def is_binary(self) -> [bool, None]:
