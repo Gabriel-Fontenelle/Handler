@@ -67,6 +67,13 @@ class FileMetadata:
     This is mostly used for hash files created with hasher and will be set up only in those files.
     """
 
+    # Thumbnail files
+    # thumbnail = None
+    """
+    Indicate whether an object is a thumbnail file or not.
+    This is mostly used for thumbnail created with render and will be set up only in those files.
+    """
+
     def __init__(self, **kwargs):
         """
         Method to create the current object using the keyword arguments.
@@ -91,7 +98,8 @@ class FileMetadata:
         }
         optional_attributes = {
             "checksum",
-            "loaded"
+            "loaded",
+            "thumbnail"
         }
 
         class_vars = {key: getattr(self, key) for key in attributes}
