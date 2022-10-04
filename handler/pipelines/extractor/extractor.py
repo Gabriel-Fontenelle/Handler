@@ -45,10 +45,6 @@ class Extractor:
         Method used to run this class on Processor`s Pipeline for Extracting info from Data.
         This method and to_processor() is not need to extract info outside a pipeline.
         This process method is created exclusively to pipeline for objects inherent from BaseFile.
-
-        The processor for renamer uses only one object that must be settled through first argument
-        or through key work `object`.
-
         """
         object_to_process = kwargs.pop('object_to_process', None)
         overrider = kwargs.pop('overrider', False)

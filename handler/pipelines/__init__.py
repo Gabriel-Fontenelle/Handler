@@ -196,7 +196,7 @@ class Pipeline:
 
             if hasattr(processor, 'stopper') and processor.stopper:
                 # If processor is a step that should stop the whole pipeline
-                # we verify if we reach the condition to it stop. By default that
+                # we verify if we reach the condition to it stop. By default, that
                 # condition is True, but can be any value set-up in stop_value and
                 # returned by processor.
                 try:
