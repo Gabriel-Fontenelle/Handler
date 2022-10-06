@@ -355,7 +355,7 @@ class PillowImage(ImageEngine):
         """
         Method to scale the current image object without implementing additional logic.
         """
-        self.image = self.image.resize((width, height))
+        self.image = self.image.resize((width, height), resample=PillowImageClass.Resampling.LANCZOS)
 
     def show(self):
         """
