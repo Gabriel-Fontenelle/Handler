@@ -26,9 +26,11 @@ import numpy as np
 import warnings
 from io import BytesIO
 
-from PIL import Image as PillowImageClass
+import pytest
+from PIL import Image as PillowImageClass, ImageChops
 from wand.display import display as wand_display
 from wand.image import Image as WandImageClass
+from wand.color import Color
 
 __all__ = [
     "ImageEngine",
@@ -139,6 +141,13 @@ class ImageEngine:
         """
         raise NotImplementedError("The method get_size should be override in child class.")
 
+    def has_transparency(self):
+        """
+        Method to verify if image has a channel for transparency.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError("The method has_transparency should be override in child class.")
+
     def prepare_image(self):
         """
         Method to prepare the image using the stored buffer as the source.
@@ -195,6 +204,14 @@ class ImageEngine:
         This method should be overwritten in child class with the appropriate mode of displaying the image.
         """
         raise NotImplementedError("The method show should be override in child class.")
+
+    def trim(self, color=None):
+        """
+        Method to trim the current image object.
+        This method must affect the current image object.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError("The method trim should be override in child class.")
 
 
 class OpenCVImage(ImageEngine):
@@ -258,6 +275,12 @@ class OpenCVImage(ImageEngine):
         """
         return self.image.shape[1], self.image.shape[0]
 
+    def has_transparency(self):
+        """
+        Method to verify if image has a channel for transparency.
+        """
+        return self.image.shape[2] > 3 or self.image.shape[2] == 2
+
     def prepare_image(self):
         """
         Method to prepare the image using the stored buffer as the source.
@@ -280,6 +303,39 @@ class OpenCVImage(ImageEngine):
         cv2.imshow("Image", self.image)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
+
+    def trim(self, color=None):
+        """
+        Method to trim the current image object.
+        The parameter color is used to indicate the color to trim else it will use transparency.
+        """
+        if color:
+            # Create new image with same color
+            background = np.zeros(self.image.shape, np.uint8)
+
+            if self.has_transparency():
+                background[:] = tuple([*color, 255])
+            else:
+                background[:] = color
+
+            diff = cv2.absdiff(self.image, background)
+
+            # Convert channels to one channel to allow boundingRect to work
+            diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
+
+            bounding_border = cv2.boundingRect(diff)
+
+        elif self.has_transparency():
+            splitted_channels = cv2.split(self.image)
+            bounding_border = cv2.boundingRect(splitted_channels[-1])
+
+        else:
+            raise ValueError("Cannot trim image because no color was informed and no alpha channel exists in the "
+                             "current image.")
+
+        if bounding_border:
+            # bounding_border is equal to `x, y, w, h = bounding_border`
+            self.image = self.image[bounding_border[1]:bounding_border[3], bounding_border[0]:bounding_border[2]]
 
 
 class PillowImage(ImageEngine):
@@ -345,6 +401,12 @@ class PillowImage(ImageEngine):
         """
         return self.image.size[0], self.image.size[1]
 
+    def has_transparency(self):
+        """
+        Method to verify if image has a channel for transparency.
+        """
+        return self.image.info.get("transparency") is not None
+
     def prepare_image(self):
         """
         Method to prepare the image using the stored buffer as the source.
@@ -362,6 +424,24 @@ class PillowImage(ImageEngine):
         Method to display the image for debugging purposes.
         """
         self.image.show()
+
+    def trim(self, color=None):
+        """
+        Method to trim the current image object.
+        The parameter color is used to indicate the color to trim else it will use transparency.
+        """
+        if color:
+            background = PillowImageClass.new(self.image.mode, self.image.size, color=color)
+            bounding_border = ImageChops.difference(self.image, background).getbbox()
+        elif self.has_transparency():
+            # Trim transparency
+            bounding_border = self.image.getchannel("A").getbbox()
+        else:
+            raise ValueError("Cannot trim image because no color was informed and no alpha channel exists in the "
+                             "current image.")
+
+        if bounding_border:
+            self.image = self.image.crop(bounding_border)
 
 
 class WandImage(ImageEngine):
@@ -407,6 +487,12 @@ class WandImage(ImageEngine):
         """
         return self.image.size[0], self.image.size[1]
 
+    def has_transparency(self):
+        """
+        Method to verify if image has a channel for transparency.
+        """
+        return self.image.alpha_channel
+
     def prepare_image(self):
         """
         Method to prepare the image using the stored buffer as the source.
@@ -424,3 +510,21 @@ class WandImage(ImageEngine):
         Method to display the image for debugging purposes.
         """
         wand_display(self.image)
+
+    def trim(self, color=None):
+        """
+        Method to trim the current image object.
+        The parameter color is used to indicate the color to trim else it will use transparency.
+        """
+        if color:
+            color = Color(f"rgb({color[0]}, {color[1]}, {color[2]})")
+
+        elif self.has_transparency():
+            # Trim transparency
+            color = Color('rgba(0,0,0,0)')
+
+        else:
+            raise ValueError("Cannot trim image because no color was informed and no alpha channel exists in the "
+                             "current image.")
+
+        self.image.trim(background_color=color, reset_coords=True)
