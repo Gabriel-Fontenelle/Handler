@@ -63,6 +63,15 @@ class ThumbnailDefaults:
     """
     Attribute that define the default extension for the thumbnail. It should be related to the format attribute.
     """
+    format_dpi = 72
+    """
+    Attribute that define the resolution for the thumbnail when rendering a vectorized content.
+    """
+
+    color_to_trim = (255, 255, 255)
+    """
+    Attribute that define which color should be used to trim an image if required.
+    """
 
     filename = None
     """
@@ -143,6 +152,7 @@ class FileThumbnail:
 
     # Pipeline
     render_static_pipeline = Pipeline(
+        "handler.pipelines.render.static.DocumentFirstPageRender",
         "handler.pipelines.render.static.ImageRender",
         "handler.pipelines.render.static.PSDRender",
     )

@@ -22,13 +22,16 @@ Should there be a need for contact the electronic mail
 """
 from io import BytesIO
 
+import fitz
 from psd_tools import PSDImage
+
 from .. import ValidationError, Pipeline
 
 __all__ = [
-    "StaticRender",
+    "DocumentFirstPageRender",
     "ImageRender",
     "PSDRender",
+    "StaticRender",
 ]
 
 
@@ -126,9 +129,68 @@ class StaticRender:
             raise ValidationError(f"Extension {file_object.extension} not allowed in validate for class {cls.__name__}")
 
 
-class ImageRender(StaticRender):
+class DocumentFirstPageRender(StaticRender):
+    """
+    Render class for processing information from file's content focusing in rendering the representation of the first
+    page of document.
+    """
 
-    extensions = ["jpeg", "jpg", "png", "gif"]
+    extensions = ["pdf", "epub", "fb2", "xps", "oxps"]
+    """
+    Attribute to store allowed extensions for use in `validator`.
+    """
+
+    @classmethod
+    def render(cls, file_object, **kwargs: dict):
+        """
+        Method to render the image representation of the file_object.
+        This method will only use the first page of the documents.
+        """
+        image_engine = kwargs.pop('engine')
+
+        defaults = file_object._thumbnail.defaults
+
+        buffer = BytesIO()
+
+        # Use fitz from PyMuPDF to open the document.
+        # Because BufferedReader (default return for file_system.open) is not accept
+        # we need to consume to get its bytes as bytes are accepted as stream.
+        doc = fitz.open(
+            stream=file_object.buffer.read(),
+            filetype=file_object.extension,
+            # width and height are only used for content that requires rendering of vectors as `epub`.
+            width=defaults.width * 5,
+            height=defaults.height * 5
+        )
+        for page in doc:
+            bitmap = page.get_pixmap(dpi=defaults.format_dpi)
+            # Save the image in buffer with Pillow.
+            bitmap.pil_save(fp=buffer, format=defaults.format)
+            buffer.seek(0)
+            break
+
+        # Resize image using the image_engine and default values.
+        image = image_engine(buffer=buffer)
+
+        # Trim white space originated from epub.
+        image.trim(color=defaults.color_to_trim)
+
+        # Resize
+        image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
+
+        # Set static file for current file_object.
+        file_object._thumbnail._static_file = cls.create_static_file(
+            file_object,
+            content=image.get_buffer(encode_format=defaults.format)
+        )
+
+
+class ImageRender(StaticRender):
+    """
+    Render class for processing information from file's content focusing in rendering the whole image.
+    """
+
+    extensions = ["jpeg", "jpg", "png", "gif", "bmp", "tiff"]
     """
     Attribute to store allowed extensions for use in `validator`.
     """
@@ -152,10 +214,6 @@ class ImageRender(StaticRender):
             file_object,
             content=image.get_buffer(encode_format=defaults.format)
         )
-
-
-class PDFRender(StaticRender):
-    pass
 
 
 class PSDRender(StaticRender):
@@ -203,6 +261,3 @@ class VideoRender(StaticRender):
     Attribute to store allowed extensions for use in `validator`.
     """
 
-
-class DocumentRender(StaticRender):
-    pass
