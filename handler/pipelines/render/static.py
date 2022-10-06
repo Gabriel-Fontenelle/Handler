@@ -217,6 +217,9 @@ class ImageRender(StaticRender):
 
 
 class PSDRender(StaticRender):
+    """
+    Render class for processing information from file's content focusing in rendering the whole PSD image.
+    """
 
     extensions = ["psd", "psb"]
     """
@@ -255,6 +258,10 @@ class PSDRender(StaticRender):
 
 
 class VideoRender(StaticRender):
+    """
+    Render class for processing information from file's content focusing in rendering the few first seconds of the
+    video.
+    """
 
     extensions = ["avi", "mkv", "mpg", "mpeg", "flv"]
     """
