@@ -162,6 +162,7 @@ class FileThumbnail:
         "handler.pipelines.render.static.DocumentFirstPageRender",
         "handler.pipelines.render.static.ImageRender",
         "handler.pipelines.render.static.PSDRender",
+        "handler.pipelines.render.static.VideoRender",
     )
     """
     Pipeline to render thumbnail representation from multiple source. For it to work, its classes should implement 
