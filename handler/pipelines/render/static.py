@@ -53,7 +53,7 @@ class StaticRender:
     """
 
     @classmethod
-    def create_static_file(cls, object_to_process, content):
+    def create_file(cls, object_to_process, content):
         """
         Method to create a file structured for the static image on same class as object_to_process.
         """
@@ -180,7 +180,7 @@ class DocumentFirstPageRender(StaticRender):
         image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
 
         # Set static file for current file_object.
-        file_object._thumbnail._static_file = cls.create_static_file(
+        file_object._thumbnail._static_file = cls.create_file(
             file_object,
             content=image.get_buffer(encode_format=defaults.format)
         )
@@ -211,7 +211,7 @@ class ImageRender(StaticRender):
         image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
 
         # Set static file for current file_object.
-        file_object._thumbnail._static_file = cls.create_static_file(
+        file_object._thumbnail._static_file = cls.create_file(
             file_object,
             content=image.get_buffer(encode_format=defaults.format)
         )
@@ -252,7 +252,7 @@ class PSDRender(StaticRender):
         image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
 
         # Set static file for current file_object.
-        file_object._thumbnail._static_file = cls.create_static_file(
+        file_object._thumbnail._static_file = cls.create_file(
             file_object,
             content=image.get_buffer(encode_format=defaults.format)
         )
@@ -291,7 +291,7 @@ class VideoRender(StaticRender):
         image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
 
         # Set static file for current file_object.
-        file_object._thumbnail._static_file = cls.create_static_file(
+        file_object._thumbnail._static_file = cls.create_file(
             file_object,
             content=image.get_buffer(encode_format=defaults.format)
         )
