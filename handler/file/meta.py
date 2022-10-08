@@ -68,6 +68,11 @@ class FileMetadata:
     """
 
     # Thumbnail files
+    # preview = None
+    """
+    Indicate whether an object is a preview file or not.
+    This is mostly used for animated thumbnail created with render and will be set up only in those files.
+    """
     # thumbnail = None
     """
     Indicate whether an object is a thumbnail file or not.
@@ -99,7 +104,8 @@ class FileMetadata:
         optional_attributes = {
             "checksum",
             "loaded",
-            "thumbnail"
+            "preview",
+            "thumbnail",
         }
 
         class_vars = {key: getattr(self, key) for key in attributes}
