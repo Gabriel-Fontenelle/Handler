@@ -20,10 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
-from .static import StaticRender, ImageRender, PSDRender
+from .static import StaticRender, DocumentFirstPageRender, ImageRender, PSDRender, VideoRender
+from .animated import AnimatedRender
 
 __all__ = [
-    "StaticRender",
+    "DocumentFirstPageRender",
     "ImageRender",
     "PSDRender",
+    "StaticRender",
+    "VideoRender",
 ]
