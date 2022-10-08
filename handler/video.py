@@ -21,6 +21,15 @@ Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
 
+import imageio as iio
+from moviepy.editor import VideoClip
+import cv2
+
+__all__ = [
+    "VideoEngine",
+    "MoviePyVideo",
+]
+
 
 class VideoEngine:
     """
@@ -110,3 +119,65 @@ class VideoEngine:
                 break
 
         cv2.destroyAllWindows()
+
+
+class MoviePyVideo(VideoEngine):
+    """
+    Class that standardized methods of MoviePy library.
+    This class depends on MoviePy, OpenCV and FFMPG installed in the system.
+    """
+
+    def get_duration(self):
+        """
+        Method to return the duration in seconds of the video.
+        """
+        return self.video.duration
+
+    def get_frame_rate(self):
+        """
+        Method to return the framerate of the video.
+        """
+        return self.video.fps
+
+    def get_frame_as_bytes(self, index, encode_format="jpeg"):
+        """
+        Method to return content of the frame at index as bytes.
+        """
+        formats = {
+            "jpeg": ".jpg"
+        }
+        success, buffer = cv2.imencode(formats[encode_format], self.video.get_frame(index))
+
+        if not success:
+            raise ValueError(f"Could not convert image to format {encode_format} in MoviePyVideo.get_frame_as_bytes.")
+
+        return buffer
+
+    def get_frame_image(self, index):
+        """
+        Method to return the array representing the frame at index.
+        """
+        return self.video.get_frame(index)
+
+    def get_size(self):
+        """
+        Method to return the width and height of the video.
+        """
+        return self.video.size
+
+    def prepare_video(self):
+        """
+        Method to prepare the video using the stored buffer as the source.
+        """
+        video_array = iio.imopen(self.source_buffer, io_mode="r")
+        self.metadata = video_array.metadata()
+
+        def make_frame(t):
+            """
+            Internal function to create the frame from video_array.
+            """
+            return video_array.read(index=t)
+
+        self.video = VideoClip(make_frame, duration=self.metadata['duration'])
+        self.video.fps = self.metadata['fps']
+
