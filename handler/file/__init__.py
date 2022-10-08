@@ -496,6 +496,17 @@ class BaseFile:
             self._actions.to_list()
 
     @property
+    def base64(self):
+        """
+        Method to return the current content as string of base64.
+        This method will load the content to memory before trying to convert to base64.
+        """
+        if self._content is None:
+            return None
+
+        return self._content.content_as_base64
+
+    @property
     def buffer(self):
         """
         Method to return the current content as buffer to be used for extraction or other code

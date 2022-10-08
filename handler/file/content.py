@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
-
+from base64 import b64encode
 from io import StringIO, IOBase, BytesIO
 
 from ..pipelines.renamer import UniqueRenamer
@@ -298,6 +298,14 @@ class FileContent:
             self.reset()
 
             return self.buffer
+
+    @property
+    def content_as_base64(self):
+        """
+        Method to obtain the content as a base64 encoded, loading it in memory if it is allowed and is not
+        loaded already.
+        """
+        return b64encode(self.content)
 
     def reset(self):
         """
