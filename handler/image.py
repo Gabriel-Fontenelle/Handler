@@ -26,7 +26,6 @@ import numpy as np
 import warnings
 from io import BytesIO
 
-import pytest
 from PIL import Image as PillowImageClass, ImageChops
 from wand.display import display as wand_display
 from wand.image import Image as WandImageClass
