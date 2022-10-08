@@ -106,19 +106,9 @@ class VideoEngine:
     def show(self):
         """
         Method to display the video for debugging purposes.
+        This method should be overwritten in child class.
         """
-        total_frames = self.get_frame_amount()
-
-        frame = 0
-
-        while frame < total_frames:
-            cv2.imshow("Video", self.get_frame_image(frame))
-            frame += 1
-
-            if cv2.waitKey(25) & 0xFF == ord('q'):
-                break
-
-        cv2.destroyAllWindows()
+        raise NotImplementedError("The method show should be override in child class.")
 
 
 class MoviePyVideo(VideoEngine):
@@ -175,9 +165,26 @@ class MoviePyVideo(VideoEngine):
         def make_frame(t):
             """
             Internal function to create the frame from video_array.
+            This function allow for consuming of video with lazy operation.
             """
             return video_array.read(index=t)
 
         self.video = VideoClip(make_frame, duration=self.metadata['duration'])
         self.video.fps = self.metadata['fps']
 
+    def show(self):
+        """
+        Method to display the video for debugging purposes.
+        """
+        total_frames = self.get_frame_amount()
+
+        frame = 0
+
+        while frame < total_frames:
+            cv2.imshow("Video", self.get_frame_image(frame))
+            frame += 1
+
+            if cv2.waitKey(25) & 0xFF == ord('q'):
+                break
+
+        cv2.destroyAllWindows()
