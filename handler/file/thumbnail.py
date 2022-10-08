@@ -31,8 +31,9 @@ from ..pipelines.extractor.package import PSDLayersFromPackageExtractor
 
 
 __all__ = [
-    "ThumbnailDefaults",
     "FileThumbnail",
+    "PreviewDefaults",
+    "ThumbnailDefaults",
 ]
 
 
@@ -90,6 +91,22 @@ class ThumbnailDefaults:
     """
 
 
+class PreviewDefaults(ThumbnailDefaults):
+    """
+    Class to handle the default properties of render, to allow changes to be propagated to all images.
+    For that end, this class should implement only class methods and attributes.
+
+    This class should be used for setting the size and extension of preview to be created.
+    """
+
+    format = "webp"
+    """
+    Attribute that define the default extension for the thumbnail as a format for conversion used in Image classes.
+    """
+    format_extension = "wepb"
+    """
+    Attribute that define the default extension for the thumbnail. It should be related to the format attribute.
+    """
 
     # Animation data
     delay = 1
@@ -103,10 +120,15 @@ class FileThumbnail:
     Class that store thumbnail data from file instance content.
     """
 
-    # Default property
-    defaults = ThumbnailDefaults
+    # Default properties
+    static_defaults = ThumbnailDefaults
     """
     Attribute to store the default values to be used for handling thumbnails.
+    This attribute must be a class, not instance, so any change will affect all usages. 
+    """
+    animated_defaults = PreviewDefaults
+    """
+    Attribute to store the default values to be used for handling animated previews.
     This attribute must be a class, not instance, so any change will affect all usages. 
     """
 
@@ -201,7 +223,7 @@ class FileThumbnail:
 
             if (
                 self.related_file_object._meta.packed
-                and self.related_file_object.extension not in self.defaults.packed_to_ignore
+                and self.related_file_object.extension not in self.static_defaults.packed_to_ignore
             ):
                 # Check if there is an element in iterator, else the self.related_file_object will be used.
                 first, second = itertools.tee(self.related_file_object.files, 2)

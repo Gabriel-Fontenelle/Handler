@@ -57,7 +57,7 @@ class StaticRender:
         """
         Method to create a file structured for the static image on same class as object_to_process.
         """
-        defaults = object_to_process._thumbnail.defaults
+        defaults = object_to_process._thumbnail.static_defaults
 
         # Create file object for image, change filename from parent to use
         # the new format as base for extension.
@@ -149,7 +149,7 @@ class DocumentFirstPageRender(StaticRender):
         """
         image_engine = kwargs.pop('image_engine')
 
-        defaults = file_object._thumbnail.defaults
+        defaults = file_object._thumbnail.static_defaults
 
         buffer = BytesIO()
 
@@ -203,7 +203,7 @@ class ImageRender(StaticRender):
         """
         image_engine = kwargs.pop('image_engine')
 
-        defaults = file_object._thumbnail.defaults
+        defaults = file_object._thumbnail.static_defaults
 
         # Resize image using the image_engine and default values.
         image = image_engine(buffer=file_object.buffer)
@@ -234,7 +234,7 @@ class PSDRender(StaticRender):
         """
         image_engine = kwargs.pop('image_engine')
 
-        defaults = file_object._thumbnail.defaults
+        defaults = file_object._thumbnail.static_defaults
 
         # Load PSD from buffer
         psd = PSDImage.open(fp=file_object.buffer)
@@ -279,7 +279,7 @@ class VideoRender(StaticRender):
 
         video_engine = kwargs.pop('video_engine')
 
-        defaults = file_object._thumbnail.defaults
+        defaults = file_object._thumbnail.static_defaults
 
         video = video_engine(buffer=file_object.buffer)
 
