@@ -352,7 +352,7 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
     most common usage of tar with those compressors.
     """
 
-    extensions = ['gz', 'tar', 'bz']
+    extensions = ['gz', 'tar', 'bz', 'cbt']
     """
     Attribute to store allowed extensions for use in `validator`.
     """
@@ -506,10 +506,10 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
 
 class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
     """
-    Class to extract internal files from rar files.
+    Class to extract internal files from zip and cbz files.
     """
 
-    extensions = ['zip']
+    extensions = ['zip', 'cbz']
     """
     Attribute to store allowed extensions for use in `validator`.
     """
@@ -666,7 +666,7 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
     Class to extract internal files from rar files.
     """
 
-    extensions = ['rar']
+    extensions = ['rar', 'cbr']
     """
     Attribute to store allowed extensions for use in `validator`.
     """
@@ -823,7 +823,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
     Class to extract internal files from 7z files.
     """
 
-    extensions = ['7z']
+    extensions = ['7z', 'cb7']
     """
     Attribute to store allowed extensions for use in `validator`.
     """
