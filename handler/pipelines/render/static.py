@@ -32,6 +32,7 @@ __all__ = [
     "ImageRender",
     "PSDRender",
     "StaticRender",
+    "VideoRender",
 ]
 
 
