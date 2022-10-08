@@ -22,6 +22,8 @@ Should there be a need for contact the electronic mail
 """
 import itertools
 
+from handler.video import MoviePyVideo
+
 from ..exception import SerializerError
 from ..image import WandImage
 from ..pipelines import Pipeline
@@ -146,6 +148,11 @@ class FileThumbnail:
     Attribute that identifies the current engine for use with the thumbnails. This engine must be inherent from 
     ImageEngine or implement its methods to avoid errors.
     """
+    video_engine = MoviePyVideo
+    """
+    Attribute that identifies the current engine for use with videos for the thumbnails. This engine must be inherent 
+    from VideoEngine or implement its methods to avoid errors.
+    """
     composer_engine = None
     """
     """
@@ -210,7 +217,8 @@ class FileThumbnail:
             for file_object in files:
                 # Call processor for each file running the pipeline to render a thumbnail
                 # of the file, files that don't have a processor will result in None
-                self.render_static_pipeline.run(object_to_process=file_object, engine=self.image_engine)
+                self.render_static_pipeline.run(object_to_process=file_object, image_engine=self.image_engine,
+                                                video_engine=self.video_engine)
 
                 # Check if static image was generated.
                 # We use is None to avoid a bug where bool(file_object._thumbnail._static_file) return False.

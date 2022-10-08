@@ -146,7 +146,7 @@ class DocumentFirstPageRender(StaticRender):
         Method to render the image representation of the file_object.
         This method will only use the first page of the documents.
         """
-        image_engine = kwargs.pop('engine')
+        image_engine = kwargs.pop('image_engine')
 
         defaults = file_object._thumbnail.defaults
 
@@ -200,7 +200,7 @@ class ImageRender(StaticRender):
         """
         Method to render the image representation of the file_object.
         """
-        image_engine = kwargs.pop('engine')
+        image_engine = kwargs.pop('image_engine')
 
         defaults = file_object._thumbnail.defaults
 
@@ -231,7 +231,7 @@ class PSDRender(StaticRender):
         """
         Method to render the image representation of the file_object.
         """
-        image_engine = kwargs.pop('engine')
+        image_engine = kwargs.pop('image_engine')
 
         defaults = file_object._thumbnail.defaults
 
