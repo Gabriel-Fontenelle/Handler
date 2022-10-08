@@ -132,6 +132,7 @@ class FileThumbnail:
     This attribute must be a class, not instance, so any change will affect all usages. 
     """
 
+    # Thumbnail and preview data
     history = None
     """
     Attribute to store previous generated thumbnails to allow browsing old ones for current file.
@@ -150,7 +151,7 @@ class FileThumbnail:
     Attribute to store the File object for the animated preview of the file.
     """
 
-    # Processor data
+    # Engines
     image_engine = WandImage
     """
     Attribute that identifies the current engine for use with the thumbnails. This engine must be inherent from 
@@ -175,7 +176,7 @@ class FileThumbnail:
     Available default composers can be found at `handler.image.composer.default`.
     """
 
-    # Pipeline
+    # Pipelines
     render_static_pipeline = Pipeline(
         "handler.pipelines.render.static.DocumentFirstPageRender",
         "handler.pipelines.render.static.ImageRender",
@@ -186,7 +187,6 @@ class FileThumbnail:
     Pipeline to render thumbnail representation from multiple source. For it to work, its classes should implement 
     stopper as True.
     """
-
     render_animated_pipeline = Pipeline(
         "handler.pipelines.render.static.ImageRender"
     )
