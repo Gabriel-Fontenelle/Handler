@@ -215,6 +215,7 @@ class ImageEngine:
 
 class OpenCVImage(ImageEngine):
     """
+    Class that standardized methods of OpenCV library.
     This class depends on OpenCV being installed in the system.
     In OpenCV the image is basically a numpy matrix.
     """
