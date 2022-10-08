@@ -28,6 +28,11 @@ pillow = "^9.2"
 opencv-python = "^4.6"
 psd-tools = "^1.9"
 PyPDF2 = "^2.11"
+imageio = "^2.22"
+pymupdf = "^1.20"
+imageio-ffmpeg = "*"
+av = "9.2.0"
+moviepy = "^1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"

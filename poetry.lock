@@ -21,6 +21,14 @@ tests = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)"
 tests_no_zope = ["coverage[toml] (>=5.0.2)", "hypothesis", "pympler", "pytest (>=4.3.0)", "mypy (>=0.900,!=0.940)", "pytest-mypy-plugins", "cloudpickle"]
 
 [[package]]
+name = "av"
+version = "9.2.0"
+description = "Pythonic bindings for FFmpeg's libraries."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "brotli"
 version = "1.0.9"
 description = "Python bindings for the Brotli compression library"
@@ -40,6 +48,14 @@ python-versions = "*"
 cffi = ">=1.0.0"
 
 [[package]]
+name = "certifi"
+version = "2022.9.24"
+description = "Python package for providing Mozilla's CA Bundle."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
 name = "cffi"
 version = "1.15.1"
 description = "Foreign Function Interface for Python calling C code."
@@ -49,6 +65,17 @@ python-versions = "*"
 
 [package.dependencies]
 pycparser = "*"
+
+[[package]]
+name = "charset-normalizer"
+version = "2.0.12"
+description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
+category = "main"
+optional = false
+python-versions = ">=3.5.0"
+
+[package.extras]
+unicode_backport = ["unicodedata2"]
 
 [[package]]
 name = "colorama"
@@ -65,6 +92,14 @@ description = "Backports and enhancements for the contextlib module"
 category = "dev"
 optional = false
 python-versions = ">=3.6"
+
+[[package]]
+name = "decorator"
+version = "4.4.2"
+description = "Decorators for Humans"
+category = "main"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*"
 
 [[package]]
 name = "dill"
@@ -117,6 +152,14 @@ docs = ["furo (>=2022.6.21)", "sphinx (>=5.1.1)", "sphinx-autodoc-typehints (>=1
 testing = ["covdefaults (>=2.2)", "coverage (>=6.4.2)", "pytest (>=7.1.2)", "pytest-cov (>=3)", "pytest-timeout (>=2.1)"]
 
 [[package]]
+name = "idna"
+version = "3.4"
+description = "Internationalized Domain Names in Applications (IDNA)"
+category = "main"
+optional = false
+python-versions = ">=3.5"
+
+[[package]]
 name = "imageio"
 version = "2.22.1"
 description = "Library for reading and writing a wide range of image, video, scientific, and volumetric data formats."
@@ -144,6 +187,14 @@ opencv = ["opencv-python"]
 pyav = ["av"]
 test = ["invoke", "pytest", "pytest-cov", "fsspec"]
 tifffile = ["tifffile"]
+
+[[package]]
+name = "imageio-ffmpeg"
+version = "0.4.7"
+description = "FFMPEG wrapper for Python"
+category = "main"
+optional = false
+python-versions = ">=3.5"
 
 [[package]]
 name = "inflate64"
@@ -186,6 +237,31 @@ python-versions = ">=3.6"
 build = ["twine", "wheel", "blurb"]
 docs = ["sphinx"]
 test = ["pytest (<5.4)", "pytest-cov"]
+
+[[package]]
+name = "moviepy"
+version = "1.0.3"
+description = "Video editing with Python"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+decorator = ">=4.0.2,<5.0"
+imageio = {version = ">=2.5,<3.0", markers = "python_version >= \"3.4\""}
+imageio_ffmpeg = {version = ">=0.2.0", markers = "python_version >= \"3.4\""}
+numpy = [
+    {version = ">=1.17.3", markers = "python_version != \"2.7\""},
+    {version = "*", markers = "python_version >= \"2.7\""},
+]
+proglog = "<=1.0.0"
+requests = ">=2.8.1,<3.0"
+tqdm = ">=4.11.2,<5.0"
+
+[package.extras]
+doc = ["numpydoc (>=0.6.0,<1.0)", "sphinx_rtd_theme (>=0.1.10b0,<1.0)", "Sphinx (>=1.5.2,<2.0)", "pygame (>=1.9.3,<2.0)"]
+optional = ["youtube-dl", "opencv-python (>=3.0,<4.0)", "scipy (>=0.19.0,<1.5)", "scikit-image (>=0.13.0,<1.0)", "scikit-learn", "matplotlib (>=2.0.0,<3.0)"]
+test = ["coverage (<5.0)", "coveralls (>=1.1,<2.0)", "pytest-cov (>=2.5.1,<3.0)", "pytest (>=3.0.0,<4.0)", "requests (>=2.8.1,<3.0)"]
 
 [[package]]
 name = "multivolumefile"
@@ -314,6 +390,17 @@ testing = ["pytest-benchmark", "pytest"]
 dev = ["tox", "pre-commit"]
 
 [[package]]
+name = "proglog"
+version = "0.1.10"
+description = "Log and progress bar manager for console, notebooks, web..."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+tqdm = "*"
+
+[[package]]
 name = "psd-tools"
 version = "1.9.23"
 description = "Python package for working with Adobe Photoshop PSD files"
@@ -405,6 +492,14 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
+name = "pymupdf"
+version = "1.20.2"
+description = "Python bindings for the PDF toolkit and renderer MuPDF"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[[package]]
 name = "pyparsing"
 version = "3.0.9"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
@@ -442,6 +537,17 @@ check = ["mypy (>=0.812)", "mypy-extensions (>=0.4.3)", "check-manifest", "flake
 docs = ["sphinx (>=2.3)", "sphinx-rtd-theme"]
 fuzzer = ["atheris", "hypothesis"]
 test = ["pytest (>=6.0)", "pytest-benchmark", "pytest-cov", "pytest-timeout", "hypothesis", "coverage[toml] (>=5.2)"]
+
+[[package]]
+name = "pyside2"
+version = "5.13.2"
+description = "Python bindings for the Qt cross-platform application and UI framework"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+shiboken2 = "5.13.2"
 
 [[package]]
 name = "pytest"
@@ -511,6 +617,24 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "requests"
+version = "2.27.1"
+description = "Python HTTP for Humans."
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
+
+[package.dependencies]
+certifi = ">=2017.4.17"
+charset-normalizer = {version = ">=2.0.0,<2.1.0", markers = "python_version >= \"3\""}
+idna = {version = ">=2.5,<4", markers = "python_version >= \"3\""}
+urllib3 = ">=1.21.1,<1.27"
+
+[package.extras]
+socks = ["PySocks (>=1.5.6,!=1.5.7)", "win-inet-pton"]
+use_chardet_on_py3 = ["chardet (>=3.0.2,<5)"]
+
+[[package]]
 name = "scikit-image"
 version = "0.19.3"
 description = "Image processing in Python"
@@ -557,6 +681,14 @@ python-versions = "*"
 nativelib = ["pyobjc-framework-cocoa", "pywin32"]
 objc = ["pyobjc-framework-cocoa"]
 win32 = ["pywin32"]
+
+[[package]]
+name = "shiboken2"
+version = "5.13.2"
+description = "Python / C++ bindings helper module"
+category = "dev"
+optional = false
+python-versions = "*"
 
 [[package]]
 name = "six"
@@ -665,12 +797,41 @@ tox = {version = ">=3.7.0", markers = "python_version >= \"3\""}
 test = ["pylint", "pycodestyle", "pytest", "coverage"]
 
 [[package]]
+name = "tqdm"
+version = "4.64.1"
+description = "Fast, Extensible Progress Meter"
+category = "main"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
+
+[package.dependencies]
+colorama = {version = "*", markers = "platform_system == \"Windows\""}
+
+[package.extras]
+dev = ["py-make (>=0.1.0)", "twine", "wheel"]
+notebook = ["ipywidgets (>=6)"]
+slack = ["slack-sdk"]
+telegram = ["requests"]
+
+[[package]]
 name = "typing-extensions"
-version = "4.3.0"
+version = "4.4.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
 category = "main"
 optional = false
 python-versions = ">=3.7"
+
+[[package]]
+name = "urllib3"
+version = "1.22"
+description = "HTTP library with thread-safe connection pooling, file post, and more."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.extras]
+secure = ["pyOpenSSL (>=0.14)", "cryptography (>=1.3.4)", "idna (>=2.0.0)", "certifi", "ipaddress"]
+socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
 name = "virtualenv"
@@ -704,26 +865,33 @@ test = ["pytest (>=5.3.5)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8"
-content-hash = "b02396c6fdca954789d3d097a1b1552e79d8ed0f1dc04b88014fd998d9c274e9"
+content-hash = "28f15ac73c4c58e917d77ee25bd575741be71721e2dddbde3a9a326a464f680e"
 
 [metadata.files]
 aggdraw = []
 attrs = []
+av = []
 brotli = []
 brotlicffi = []
+certifi = []
 cffi = []
+charset-normalizer = []
 colorama = []
 contextlib2 = []
+decorator = []
 dill = []
 distlib = []
 docopt = []
 execnet = []
 filelock = []
+idna = []
 imageio = []
+imageio-ffmpeg = []
 inflate64 = []
 iniconfig = []
 json-tricks = []
 mock = []
+moviepy = []
 multivolumefile = []
 networkx = []
 numpy = []
@@ -734,6 +902,7 @@ path = []
 pillow = []
 platformdirs = []
 pluggy = []
+proglog = []
 psd-tools = []
 psutil = []
 py = []
@@ -741,17 +910,21 @@ py7zr = []
 pybcj = []
 pycparser = []
 pycryptodomex = []
+pymupdf = []
 pyparsing = []
 pypdf2 = []
 pyppmd = []
+pyside2 = []
 pytest = []
 pytest-shutil = []
 pywavelets = []
 pyzstd = []
 rarfile = []
+requests = []
 scikit-image = []
 scipy = []
 send2trash = []
+shiboken2 = []
 six = []
 termcolor = []
 texttable = []
@@ -761,6 +934,8 @@ toml = []
 tomli = []
 tox = []
 tox-poetry = []
+tqdm = []
 typing-extensions = []
+urllib3 = []
 virtualenv = []
 wand = []
