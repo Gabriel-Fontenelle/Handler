@@ -268,3 +268,29 @@ class VideoRender(StaticRender):
     Attribute to store allowed extensions for use in `validator`.
     """
 
+    @classmethod
+    def render(cls, file_object, **kwargs: dict):
+        """
+        Method to render the image representation of the file_object.
+        This method will get the frame in 20% of the video.
+        """
+        image_engine = kwargs.pop('image_engine')
+
+        video_engine = kwargs.pop('video_engine')
+
+        defaults = file_object._thumbnail.defaults
+
+        video = video_engine(buffer=file_object.buffer)
+
+        frame_to_select = video.get_frame_amount() * 20 // 100
+
+        image = image_engine(buffer=BytesIO(video.get_frame_as_bytes(index=frame_to_select,
+                                                                     encode_format=defaults.format)))
+
+        image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
+
+        # Set static file for current file_object.
+        file_object._thumbnail._static_file = cls.create_static_file(
+            file_object,
+            content=image.get_buffer(encode_format=defaults.format)
+        )
