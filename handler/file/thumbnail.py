@@ -89,21 +89,7 @@ class ThumbnailDefaults:
     Attribute that define list of extensions where we should ignore the internal_files.
     """
 
-    # Composer data
-    composition = False
-    """
-    Attribute that define if the first image will be used or a composition of images in case there is multiples.
-    """
 
-    # Behavior for default image generator
-    compose_default = True
-    """
-    Attribute that define if the default image should be composed or not. If not, it should return False.
-    """
-    compose_default_with_filename = False
-    """
-    Attribute that define if the default image to be composed should also add the filename to the composed image.
-    """
 
     # Animation data
     delay = 1
@@ -155,6 +141,16 @@ class FileThumbnail:
     """
     composer_engine = None
     """
+    Attribute that identifies the current engine for composing thumbnails in case there is multiples candidates. If 
+    this value is None no composition will be made and the first image found should be used instead.
+    Available composer can be found at `handler.image.composer.merger`.
+    """
+    default_engine = None
+    """
+    Attribute that identifies the current engine for composing the default image.
+    If this value is None no default image will be created and _static_image will be set to False case there is 
+    no thumbnail to be created.
+    Available default composers can be found at `handler.image.composer.default`.
     """
 
     # Pipeline
@@ -193,8 +189,8 @@ class FileThumbnail:
         Method to compose the cover for the file, also known as thumbnail.
         This method should return only one image.
 
-        If composition is True in defaults, a mix of pages will be resized and combined in one image.
-        If there is no image to represent the file, and compose_default is True in defaults, a default image will
+        If composition is True in static_defaults, a mix of pages will be resized and combined in one image.
+        If there is no image to represent the file, and compose_default is True in static_defaults, a default image will
         be composed else _static_file will be set to False.
         """
         if self.related_file_object._actions.thumbnail:
@@ -225,7 +221,7 @@ class FileThumbnail:
                 # We use is None to avoid a bug where bool(file_object._thumbnail._static_file) return False.
                 if file_object._thumbnail._static_file is not None:
 
-                    if not self.defaults.composition:
+                    if self.composer_engine is None:
                         # Return the first image
                         self._static_file = file_object._thumbnail._static_file
 
@@ -243,9 +239,11 @@ class FileThumbnail:
                     files_to_compose=to_be_composed,
                     engine=self.image_engine
                 )
+            elif self.default_engine is not None:
+                # No image was rendered for thumbnail, so we should return the default one.
+                self._static_file = self.default_engine.compose(self.related_file_object)
             else:
-                # No image was rendered for thumbnail, so we should return the default one or set it to False.
-                self._static_file = self.defaults.default_image(self.related_file_object)
+                self._static_file = False
 
             # Set state of related file as thumbnailed.
             self.related_file_object._actions.thumbnailed()
