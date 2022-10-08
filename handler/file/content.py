@@ -304,6 +304,7 @@ class FileContent:
         """
         Method to obtain the content as a base64 encoded, loading it in memory if it is allowed and is not
         loaded already.
+        TODO: Change the code to work with BaseIO to avoid loading all content to memory for larger files.
         """
         return b64encode(self.content)
 
