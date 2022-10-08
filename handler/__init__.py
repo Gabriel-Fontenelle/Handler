@@ -55,7 +55,7 @@ from .pipelines.comparer import (
 # Module with pipeline classes for extracting data for files from multiple sources.
 from .pipelines.extractor import (
     Extractor,
-    ContentExtractor,
+    PackageExtractor,
     FileSystemDataExtractor,
     FilenameAndExtensionFromPathExtractor,
     MimeTypeFromFilenameExtractor,
@@ -64,10 +64,10 @@ from .pipelines.extractor import (
     PathFromURLExtractor,
     FilenameFromMetadataExtractor,
     MetadataExtractor,
-    SevenZipCompressedFilesFromContentExtractor,
+    SevenZipCompressedFilesFromPackageExtractor,
     AudioMetadataFromContentExtractor,
-    RarCompressedFilesFromContentExtractor,
-    ZipCompressedFilesFromContentExtractor,
+    RarCompressedFilesFromPackageExtractor,
+    ZipCompressedFilesFromPackageExtractor,
     MimeTypeFromContentExtractor
 )
 # Module with pipeline classes for generating or extracting hashed data related to file.
@@ -78,16 +78,17 @@ from .pipelines.renamer import Renamer, WindowsRenamer, LinuxRenamer, UniqueRena
 
 __all__ = [
     'APIMimeTyper', 'AudioMetadataFromContentExtractor', 'BaseFile', 'BinaryCompare',
-    'Comparer', 'ContentExtractor', 'ContentFile', 'CRC32Hasher', 'DataCompare',
+    'Comparer', 'PackageExtractor', 'ContentFile', 'CRC32Hasher', 'DataCompare',
     'Extractor', 'File', 'FileSystemDataExtractor', 'FilenameAndExtensionFromPathExtractor',
     'FilenameFromMetadataExtractor', 'FilenameFromURLExtractor', 'HashCompare', 'HashFileExtractor',
-    'Hasher', 'ImproperlyConfiguredFile', 'JSONSerializer', 'LibraryMimeTyper',
+    'Hasher', 'ImageEngine', 'ImproperlyConfiguredFile', 'JSONSerializer', 'LibraryMimeTyper',
     'LinuxFileSystem',  'LinuxRenamer', 'LousyNameCompare', 'MD5Hasher',
     'MetadataExtractor', 'MimeTypeCompare', 'MimeTypeFromContentExtractor',
-    'MimeTypeFromFilenameExtractor', 'NameCompare', 'NoInternalContentError',
-    'OperationNotAllowed', 'PathFromURLExtractor', 'PickleSerializer', 'Pipeline', 'Processor',
-    'RarCompressedFilesFromContentExtractor', 'Renamer', 'ReservedFilenameError',
-    'SHA256Hasher', 'SevenZipCompressedFilesFromContentExtractor',
+    'MimeTypeFromFilenameExtractor', 'NameCompare', 'NoInternalContentError', 'OpenCVImage',
+    'OperationNotAllowed', 'PathFromURLExtractor', 'PickleSerializer', 'PillowImage', 'Pipeline',
+    'Processor', 'RarCompressedFilesFromPackageExtractor', 'Renamer', 'ReservedFilenameError',
+    'SHA256Hasher', 'SevenZipCompressedFilesFromPackageExtractor',
     'SizeCompare', 'Storage', 'StreamFile', 'System', 'TypeCompare', 'URI', 'UniqueRenamer',
-    'ValidationError', 'WindowsFileSystem', 'WindowsRenamer', 'ZipCompressedFilesFromContentExtractor'
+    'ValidationError', 'WandImage', 'WindowsFileSystem', 'WindowsRenamer',
+    'ZipCompressedFilesFromPackageExtractor'
 ]
