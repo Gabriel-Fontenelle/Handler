@@ -273,7 +273,8 @@ class FileThumbnail:
             for file_object in files:
                 # Call processor for each file running the pipeline to render an animated image
                 # of the file, files that don't have a processor will result in None
-                self.render_static_pipeline.run(object_to_process=file_object, image_engine=self.image_engine)
+                self.render_animated_pipeline.run(object_to_process=file_object, image_engine=self.image_engine,
+                                                  video_engine=self.video_engine)
 
                 # Check if animated image was generated
                 if file_object._thumbnail._animated_file:
