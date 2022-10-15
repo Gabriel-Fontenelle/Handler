@@ -340,6 +340,15 @@ class FileThumbnail:
         image = self.image_engine(buffer=self.thumbnail.buffer)
         image.show()
 
+    def display_animation(self):
+        """
+        Method to debug the current animated image showing it with the available image engine.
+        This method make use of property preview to generate the thumbnail image if not
+        processed already.
+        """
+        image = self.image_engine(buffer=self.preview.buffer)
+        image.show()
+
     def reset(self, name="_static_file"):
         """
         Method to clean the generated thumbnail keeping a history of changes.
@@ -357,4 +366,3 @@ class FileThumbnail:
 
             # Reset the internal files
             setattr(self, name, None)
-
