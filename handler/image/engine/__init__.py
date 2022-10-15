@@ -21,8 +21,6 @@ Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
 import base64
-import cv2
-import numpy as np
 import warnings
 from io import BytesIO
 
@@ -33,7 +31,6 @@ from wand.color import Color
 
 __all__ = [
     "ImageEngine",
-    "OpenCVImage",
     "PillowImage",
     "SequenceEngine",
     "WandImage"
@@ -261,131 +258,6 @@ class ImageEngine:
         This method should be overwritten in child class.
         """
         raise NotImplementedError("The method trim should be override in child class.")
-
-
-class OpenCVImage(ImageEngine):
-    """
-    Class that standardized methods of OpenCV library.
-    This class depends on OpenCV being installed in the system.
-    In OpenCV the image is basically a numpy matrix.
-    """
-
-    def change_color(self, colorspace="gray"):
-        """
-        Method to change the color space of the current image.
-        """
-        # Convert to grey scale
-        colorscheme = {
-            "gray": cv2.COLOR_BGR2GRAY,
-            "Lab": cv2.COLOR_BGR2LAB,
-            "YCrCb": cv2.COLOR_BGR2YCrCb,
-            "HSV": cv2.COLOR_BGR2HSV
-        }
-
-        self.image = cv2.cvtColor(self.image, colorscheme[colorspace])
-
-    def clone(self):
-        """
-        Method to copy the current image object and return it.
-        """
-        return self.image.copy()
-
-    def crop(self, width, height):
-        """
-        Method to crop the current image object.
-        """
-        current_width, current_height = self.get_size()
-
-        # Set `top` based on center gravity
-        top = current_height // 2 - height // 2
-
-        # Set `left` based on center gravity
-        left = current_width // 2 - width // 2
-
-        self.image = self.image[top:top+height, left:left+width]
-
-    def get_bytes(self, encode_format="jpeg"):
-        """
-        Method to obtain the bytes' representation for the content of the current image object.
-        """
-        formats = {
-            "jpeg": ".jpg"
-        }
-        success, buffer = cv2.imencode(formats[encode_format], self.image)
-
-        if not success:
-            raise ValueError(f"Could not convert image to format {encode_format} in OpenCVImage.get_bytes_from_image.")
-
-        return buffer
-
-    def get_size(self):
-        """
-        Method to obtain the size of current image.
-        OpenCV shape attribute is a tuple (height, width, channels).
-        """
-        return self.image.shape[1], self.image.shape[0]
-
-    def has_transparency(self):
-        """
-        Method to verify if image has a channel for transparency.
-        """
-        return self.image.shape[2] > 3 or self.image.shape[2] == 2
-
-    def prepare_image(self):
-        """
-        Method to prepare the image using the stored buffer as the source.
-        """
-        # convert to numpy array
-        array = np.asarray(bytearray(self.source_buffer.read()), dtype="uint8")
-
-        self.image = cv2.imdecode(array, cv2.IMREAD_UNCHANGED)
-
-    def scale(self, width, height):
-        """
-        Method to scale the current image object without implementing additional logic.
-        """
-        self.image = cv2.resize(self.image, (width, height), interpolation=cv2.INTER_AREA)
-
-    def show(self):
-        """
-        Method to display the image for debugging purposes.
-        """
-        cv2.imshow("Image", self.image)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
-    def trim(self, color=None):
-        """
-        Method to trim the current image object.
-        The parameter color is used to indicate the color to trim else it will use transparency.
-        """
-        if color:
-            # Create new image with same color
-            background = np.zeros(self.image.shape, np.uint8)
-
-            if self.has_transparency():
-                background[:] = tuple([*color, 255])
-            else:
-                background[:] = color
-
-            diff = cv2.absdiff(self.image, background)
-
-            # Convert channels to one channel to allow boundingRect to work
-            diff = cv2.cvtColor(diff, cv2.COLOR_BGR2GRAY)
-
-            bounding_border = cv2.boundingRect(diff)
-
-        elif self.has_transparency():
-            splitted_channels = cv2.split(self.image)
-            bounding_border = cv2.boundingRect(splitted_channels[-1])
-
-        else:
-            raise ValueError("Cannot trim image because no color was informed and no alpha channel exists in the "
-                             "current image.")
-
-        if bounding_border:
-            # bounding_border is equal to `x, y, w, h = bounding_border`
-            self.image = self.image[bounding_border[1]:bounding_border[3], bounding_border[0]:bounding_border[2]]
 
 
 class PillowImage(ImageEngine, SequenceEngine):
