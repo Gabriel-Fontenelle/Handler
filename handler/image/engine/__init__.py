@@ -24,14 +24,12 @@ import base64
 import warnings
 from io import BytesIO
 
-from PIL import Image as PillowImageClass, ImageChops, ImageSequence as PillowSequence
 from wand.display import display as wand_display
 from wand.image import Image as WandImageClass
 from wand.color import Color
 
 __all__ = [
     "ImageEngine",
-    "PillowImage",
     "SequenceEngine",
     "WandImage"
 ]
@@ -258,151 +256,6 @@ class ImageEngine:
         This method should be overwritten in child class.
         """
         raise NotImplementedError("The method trim should be override in child class.")
-
-
-class PillowImage(ImageEngine, SequenceEngine):
-    """
-    Class that standardized methods of Pillow library.
-    """
-
-    class_image = PillowImageClass
-    """
-    Attribute used to store the class reference responsible to create an image.
-    """
-
-    def change_color(self, colorspace="gray"):
-        """
-        Method to change the color space of the current image.
-        """
-        # Convert to grey scale
-        colorscheme = {
-            "gray": "L",
-            "Lab": "",
-            "YCrCb": "",
-            "HSV": ""
-        }
-        self.image = self.image.convert(colorscheme[colorspace])
-
-    def clone(self):
-        """
-        Method to copy the current image object and return it.
-        """
-        return self.image.copy()
-
-    def create_sequence_image(self, images):
-        """
-        Method to create a new image with sequence using a list of images.
-        """
-        pass
-
-    def crop(self, width, height):
-        """
-        Method to crop the current image object.
-        """
-        current_width, current_height = self.get_size()
-
-        # Set `top` based on center gravity
-        top = current_height // 2 - height // 2
-
-        # Set `left` based on center gravity
-        left = current_width // 2 - width // 2
-
-        self.image = self.image.crop((top, left, width, height))
-
-    def get_buffer(self, encode_format="jpeg"):
-        """
-        Method to get a buffer IO from the current image.
-        For optimization this function performance the same as get_bytes_from_image except by the return of
-        BytesIO without reading bytes content.
-        """
-        output = BytesIO()
-        self.image.save(output, format=encode_format)
-        return output
-
-    def get_bytes(self, encode_format="jpeg"):
-        """
-        Method to obtain the bytes' representation for the content of the current image object.
-        """
-        output = BytesIO()
-        self.image.save(output, format=encode_format)
-        return output.read()
-
-    def get_frame(self, index):
-        """
-        Method to obtain an engine from a specified index frame of current image object.
-        This method should return None if no frame exists with given index.
-        """
-        if self.sequence_image is None:
-            self.prepare_sequence_image()
-
-        try:
-            image = self.sequence_image[index]
-            return self.create_from_image(image=image)
-
-        except (StopIteration, IndexError):
-            return None
-
-    def get_size(self):
-        """
-        Method to obtain the size of current image.
-        This method should return a tuple with width and height.
-        """
-        return self.image.size[0], self.image.size[1]
-
-    def get_total_frames(self):
-        """
-        Method to obtain the total amount of frames in image.
-        This method should return 1 if the current image is not iterable.
-        """
-        return len(self.sequence_image)
-
-    def has_transparency(self):
-        """
-        Method to verify if image has a channel for transparency.
-        """
-        return self.image.info.get("transparency") is not None
-
-    def prepare_image(self):
-        """
-        Method to prepare the image using the stored buffer as the source.
-        """
-        self.image = self.class_image.open(fp=self.source_buffer)
-
-    def prepare_sequence_image(self):
-        """
-        Method to prepare the sequence object from image.
-        """
-        self.sequence_image = PillowSequence.Iterator(self.image)
-
-    def scale(self, width, height):
-        """
-        Method to scale the current image object without implementing additional logic.
-        """
-        self.image = self.image.resize((width, height), resample=self.class_image.Resampling.LANCZOS)
-
-    def show(self):
-        """
-        Method to display the image for debugging purposes.
-        """
-        self.image.show()
-
-    def trim(self, color=None):
-        """
-        Method to trim the current image object.
-        The parameter color is used to indicate the color to trim else it will use transparency.
-        """
-        if color:
-            background = self.class_image.new(self.image.mode, self.image.size, color=color)
-            bounding_border = ImageChops.difference(self.image, background).getbbox()
-        elif self.has_transparency():
-            # Trim transparency
-            bounding_border = self.image.getchannel("A").getbbox()
-        else:
-            raise ValueError("Cannot trim image because no color was informed and no alpha channel exists in the "
-                             "current image.")
-
-        if bounding_border:
-            self.image = self.image.crop(bounding_border)
 
 
 class WandImage(ImageEngine, SequenceEngine):
