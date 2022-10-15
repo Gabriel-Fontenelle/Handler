@@ -212,6 +212,27 @@ class FileThumbnail:
                 raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
 
     @property
+    def __serialize__(self):
+        """
+        Method to allow dir and vars to work with the class simplifying the serialization of object.
+        """
+
+        attributes = {
+            "static_defaults",
+            "animated_defaults",
+            "history",
+            "related_file_object",
+            "_static_file",
+            "_animated_file",
+            "image_engine",
+            "video_engine",
+            "render_static_pipeline",
+            "render_animated_pipeline",
+        }
+
+        return {key: getattr(self, key) for key in attributes}
+
+    @property
     def thumbnail(self):
         """
         Method to compose the cover for the file, also known as thumbnail.
