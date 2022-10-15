@@ -215,9 +215,9 @@ class FileThumbnail:
         Method to compose the cover for the file, also known as thumbnail.
         This method should return only one image.
 
-        If composition is True in static_defaults, a mix of pages will be resized and combined in one image.
-        If there is no image to represent the file, and compose_default is True in static_defaults, a default image will
-        be composed else _static_file will be set to False.
+        If there is a composer engine in static_defaults, a mix of pages will be resized and combined in one image.
+        If there is no image to represent the file, and there is a default engine in static_defaults, a default image
+        will be composed else _static_file will be set to False.
         """
         if self.related_file_object._actions.thumbnail:
             self.reset(name="_static_file")
@@ -281,6 +281,10 @@ class FileThumbnail:
         """
         Method to compose the preview animated for the file.
         This method should return only one animated image.
+
+        If there is a composer engine in animated_defaults, a mix of animated images will be merged in one image.
+        If there is no image to represent the file, and there is a default engine in animated_defaults, a default image
+        will be composed else _animated_file will be set to False.
         """
         if self.related_file_object._actions.preview:
             self.reset(name="_animated_file")
