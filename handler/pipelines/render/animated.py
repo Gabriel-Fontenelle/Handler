@@ -39,7 +39,7 @@ class AnimatedRender(StaticRender):
         """
         Method to create a file structured for the animated image on same class as object_to_process.
         """
-        defaults = object_to_process._thumbnail.defaults
+        defaults = object_to_process._thumbnail.animated_defaults
 
         # Create file object for image, change filename from parent to use
         # the new format as base for extension.
