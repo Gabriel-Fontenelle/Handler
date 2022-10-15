@@ -194,7 +194,8 @@ class FileThumbnail:
     stopper as True.
     """
     render_animated_pipeline = Pipeline(
-        "handler.pipelines.render.static.ImageRender"
+        "handler.pipelines.render.animated.StaticAnimatedRender",
+        "handler.pipelines.render.animated.ImageAnimatedRender",
     )
     """
     Pipeline to render animated thumbnail representation from multiple source. For it to work, its classes should 
