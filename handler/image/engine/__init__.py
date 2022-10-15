@@ -40,65 +40,6 @@ __all__ = [
 ]
 
 
-class SequenceEngine:
-    """
-    Class that standardized methods of different image manipulators focused in Sequence.
-    """
-
-    sequence_image = None
-    """
-    Attribute where the current sequence for the image is stored.
-    """
-
-    def append_to_sequence(self, image):
-        """
-        Method to append an image to the sequence of images in the current image.
-        This method should be overwritten in child class.
-        """
-        raise NotImplementedError("The method append_sequence should be override in child class.")
-
-    @classmethod
-    def create_sequence_image(cls, images):
-        """
-        Method to create a new image with sequence using a list of images.
-        This method should be overwritten in child class.
-        """
-        raise NotImplementedError("The method create_sequence_image should be override in child class.")
-
-    def get_frame(self, index):
-        """
-        Method to obtain an engine from a specified index frame of current image object.
-        This method should return None if no frame exists with given index.
-        This method should be overwritten in child class.
-        """
-        raise NotImplementedError("The method get_frame should be override in child class.")
-
-    def get_sequence(self, steps=1):
-        """
-        Method to obtain the iterator for the available sequence of images.
-        This method should return an iterator with instances of engine instead of the image directly.
-        Case the image does not have a sequence it should return an iterator of itself as the only element.
-        This method should be overwritten in child class.
-        """
-        for index in range(0, self.get_total_frames(), steps):
-            yield self.get_frame(index)
-
-    def get_total_frames(self):
-        """
-        Method to obtain the total amount of frames in image.
-        This method should return 1 if the current image is not iterable.
-        This method should be overwritten in child class.
-        """
-        raise NotImplementedError("The method get_total_frames should be override in child class.")
-
-    def prepare_sequence_image(self):
-        """
-        Method to prepare the sequence object from image.
-        This method should be overwritten in child class.
-        """
-        raise NotImplementedError("The method prepare_sequence_image should be override in child class.")
-
-
 class ImageEngine:
     """
     Class that standardized methods of different image manipulators.
