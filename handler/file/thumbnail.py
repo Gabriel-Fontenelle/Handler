@@ -113,6 +113,10 @@ class PreviewDefaults(ThumbnailDefaults):
     """
     Attribute that defines the delay between each frame in the animation in seconds.
     """
+    duration = 10
+    """
+    Attribute that defines a fix percentual duration for the animation.
+    """
 
 
 class FileThumbnail:
