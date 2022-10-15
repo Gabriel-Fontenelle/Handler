@@ -27,7 +27,6 @@ from io import BytesIO
 
 __all__ = [
     "ImageEngine",
-    "SequenceEngine",
 ]
 
 
