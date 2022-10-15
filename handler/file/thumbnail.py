@@ -103,7 +103,7 @@ class PreviewDefaults(ThumbnailDefaults):
     """
     Attribute that define the default extension for the thumbnail as a format for conversion used in Image classes.
     """
-    format_extension = "wepb"
+    format_extension = "webp"
     """
     Attribute that define the default extension for the thumbnail. It should be related to the format attribute.
     """
