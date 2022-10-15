@@ -169,7 +169,7 @@ class LibraryMimeTyper(BaseMimeTyper):
         Method that instantiate the mimetype library and load to it the file of known mimetypes.
         It will output a IOError, that must be caught in stack above, if file don't exists.
         """
-        mimetypes.init(self._known_mimetypes_file)
+        mimetypes.init(files=[self._known_mimetypes_file])
 
     @property
     def lossless_mimetypes(self):
@@ -393,7 +393,7 @@ class LibraryMimeTyper(BaseMimeTyper):
 
     def is_extension_registered(self, extension):
         """
-        Method to check if a extension is registered or not in list of mimetypes and extensions.
+        Method to check if an extension is registered or not in list of mimetypes and extensions.
         """
         return bool(self.get_mimetype(extension))
 
