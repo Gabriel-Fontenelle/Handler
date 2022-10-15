@@ -1743,7 +1743,7 @@ image/jpeg				jpe jpeg jpg
 image/ktx				ktx
 # image/naplps
 image/photoshop				psd
-image/png				png
+image/png				png apng
 image/prs.btif				btif
 # image/prs.ptiraw
 # image/pwg-raster
