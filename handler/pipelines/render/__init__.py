@@ -21,12 +21,17 @@ Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
 from .static import StaticRender, DocumentFirstPageRender, ImageRender, PSDRender, VideoRender
-from .animated import AnimatedRender
+from .animated import AnimatedRender, StaticAnimatedRender, ImageAnimatedRender
 
 __all__ = [
+    # Static
     "DocumentFirstPageRender",
     "ImageRender",
     "PSDRender",
     "StaticRender",
     "VideoRender",
+    # Animated
+    "AnimatedRender",
+    "ImageAnimatedRender",
+    "StaticAnimatedRender",
 ]

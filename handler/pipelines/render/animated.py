@@ -25,7 +25,9 @@ from .. import Pipeline
 from .static import StaticRender
 
 __all__ = [
-    'AnimatedRender'
+    'AnimatedRender',
+    'ImageAnimatedRender',
+    'StaticAnimatedRender',
 ]
 
 
@@ -60,3 +62,70 @@ class AnimatedRender(StaticRender):
 
         return animated_file
 
+
+class StaticAnimatedRender(AnimatedRender):
+    """
+    Render class for processing information from file's content focusing in rendering the whole image.
+    This class not make use of sequences.
+    """
+
+    extensions = ["jpeg", "jpg", "bmp", "tiff", "tif"]
+    """
+    Attribute to store allowed extensions for use in `validator`.
+    """
+
+    @classmethod
+    def render(cls, file_object, **kwargs: dict):
+        """
+        Method to render the animated representation of the file_object.
+        But because those extensions don`t need to be animated to represent the whole image,
+        there is no need to animate it.
+        """
+        image_engine = kwargs.pop('image_engine')
+
+        defaults = file_object._thumbnail.animated_defaults
+
+        # Resize image using the image_engine and default values.
+        image = image_engine(buffer=file_object.buffer)
+
+        image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
+
+        # Set static file for current file_object.
+        file_object._thumbnail._animated_file = cls.create_file(
+            file_object,
+            content=image.get_buffer(encode_format=defaults.format)
+        )
+
+
+class ImageAnimatedRender(AnimatedRender):
+    """
+    Render class for processing information from file's content focusing in rendering the whole image.
+    This class make use of sequences.
+    """
+
+    extensions = ["gif", "png", "apng", "webp"]
+    """
+    Attribute to store allowed extensions for use in `validator`.
+    """
+
+    @classmethod
+    def render(cls, file_object, **kwargs: dict):
+        """
+        Method to render the animated representation of the file_object that has animation.
+        """
+        image_engine = kwargs.pop('image_engine')
+
+        defaults = file_object._thumbnail.animated_defaults
+
+        # Resize image using the image_engine and default values.
+        image = image_engine(buffer=file_object.buffer)
+
+        image.resample(percentual=defaults.duration, encode_format=defaults.format)
+
+        image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
+
+        # Set animated file for current file_object.
+        file_object._thumbnail._animated_file = cls.create_file(
+            file_object,
+            content=image.get_buffer(encode_format=defaults.format)
+        )
