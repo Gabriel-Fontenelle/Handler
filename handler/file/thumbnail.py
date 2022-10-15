@@ -226,55 +226,7 @@ class FileThumbnail:
 
         # Generate static file if not exists already
         if self._static_file is None:
-
-            if (
-                self.related_file_object._meta.packed
-                and self.related_file_object.extension not in self.static_defaults.packed_to_ignore
-            ):
-                # Check if there is an element in iterator, else the self.related_file_object will be used.
-                first, second = itertools.tee(self.related_file_object.files, 2)
-                files = first if next(second, False) else [self.related_file_object]
-            else:
-                files = [self.related_file_object]
-
-            to_be_composed = []
-
-            for file_object in files:
-                # Call processor for each file running the pipeline to render a thumbnail
-                # of the file, files that don't have a processor will result in None
-                self.render_static_pipeline.run(object_to_process=file_object, image_engine=self.image_engine,
-                                                video_engine=self.video_engine)
-
-                # Check if static image was generated.
-                # We use is None to avoid a bug where bool(file_object._thumbnail._static_file) return False.
-                if file_object._thumbnail._static_file is not None:
-
-                    if self.composer_engine is None:
-                        # Return the first image
-                        self._static_file = file_object._thumbnail._static_file
-
-                        # Set state of related file as thumbnailed.
-                        self.related_file_object._actions.thumbnailed()
-
-                        return self._static_file
-
-                    to_be_composed.append(file_object._thumbnail._static_file)
-
-            if to_be_composed:
-                # Call the current composer set up for the FileThumbnail.
-                # It will clone the images and rendered to be a merge for the collection.
-                self._static_file = self.composer_engine.compose(
-                    files_to_compose=to_be_composed,
-                    engine=self.image_engine
-                )
-            elif self.default_engine is not None:
-                # No image was rendered for thumbnail, so we should return the default one.
-                self._static_file = self.default_engine.compose(self.related_file_object)
-            else:
-                self._static_file = False
-
-            # Set state of related file as thumbnailed.
-            self.related_file_object._actions.thumbnailed()
+            self._generate_file(name="static", defaults=self.static_defaults)
 
         return self._static_file
 
@@ -293,38 +245,96 @@ class FileThumbnail:
 
         # Generate animated file if not exists already
         if self._animated_file is None:
-
-            files = self.related_file_object.files if self.related_file_object._meta.packed else [
-                self.related_file_object
-            ]
-
-            to_be_merged = []
-
-            for file_object in files:
-                # Call processor for each file running the pipeline to render an animated image
-                # of the file, files that don't have a processor will result in None
-                self.render_animated_pipeline.run(object_to_process=file_object, image_engine=self.image_engine,
-                                                  video_engine=self.video_engine)
-
-                # Check if animated image was generated
-                if file_object._thumbnail._animated_file:
-
-                    to_be_merged.append(file_object._thumbnail._animated_file)
-
-            if not to_be_merged:
-                self._animated_file = False
-
-            elif len(to_be_merged) == 1:
-                self._animated_file = to_be_merged[0]
-
-            else:
-                # Merge animated files in one
-                pass
-
-            # Set state of related file as previewed.
-            self.related_file_object._actions.previewed()
+            self._generate_file(name="animated", defaults=self.animated_defaults)
 
         return self._animated_file
+
+    def _conclude_static_action(self):
+        """
+        Method to apply the action related with generating a static thumbnail file.
+        As convention this method should be considered private and not called outside internal use.
+        """
+        self.related_file_object._actions.thumbnailed()
+
+    def _conclude_animated_action(self):
+        """
+        Method to apply the action related with generating an animate preview file.
+        As convention this method should be considered private and not called outside internal use.
+        """
+        self.related_file_object._actions.previewed()
+
+    def _generate_file(self, defaults, name="static"):
+        """
+        Method to process a list of files in order to generate thumbnail's or previews' files.
+        This method use name to retrieve the related files in thumbnail. Possible names are static and animated.
+        As convention this method should be considered private and not called outside internal use.
+
+        If there is a composer engine in defaults, the composer will be called to process the list of files
+        generated.
+        If there is no image to represent the file, and there is a default engine in defaults, a default image
+        will be composed else the file related to name will be set to False.
+        """
+
+        # Obtain the current list of files that could be used for generating previews.
+        files = self._get_files_to_process(defaults)
+
+        to_be_processed = []
+
+        for file_object in files:
+            # Call processor for each file running the pipeline to render an animated image
+            # of the file, files that don't have a processor will result in None
+            getattr(self, f"render_{name}_pipeline").run(
+                object_to_process=file_object,
+                image_engine=self.image_engine,
+                video_engine=self.video_engine
+            )
+
+            # Check if animated image was generated
+            file_processed = getattr(file_object._thumbnail, f"_{name}_file")
+
+            if file_processed is not None:
+
+                if defaults.composer_engine is None:
+                    # Return the first preview
+                    setattr(self, f"_{name}_file", file_processed)
+
+                    # Set state of related file as concluded.
+                    getattr(self, f"_conclude_{name}_action")()
+
+                    return self._animated_file
+
+                to_be_processed.append(file_processed)
+
+        if to_be_processed:
+            # Call the current composer set up for the FileThumbnail.
+            # It will clone the images and merge it in a single sequence.
+            setattr(self, f"_{name}_file", defaults.composer_engine.compose(
+                files_to_compose=to_be_processed,
+                engine=self.image_engine
+            ))
+        elif defaults.default_engine is not None:
+            # No image was rendered for thumbnail, so we should return the default one.
+            setattr(self, f"_{name}_file", defaults.default_engine.compose(self.related_file_object))
+        else:
+            setattr(self, f"_{name}_file", False)
+
+            # Set state of related file as concluded.
+            getattr(self, f"_conclude_{name}_action")()
+
+    def _get_files_to_process(self, defaults):
+        """
+        Method to obtain the list of files to process considering if current related file object is a package with
+        internal files or not.
+        As convention this method should be considered private and not called outside internal use.
+        """
+        if self.related_file_object.meta.packed and self.related_file_object.extension not in defaults.packed_to_ignore:
+            # Check if there is an element in iterator, else the self.related_file_object will be used.
+            first, second = itertools.tee(self.related_file_object.files, 2)
+            files = first if next(second, False) else [self.related_file_object]
+        else:
+            files = [self.related_file_object]
+
+        return files
 
     def clean_history(self):
         """
