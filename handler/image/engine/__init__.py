@@ -64,6 +64,14 @@ class ImageEngine:
         if buffer:
             self.prepare_image()
 
+    def append_to_sequence(self, images):
+        """
+        Method to append a list of images to the current image, if the current image is not a sequence
+        this method should convert it to a sequence.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError("The method append_to_sequence should be override in child class.")
+
     def change_color(self, colorspace="gray"):
         """
         Method to change the color space of the current image.
@@ -167,6 +175,13 @@ class ImageEngine:
         """
         raise NotImplementedError("The method get_size should be override in child class.")
 
+    def has_sequence(self):
+        """
+        Method to verify if image has multiple frames, e.g `.gif`, or distinct sizes, e.g `.ico`.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError("The method has_sequence should be override in child class.")
+
     def has_transparency(self):
         """
         Method to verify if image has a channel for transparency.
@@ -181,6 +196,14 @@ class ImageEngine:
         This method should be overwritten in child class.
         """
         raise NotImplementedError("The method prepare_image should be override in child class.")
+
+    def resample(self, percentual=10, encode_format="webp"):
+        """
+        Method to re sample the image sequence with only the percentual amount of items distributed through the image
+        sequences.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError("The method resample should be override in child class.")
 
     def resize(self, width, height, constraint=True, keep_ratio=False, crop=False):
         """
