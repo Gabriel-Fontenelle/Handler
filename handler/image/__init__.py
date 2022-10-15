@@ -21,7 +21,10 @@ Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
 
-from .engine import ImageEngine, OpenCVImage, PillowImage, WandImage
+from .engine import ImageEngine
+from .engine.wand import WandImage
+from .engine.pillow import PillowImage
+from .engine.opencv import OpenCVImage
 
 __all__ = [
     "ImageEngine",
