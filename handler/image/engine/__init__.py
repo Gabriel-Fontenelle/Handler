@@ -26,7 +26,7 @@ import numpy as np
 import warnings
 from io import BytesIO
 
-from PIL import Image as PillowImageClass, ImageChops
+from PIL import Image as PillowImageClass, ImageChops, ImageSequence as PillowSequence
 from wand.display import display as wand_display
 from wand.image import Image as WandImageClass
 from wand.color import Color
@@ -35,8 +35,68 @@ __all__ = [
     "ImageEngine",
     "OpenCVImage",
     "PillowImage",
+    "SequenceEngine",
     "WandImage"
 ]
+
+
+class SequenceEngine:
+    """
+    Class that standardized methods of different image manipulators focused in Sequence.
+    """
+
+    sequence_image = None
+    """
+    Attribute where the current sequence for the image is stored.
+    """
+
+    def append_to_sequence(self, image):
+        """
+        Method to append an image to the sequence of images in the current image.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError("The method append_sequence should be override in child class.")
+
+    @classmethod
+    def create_sequence_image(cls, images):
+        """
+        Method to create a new image with sequence using a list of images.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError("The method create_sequence_image should be override in child class.")
+
+    def get_frame(self, index):
+        """
+        Method to obtain an engine from a specified index frame of current image object.
+        This method should return None if no frame exists with given index.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError("The method get_frame should be override in child class.")
+
+    def get_sequence(self, steps=1):
+        """
+        Method to obtain the iterator for the available sequence of images.
+        This method should return an iterator with instances of engine instead of the image directly.
+        Case the image does not have a sequence it should return an iterator of itself as the only element.
+        This method should be overwritten in child class.
+        """
+        for index in range(0, self.get_total_frames(), steps):
+            yield self.get_frame(index)
+
+    def get_total_frames(self):
+        """
+        Method to obtain the total amount of frames in image.
+        This method should return 1 if the current image is not iterable.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError("The method get_total_frames should be override in child class.")
+
+    def prepare_sequence_image(self):
+        """
+        Method to prepare the sequence object from image.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError("The method prepare_sequence_image should be override in child class.")
 
 
 class ImageEngine:
@@ -47,6 +107,11 @@ class ImageEngine:
     """
     Attribute where the current image converted from buffer is stored.
     """
+    class_image = None
+    """
+    Attribute used to store the class reference responsible to create an image.
+    This attribute should be override by child class.
+    """
 
     def __init__(self, buffer):
         """
@@ -55,7 +120,8 @@ class ImageEngine:
         """
         self.source_buffer = buffer
 
-        self.prepare_image()
+        if buffer:
+            self.prepare_image()
 
     def change_color(self, colorspace="gray"):
         """
@@ -71,6 +137,26 @@ class ImageEngine:
         """
         raise NotImplementedError("The method clone should be override in child class.")
 
+    @classmethod
+    def create_empty_image(cls):
+        """
+        Method to instantiate the current class with an empty image.
+        """
+        if not hasattr(cls, 'class_image'):
+            raise NotImplementedError(f"The current class {cls.__name__} don`t implement the attribute `class_image`.")
+
+        return cls.create_from_image(image=cls.class_image())
+
+    @classmethod
+    def create_from_image(cls, image):
+        """
+        Method to instantiate the current class using a preprocessed image of the same class.
+        """
+        self = cls(buffer=None)
+        self.image = image
+
+        return self
+    
     def crop(self, width, height):
         """
         Method to crop the current image object.
@@ -338,9 +424,14 @@ class OpenCVImage(ImageEngine):
             self.image = self.image[bounding_border[1]:bounding_border[3], bounding_border[0]:bounding_border[2]]
 
 
-class PillowImage(ImageEngine):
+class PillowImage(ImageEngine, SequenceEngine):
     """
     Class that standardized methods of Pillow library.
+    """
+
+    class_image = PillowImageClass
+    """
+    Attribute used to store the class reference responsible to create an image.
     """
 
     def change_color(self, colorspace="gray"):
@@ -361,6 +452,12 @@ class PillowImage(ImageEngine):
         Method to copy the current image object and return it.
         """
         return self.image.copy()
+
+    def create_sequence_image(self, images):
+        """
+        Method to create a new image with sequence using a list of images.
+        """
+        pass
 
     def crop(self, width, height):
         """
@@ -394,12 +491,34 @@ class PillowImage(ImageEngine):
         self.image.save(output, format=encode_format)
         return output.read()
 
+    def get_frame(self, index):
+        """
+        Method to obtain an engine from a specified index frame of current image object.
+        This method should return None if no frame exists with given index.
+        """
+        if self.sequence_image is None:
+            self.prepare_sequence_image()
+
+        try:
+            image = self.sequence_image[index]
+            return self.create_from_image(image=image)
+
+        except (StopIteration, IndexError):
+            return None
+
     def get_size(self):
         """
         Method to obtain the size of current image.
         This method should return a tuple with width and height.
         """
         return self.image.size[0], self.image.size[1]
+
+    def get_total_frames(self):
+        """
+        Method to obtain the total amount of frames in image.
+        This method should return 1 if the current image is not iterable.
+        """
+        return len(self.sequence_image)
 
     def has_transparency(self):
         """
@@ -411,13 +530,19 @@ class PillowImage(ImageEngine):
         """
         Method to prepare the image using the stored buffer as the source.
         """
-        self.image = PillowImageClass.open(fp=self.source_buffer)
+        self.image = self.class_image.open(fp=self.source_buffer)
+
+    def prepare_sequence_image(self):
+        """
+        Method to prepare the sequence object from image.
+        """
+        self.sequence_image = PillowSequence.Iterator(self.image)
 
     def scale(self, width, height):
         """
         Method to scale the current image object without implementing additional logic.
         """
-        self.image = self.image.resize((width, height), resample=PillowImageClass.Resampling.LANCZOS)
+        self.image = self.image.resize((width, height), resample=self.class_image.Resampling.LANCZOS)
 
     def show(self):
         """
@@ -431,7 +556,7 @@ class PillowImage(ImageEngine):
         The parameter color is used to indicate the color to trim else it will use transparency.
         """
         if color:
-            background = PillowImageClass.new(self.image.mode, self.image.size, color=color)
+            background = self.class_image.new(self.image.mode, self.image.size, color=color)
             bounding_border = ImageChops.difference(self.image, background).getbbox()
         elif self.has_transparency():
             # Trim transparency
@@ -444,11 +569,26 @@ class PillowImage(ImageEngine):
             self.image = self.image.crop(bounding_border)
 
 
-class WandImage(ImageEngine):
+class WandImage(ImageEngine, SequenceEngine):
     """
     Class that standardized methods of Wand library.
     This class depends on Wand being installed in the system.
     """
+
+    class_image = WandImageClass
+    """
+    Attribute used to store the class reference responsible to create an image.
+    """
+
+    def append_to_sequence(self, image):
+        """
+        Method to append an image to the sequence of images in the current image.
+        """
+        if self.sequence_image is None:
+            self.prepare_sequence_image()
+
+        # Append the internal image inside the current WandImage object.
+        self.sequence_image.append(image.image)
 
     def change_color(self, colorspace="gray"):
         """
@@ -469,6 +609,21 @@ class WandImage(ImageEngine):
         """
         return self.image.clone()
 
+    @classmethod
+    def create_sequence_image(cls, images):
+        """
+        Method to create a new image with sequence using a list of images.
+        """
+        image_object = cls.class_image()
+
+        for image in images:
+            image_object.sequence.append(image.image)
+
+        # Create delay for each image.
+        for index, image in image_object.sequence:
+
+        return cls.create_from_image(image=image_object)
+
     def crop(self, width, height):
         """
         Method to crop the current image object.
@@ -481,11 +636,36 @@ class WandImage(ImageEngine):
         """
         return self.image.make_blob(encode_format)
 
+    def get_frame(self, index):
+        """
+        Method to obtain an engine from a specified index frame of current image object.
+        This method should return None if no frame exists with given index.
+        """
+        if self.sequence_image is None:
+            self.prepare_sequence_image()
+
+        try:
+            # Convert wand.SingleImage to wand.Image to allow IO manipulation of the image.
+            return self.create_from_image(image=self.class_image(self.sequence_image[index]))
+
+        except (StopIteration, IndexError):
+            return None
+
     def get_size(self):
         """
         Method to obtain the size of current image.
         """
         return self.image.size[0], self.image.size[1]
+
+    def get_total_frames(self):
+        """
+        Method to obtain the total amount of frames in image.
+        This method should return 1 if the current image is not iterable.
+        """
+        if self.sequence_image is None:
+            self.prepare_sequence_image()
+
+        return len(self.sequence_image)
 
     def has_transparency(self):
         """
@@ -497,7 +677,13 @@ class WandImage(ImageEngine):
         """
         Method to prepare the image using the stored buffer as the source.
         """
-        self.image = WandImageClass(file=self.source_buffer)
+        self.image = self.class_image(file=self.source_buffer)
+
+    def prepare_sequence_image(self):
+        """
+        Method to prepare the sequence object from image.
+        """
+        self.sequence_image = self.image.sequence
 
     def scale(self, width, height):
         """
