@@ -196,7 +196,7 @@ class DocumentAnimatedRender(AnimatedRender):
 
         # Create sequence image.
         image = images[0].clone()
-        image.append_to_sequence(images=images[1:], encode_format=defaults.format)
+        image.append_to_sequence(images=[image.image for image in images[1:]], encode_format=defaults.format)
 
         # Set static file for current file_object.
         file_object._thumbnail._animated_file = cls.create_file(
@@ -251,7 +251,7 @@ class PSDAnimatedRender(AnimatedRender):
 
         # Create sequence image.
         image = images[0].clone()
-        image.append_to_sequence(images=images[1:], encode_format=defaults.format)
+        image.append_to_sequence(images=[image.image for image in images[1:]], encode_format=defaults.format)
 
         # Set static file for current file_object.
         file_object._thumbnail._animated_file = cls.create_file(
@@ -298,7 +298,7 @@ class VideoAnimatedRender(AnimatedRender):
 
         # Create sequence image.
         image = images[0].clone()
-        image.append_to_sequence(images=images[1:], encode_format=defaults.format)
+        image.append_to_sequence(images=[image.image for image in images[1:]], encode_format=defaults.format)
 
         # Set static file for current file_object.
         file_object._thumbnail._animated_file = cls.create_file(

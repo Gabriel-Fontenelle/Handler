@@ -47,12 +47,8 @@ class WandImage(ImageEngine):
         Method to append a list of images to the current image, if the current image is not a sequence
         this method should convert it to a sequence.
         """
-        images_list = [
-            image.image if isinstance(image, ImageEngine) else image
-            for image in images
-        ]
 
-        self.image.sequence.append(images_list)
+        self.image.sequence.append(images)
 
     def change_color(self, colorspace="gray"):
         """
