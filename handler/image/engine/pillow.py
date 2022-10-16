@@ -57,6 +57,15 @@ class PillowImage(ImageEngine):
 
         self.image = self.class_image.open(fp=output)
 
+    def append_to_sequence(self, images, **kwargs):
+        """
+        Method to append a list of images to the current image, if the current image is not a sequence
+        this method should convert it to a sequence.
+        """
+        encode_format = kwargs.pop("encode_format", "webp")
+
+        self._set_image_sequence([self.image] + images, encode_format=encode_format)
+
     def change_color(self, colorspace="gray", encode_format="webp"):
         """
         Method to change the color space of the current image.
