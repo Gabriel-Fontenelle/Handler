@@ -64,7 +64,12 @@ class PillowImage(ImageEngine):
         """
         encode_format = kwargs.pop("encode_format", "webp")
 
-        self._set_image_sequence([self.image] + images, encode_format=encode_format)
+        images_list = [self.image] + [
+            image.image if isinstance(image, ImageEngine) else image
+            for image in images
+        ]
+
+        self._set_image_sequence(images_list, encode_format=encode_format)
 
     def change_color(self, colorspace="gray", encode_format="webp"):
         """

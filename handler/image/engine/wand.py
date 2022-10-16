@@ -42,6 +42,18 @@ class WandImage(ImageEngine):
     Attribute used to store the class reference responsible to create an image.
     """
 
+    def append_to_sequence(self, images, **kwargs):
+        """
+        Method to append a list of images to the current image, if the current image is not a sequence
+        this method should convert it to a sequence.
+        """
+        images_list = [
+            image.image if isinstance(image, ImageEngine) else image
+            for image in images
+        ]
+
+        self.image.sequence.append(images_list)
+
     def change_color(self, colorspace="gray"):
         """
         Method to change the color space of the current image.
