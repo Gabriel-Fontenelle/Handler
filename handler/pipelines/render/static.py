@@ -276,7 +276,6 @@ class VideoRender(StaticRender):
         This method will get the frame in 20% of the video.
         """
         image_engine = kwargs.pop('image_engine')
-
         video_engine = kwargs.pop('video_engine')
 
         defaults = file_object._thumbnail.static_defaults
