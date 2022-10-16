@@ -37,7 +37,7 @@ class OpenCVImage(ImageEngine):
     In OpenCV the image is basically a numpy matrix.
     """
 
-    def append_to_sequence(self, images):
+    def append_to_sequence(self, images, **kwargs):
         """
         Method to append a list of images to the current image, if the current image is not a sequence
         this method should convert it to a sequence.

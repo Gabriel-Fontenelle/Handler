@@ -54,7 +54,7 @@ class ImageEngine:
         if buffer:
             self.prepare_image()
 
-    def append_to_sequence(self, images):
+    def append_to_sequence(self, images, **kwargs):
         """
         Method to append a list of images to the current image, if the current image is not a sequence
         this method should convert it to a sequence.
