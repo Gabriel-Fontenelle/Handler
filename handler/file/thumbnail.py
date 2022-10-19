@@ -331,12 +331,12 @@ class FileThumbnail:
             # Call the current composer set up for the FileThumbnail.
             # It will clone the images and merge it in a single sequence.
             setattr(self, f"_{name}_file", defaults.composer_engine.compose(
-                files_to_compose=to_be_processed,
+                objects_to_compose=to_be_processed,
                 engine=self.image_engine
             ))
         elif defaults.default_engine is not None:
             # No image was rendered for thumbnail, so we should return the default one.
-            setattr(self, f"_{name}_file", defaults.default_engine.compose(self.related_file_object))
+            setattr(self, f"_{name}_file", defaults.default_engine.compose(object_to_process=self.related_file_object))
         else:
             setattr(self, f"_{name}_file", False)
 
