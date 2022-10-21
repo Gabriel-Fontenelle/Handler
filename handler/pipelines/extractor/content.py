@@ -31,6 +31,11 @@ __all__ = [
 
 
 class VideoMetadataFromContentExtractor(Extractor):
+    """
+    Extractor class created for extracting metadata contained in videos using MoviePy.
+    This class don't validate any extensions to see if it's video, so any exception that this class output will
+    be caught only in stack above.
+    """
 
     @classmethod
     def extract(cls, file_object, overrider: bool, **kwargs: dict):
@@ -40,6 +45,11 @@ class VideoMetadataFromContentExtractor(Extractor):
 
 
 class ImageMetadataFromContentExtractor(Extractor):
+    """
+    Extractor class created for extracting metadata contained in images using Wand.
+    This class don't validate any extensions to see if it's image, so any exception that this class output will
+    be caught only in stack above.
+    """
 
     @classmethod
     def extract(cls, file_object, overrider: bool, **kwargs: dict):
@@ -50,8 +60,10 @@ class ImageMetadataFromContentExtractor(Extractor):
 
 class AudioMetadataFromContentExtractor(Extractor):
     """
-    # what its
-    # usage of class
+    Extractor class created for extracting metadata contained audio files that can be opened through
+    TinyTag.
+    This class don't validate any extensions to see if it's audio, so any exception that this class output will
+    be caught only in stack above.
     """
 
     @classmethod

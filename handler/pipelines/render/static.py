@@ -153,7 +153,7 @@ class DocumentFirstPageRender(StaticRender):
 
         buffer = BytesIO()
 
-        # Use fitz from PyMuPDF to open the document.
+        # We use fitz from PyMuPDF to open the document.
         # Because BufferedReader (default return for file_system.open) is not accept
         # we need to consume to get its bytes as bytes are accepted as stream.
         doc = fitz.open(
