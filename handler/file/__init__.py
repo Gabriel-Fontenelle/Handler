@@ -412,6 +412,7 @@ class BaseFile:
             "_actions",
             "_naming",
             "_content_files",
+            "_thumbnail",
             "__version__"
         }
 
