@@ -10,8 +10,10 @@ from .external_data import (
     PathFromURLExtractor
 )
 from .content import (
+    AudioMetadataFromContentExtractor,
+    DocumentMetadataFromContentExtractor,
     MimeTypeFromContentExtractor,
-    AudioMetadataFromContentExtractor
+    VideoMetadataFromContentExtractor,
 )
 
 from .package import (
@@ -39,7 +41,9 @@ __all__ = [
     "MetadataExtractor",
     # Parsing from Content
     "AudioMetadataFromContentExtractor",
+    "DocumentMetadataFromContentExtractor",
     "MimeTypeFromContentExtractor",
+    "VideoMetadataFromContentExtractor",
     # Parsing from Package
     "SevenZipCompressedFilesFromPackageExtractor",
     "RarCompressedFilesFromPackageExtractor",

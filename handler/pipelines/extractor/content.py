@@ -20,13 +20,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
+import fitz
 from tinytag import TinyTag
 
 from .extractor import Extractor
+from ...image import WandImage
+from ...video import MoviePyVideo
 
 __all__ = [
     'AudioMetadataFromContentExtractor',
+    'DocumentMetadataFromContentExtractor',
     'MimeTypeFromContentExtractor',
+    'VideoMetadataFromContentExtractor',
 ]
 
 
@@ -42,6 +47,22 @@ class VideoMetadataFromContentExtractor(Extractor):
         """
         Method to extract additional metadata information from content.
         """
+        # Use MoviePy to get additional metadata.
+        if not file_object.content:
+            raise ValueError(
+                "Attribute `content` must be settled before calling `VideoMetadataFromContentExtractor.extract`!"
+            )
+        if not len(file_object):
+            raise ValueError(
+                "Length for file's object must set before calling `VideoMetadataFromContentExtractor.extract`!"
+            )
+
+        # We don't need to reset the buffer before calling it, because it will be reset
+        # if already cached. The next time property buffer is called it will reset again.
+        video = MoviePyVideo(buffer=file_object.buffer)
+
+        for attribute, value in video.metadata or {}:
+            setattr(file_object.meta, attribute, value)
 
 
 class ImageMetadataFromContentExtractor(Extractor):
@@ -56,6 +77,59 @@ class ImageMetadataFromContentExtractor(Extractor):
         """
         Method to extract additional metadata information from content.
         """
+        # Use Wand to get additional metadata.
+        if not file_object.content:
+            raise ValueError(
+                "Attribute `content` must be settled before calling `VideoMetadataFromContentExtractor.extract`!"
+            )
+        if not len(file_object):
+            raise ValueError(
+                "Length for file's object must set before calling `VideoMetadataFromContentExtractor.extract`!"
+            )
+
+        # We don't need to reset the buffer before calling it, because it will be reset
+        # if already cached. The next time property buffer is called it will reset again.
+        image = WandImage(buffer=file_object.buffer)
+
+        for attribute, value in image.metadata or {}:
+            setattr(file_object.meta, attribute, value)
+
+
+class DocumentMetadataFromContentExtractor(Extractor):
+    """
+    Extractor class created for extracting metadata contained in PDF, ePub and other documents that
+    pyMuPDF can open.
+    This class don't validate any extensions to see if it's document, so any exception that this class output will
+    be caught only in stack above.
+    """
+
+    @classmethod
+    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+        """
+        Method to extract additional metadata information from content.
+        """
+        # Use fitz to get additional metadata.
+        if not file_object.content:
+            raise ValueError(
+                "Attribute `content` must be settled before calling `DocumentMetadataFromContentExtractor.extract`!"
+            )
+        if not len(file_object):
+            raise ValueError(
+                "Length for file's object must set before calling `DocumentMetadataFromContentExtractor.extract`!"
+            )
+
+        # We don't need to reset the buffer before calling it, because it will be reset
+        # if already cached. The next time property buffer is called it will reset again.
+        # We use fitz from PyMuPDF to open the document.
+        # Because BufferedReader (default return for file_system.open) is not accept
+        # we need to consume to get its bytes as bytes are accepted as stream.
+        doc = fitz.open(
+            stream=file_object.buffer.read(),
+            filetype=file_object.extension,
+        )
+
+        for attribute, value in doc.metadata or {}:
+            setattr(file_object.meta, attribute, value)
 
 
 class AudioMetadataFromContentExtractor(Extractor):
