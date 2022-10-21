@@ -105,6 +105,7 @@ class WandImage(ImageEngine):
         Method to prepare the image using the stored buffer as the source.
         """
         self.image = self.class_image(file=self.source_buffer)
+        self.metadata = self.image.metadata
 
     def resample(self, percentual=10, encode_format="webp"):
         """

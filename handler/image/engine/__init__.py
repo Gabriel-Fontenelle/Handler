@@ -43,6 +43,10 @@ class ImageEngine:
     Attribute used to store the class reference responsible to create an image.
     This attribute should be override by child class.
     """
+    metadata = None
+    """
+    Attribute used to store image metadata if available.
+    """
 
     def __init__(self, buffer):
         """
