@@ -352,7 +352,11 @@ class FileThumbnail:
         if self.related_file_object.meta.packed and self.related_file_object.extension not in defaults.packed_to_ignore:
             # Check if there is an element in iterator, else the self.related_file_object will be used.
             first, second = itertools.tee(self.related_file_object.files, 2)
-            files = first if next(second, False) else [self.related_file_object]
+            try:
+                next(second)
+                files = first
+            except StopIteration:
+                files = [self.related_file_object]
         else:
             files = [self.related_file_object]
 
