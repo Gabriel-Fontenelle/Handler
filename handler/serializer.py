@@ -21,11 +21,16 @@ Should there be a need for contact the electronic mail
 `handler <at> gabrielfontenelle.com` can be used.
 """
 import inspect
+from datetime import time, datetime
 from io import IOBase
 from importlib import import_module
 
 from dill import dumps, loads, HIGHEST_PROTOCOL
-from json_tricks import loads as json_loads, dumps as json_dumps
+from json_tricks import (
+    loads as json_loads,
+    dumps as json_dumps,
+    hashodict,
+)
 
 from .storage import LinuxFileSystem
 
@@ -59,60 +64,6 @@ class JSONSerializer:
     """
     Class that allow handling of Serialization/Deserialization from object to json string and from it to object.
     """
-
-    @classmethod
-    def _prepare_element(cls, source, cache=None):
-        """
-        Method to prepare the source converting it to a dict where class and objects are encoded as dictionaries to
-        allow serialization.
-
-        This method does not serialize class attributes for classes due to the fact that only the import is
-        serialized.
-        """
-        # Set up initial cache, parameter used for controlling the objects' reference for serializing __self__.
-        if cache is None:
-            cache = {}
-
-        object_id = id(source)
-        cache.append(object_id)
-
-        serialized_content = {}
-
-        for key, element in source.__serialize__.items():
-            if id(element) in cache:
-                # Serialize reference to previous encountered object.
-                serialized_content[key] = {"__self__": id(element)}
-
-            elif hasattr(element, "__serialize__"):
-                # Serialize supported object that has __serialize__ property.
-                serialized_content[key] = cls._prepare_element(source=element, cache=cache)
-
-            elif inspect.isclass(element):
-                # Serialize class
-                serialized_content[key] = {
-                    "__class__": "{module}.{name}".format(module=element.__module__, name=element.__name__)
-                }
-
-            elif isinstance(element, IOBase):
-                # Serialize buffer
-                # TODO: Make storage not dependable from LinuxFileSystem.
-                serialized_content[key] = {
-                    "__buffer__": element.name,
-                    "__mode__": element.mode,
-                    "__storage__": "{module}.{name}".format(
-                        module=LinuxFileSystem.__module__,
-                        name=LinuxFileSystem.__name__
-                    )
-                }
-
-            else:
-                serialized_content[key] = element
-
-        return {
-            "__object__": "{module}.{name}".format(module=source.__class__.__module__, name=source.__class__.__name__),
-            "__attribute__": serialized_content,
-            "__id__": object_id
-        }
 
     @classmethod
     def _instantiate_element(cls, source, cache):
@@ -204,12 +155,115 @@ class JSONSerializer:
     def serialize(cls, source):
         """
         Method to serialize the input `source` using json_tricks as extension to `json`.
+        This method implements internal functions to handle custom types available in Handler that should be
+        encoded. Those internal functions will be applied for each list, tuple and dict elements automatically by
+        `json.encoder`.
         """
-        # Prepare content from __serialize__ with new dictionary for the cache
-        serialized_content = cls._prepare_element(source, cache=[])
+
+        # List object to use as cache to allow retrieving ids already processed.
+        cache = []
+
+        def json_date_time_encode(obj, primitives=False):
+            """
+            Internal function to solve a problem with the original encoder where `obj.tzinfo.zone` results in attribute
+            error.
+            """
+            if primitives:
+                return obj.isoformat()
+
+            if isinstance(obj, datetime):
+                dct = hashodict([('__datetime__', None), ('year', obj.year), ('month', obj.month),
+                                 ('day', obj.day), ('hour', obj.hour), ('minute', obj.minute),
+                                 ('second', obj.second), ('microsecond', obj.microsecond)])
+
+                if obj.tzinfo:
+                    dct['tzinfo'] = getattr(obj.tzinfo, 'zone', None) or str(obj.tzinfo)
+
+            elif isinstance(obj, time):
+                dct = hashodict([('__time__', None), ('hour', obj.hour), ('minute', obj.minute),
+                                 ('second', obj.second), ('microsecond', obj.microsecond)])
+
+                if obj.tzinfo:
+                    dct['tzinfo'] = getattr(obj.tzinfo, 'zone', None) or str(obj.tzinfo)
+
+            else:
+                return obj
+
+            # Remove empty values
+            for key, val in tuple(dct.items()):
+                if not key.startswith('__') and not val:
+                    del dct[key]
+
+            return dct
+
+        def json_class_encode(obj, primitives=False):
+            """
+            Internal function to encode a class reference.
+            """
+            if inspect.isclass(obj):
+                if primitives:
+                    return f"{obj.__module__}.{obj.__name__}"
+
+                return hashodict([('__class__', None), ('module', obj.__module__), ('name', obj.__name__)])
+
+            return obj
+
+        def json_buffer_encode(obj, primitives=False):
+            """
+            Internal function to encode a IO Buffer.
+            To avoid circular reference error in json encoder we call json_class_encode to encode the storage's class.
+            """
+            default_storage_class = source.storage if hasattr(source, 'storage') and source.storage else LinuxFileSystem
+
+            if primitives:
+                return f"{obj.name}:{obj.mode}:{json_class_encode(default_storage_class, primitives)}"
+
+            if isinstance(obj, IOBase):
+                return hashodict(
+                    [
+                        ('__buffer__', None),
+                        ('name', obj.name),
+                        ('mode', obj.mode),
+                        ('storage', json_class_encode(default_storage_class, primitives)),
+                    ]
+                )
+
+            return obj
+
+        def json_self_reference_encode(obj, primitives=False):
+            """
+            Internal function to encode a BaseFile or any class that inherent from source and has `__serialize__`
+            property.
+            """
+            if id(obj) in cache:
+                if primitives:
+                    return id(obj)
+
+                return hashodict([('__self__', None), ('id', id(obj))])
+
+            elif isinstance(obj, source.__class__) and hasattr(obj, '__serialize__'):
+                object_id = id(obj)
+                cache.append(object_id)
+
+                if primitives:
+                    return (json_class_encode(source.__class__, primitives), obj.__serialize__, object_id)
+
+                return hashodict(
+                    [
+                        ("__object__", None),
+                        ("class", json_class_encode(source.__class__, primitives)),
+                        ("attributes", obj.__serialize__),
+                        ("id", object_id)
+                    ]
+                )
+
+            return obj
 
         # Convert to JSON.
-        return json_dumps(serialized_content)
+        # We don't check for circular reference because we should resolve it in `json_self_reference_encode`.
+        return json_dumps(source, extra_obj_encoders=(
+            json_self_reference_encode, json_date_time_encode, json_class_encode, json_buffer_encode,
+        ), check_circular=False)
 
     @classmethod
     def deserialize(cls, source):
