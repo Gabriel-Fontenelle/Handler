@@ -33,6 +33,7 @@ pymupdf = "^1.20"
 imageio-ffmpeg = "*"
 av = "9.2.0"
 moviepy = "^1.0"
+pytz = "^2022.5"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
