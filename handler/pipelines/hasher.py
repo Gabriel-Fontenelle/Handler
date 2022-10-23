@@ -156,19 +156,19 @@ class Hasher:
 
         # Add hash to file
         hash_file = object_to_process.__class__(
-            path=f"{cls.file_system_handler.sanitize_path(object_to_process.path)}{object_to_process.filename}"
-                 f".{cls.hasher_name}",
+            path=f"{cls.file_system_handler.sanitize_path(object_to_process.save_to)}"
+                 f"{cls.file_system_handler.sep}{object_to_process.complete_filename}.{cls.hasher_name}",
             extract_data_pipeline=Pipeline(
                 'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
                 'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
             ),
             file_system_handler=object_to_process.storage
         )
-        # Set-up metadata checksum as boolean to indicate whether the source
+        # Set up metadata checksum as boolean to indicate whether the source
         # of the hash is a CHECKSUM.hasher_name file (contains multiple files) or not.
         hash_file.meta.checksum = False
 
-        # Set-up metadata loaded as boolean to indicate whether the source
+        # Set up metadata loaded as boolean to indicate whether the source
         # of the hash was loaded from a file or not.
         hash_file.meta.loaded = False
 
