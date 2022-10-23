@@ -22,9 +22,10 @@ Should there be a need for contact the electronic mail
 """
 import inspect
 from datetime import time, datetime
-from io import IOBase
 from importlib import import_module
+from io import IOBase
 
+import pytz
 from dill import dumps, loads, HIGHEST_PROTOCOL
 from json_tricks import (
     loads as json_loads,
@@ -64,92 +65,6 @@ class JSONSerializer:
     """
     Class that allow handling of Serialization/Deserialization from object to json string and from it to object.
     """
-
-    @classmethod
-    def _instantiate_element(cls, source, cache):
-        """
-        Method to prepare the source converting it to objects decoding the dictionaries in source to
-        allow deserialization.
-
-        This method does not deserialize class attributes for classes due to the fact that it is instantiated a new one.
-        """
-        deserialized_content = {}
-
-        # Get class and module for object
-        modulename, classname = source["__object__"].rsplit(".", 1)
-
-        # Load class
-        class_instance = getattr(import_module(modulename), classname)
-
-        for key, element in source["__attribute__"].items():
-            if isinstance(element, dict):
-                if "__object__" in element:
-                    # Convert element to object
-                    deserialized_content[key] = cls._instantiate_element(source=element, cache=cache)
-
-                elif "__buffer__" in element:
-                    storage_module, storage_classname = element["__storage__"].rsplit(".", 1)
-                    storage = getattr(import_module(storage_module), storage_classname)
-
-                    # Convert element to buffer
-                    if storage.exists(element["__buffer__"]):
-                        deserialized_content[key] = storage.open_file(
-                            file_path=element["__buffer__"],
-                            mode=element["__mode__"]
-                        )
-                        break
-
-                elif "__class__" in element:
-                    # Convert element to class
-                    modulename, classname = element["__class__"].rsplit(".", 1)
-
-                    # Import class
-                    deserialized_content[key] = getattr(import_module(modulename), classname)
-
-                else:
-                    deserialized_content[key] = element
-            else:
-                deserialized_content[key] = element
-
-        # Instantiate the current object
-        instance = class_instance(**deserialized_content)
-
-        # Register reference in cache
-        cache[source["__id__"]] = instance
-
-        return instance
-
-    @classmethod
-    def _fix_self_reference(cls, source, cache):
-        """
-        Method to fix the references present in instance source that were not able to be converted in
-        _instantiate_element to allow deserialization to finish.
-        """
-        # Add the instance id to cache of inspections concluded to avoid calling fix_self_reference
-        # again for object already inspect.
-        cache["done"].append(id(source))
-
-        for attribute, value in inspect.getmembers(source):
-            # Ignore special attributes
-            if attribute[0:2] == "__" and attribute[-2:] == "__":
-                continue
-
-            # Ignore non object
-            elif (
-                    inspect.isclass(value)
-                    or inspect.ismethod(value)
-                    or inspect.isdatadescriptor(value)
-                    or inspect.isfunction(value)
-                    or inspect.ismemberdescriptor(value)
-                    or inspect.isgenerator(value)
-            ):
-                continue
-
-            if isinstance(value, dict) and "__self__" in value:
-                setattr(source, attribute, cache[value["__self__"]])
-
-            elif hasattr(value, "__serialize__") and not callable(value) and id(value) not in cache["done"]:
-                cls._fix_self_reference(value, cache)
 
     @classmethod
     def serialize(cls, source):
@@ -239,19 +154,23 @@ class JSONSerializer:
                 if primitives:
                     return id(obj)
 
-                return hashodict([('__self__', None), ('id', id(obj))])
+                return hashodict(
+                    [
+                        ('__self__', None), ('class', json_class_encode(obj.__class__, primitives)), ('id', id(obj))
+                    ]
+                )
 
-            elif isinstance(obj, source.__class__) and hasattr(obj, '__serialize__'):
+            elif hasattr(obj, '__serialize__') and not callable(obj.__serialize__):
                 object_id = id(obj)
                 cache.append(object_id)
 
                 if primitives:
-                    return (json_class_encode(source.__class__, primitives), obj.__serialize__, object_id)
+                    return json_class_encode(obj.__class__, primitives), obj.__serialize__, object_id
 
                 return hashodict(
                     [
                         ("__object__", None),
-                        ("class", json_class_encode(source.__class__, primitives)),
+                        ("class", json_class_encode(obj.__class__, primitives)),
                         ("attributes", obj.__serialize__),
                         ("id", object_id)
                     ]
@@ -270,18 +189,140 @@ class JSONSerializer:
         """
         Method to deserialize the input `source` using json_tricks as extension to `json`.
         """
-        # Prepare content to be parsed
-        dictionary_content = json_loads(source, preserve_order=False)
 
-        # Create cache dictionary to fix __self__ reference. The cache will be a
-        # dictionary with pair id: instance and one special pair string: list for controlling
-        # recursion.
+        # Create cache dictionary to fix __self__ reference. The dictionary will have a numeric key with
+        # instance as value. The `done` list will be used when fixing reference for related objects.
         cache = {"done": []}
 
-        # Convert elements of dictionary to objects
-        instance = cls._instantiate_element(source=dictionary_content, cache=cache)
+        def json_date_time_hook(dct):
+            """
+            Internal function to parse the __datetime__ and __time__ dictionary.
+            This function solves a problem with the original decoder where importing pytz results in attribute error.
+            """
+            def get_tz(dct):
+                """
+                Internal function to process the tzinfo key from dictionary to be a tzinfo object.
+                """
+                if 'tzinfo' not in dct:
+                    return None
+
+                return pytz.timezone(dct['tzinfo'])
+
+            if not isinstance(dct, dict):
+                return dct
+
+            if '__time__' in dct:
+                tzinfo = get_tz(dct)
+                return time(hour=dct.get('hour', 0), minute=dct.get('minute', 0), second=dct.get('second', 0),
+                            microsecond=dct.get('microsecond', 0), tzinfo=tzinfo)
+
+            elif '__datetime__' in dct:
+                tzinfo = get_tz(dct)
+                dt = datetime(year=dct.get('year', 0), month=dct.get('month', 0), day=dct.get('day', 0),
+                              hour=dct.get('hour', 0), minute=dct.get('minute', 0), second=dct.get('second', 0),
+                              microsecond=dct.get('microsecond', 0))
+                if tzinfo is None:
+                    return dt
+
+                return tzinfo.localize(dt)
+
+            return dct
+
+        def json_class_hook(dct):
+            """
+            Internal function to parse the __class__ dictionary.
+            """
+            if not isinstance(dct, dict):
+                return dct
+
+            if "__class__" in dct:
+                return getattr(import_module(dct.get('module')), dct.get('name'))
+
+            return dct
+
+        def json_buffer_hook(dct):
+            """
+            Internal function to parse the __buffer__ dictionary.
+            """
+            if not isinstance(dct, dict):
+                return dct
+
+            if "__buffer__" in dct:
+                storage = json_class_hook(dct.get('storage'))
+
+                if storage.exists(dct.get("name")):
+                    return storage.open_file(file_path=dct.get("name"), mode=dct.get("mode"))
+
+                return None
+
+            return dct
+
+        def json_object_hook(dct):
+            """
+            Internal function to parse the __object__ dictionary.
+            """
+            if not isinstance(dct, dict):
+                return dct
+
+            if "__object__" in dct and dct.get("id"):
+                class_instance = dct.get('class')
+                parsed_object = class_instance(**dct.get('attributes'))
+
+                cache[dct.get('id')] = parsed_object
+
+                return parsed_object
+
+            elif "__self__" in dct:
+                try:
+                    return cache[dct.get("id")]
+                except KeyError:
+                    return dct
+
+            return dct
+
+        def fix_self_reference(instance):
+            """
+            Internal function to fix the references present in instance source that were not able to be
+            converted in decoder to allow the deserialization to finish.
+            """
+            # Add the instance id to cache of inspections concluded to avoid calling fix_self_reference
+            # again for object already inspect.
+            cache["done"].append(id(instance))
+
+            def fix_iterator_value(listing):
+                """
+                Internal function to recursively to process list, tuple, and dict that could have an object with
+                __serialize__ property.
+                """
+                for index, item in listing:
+                    if isinstance(item, dict) and "__self__" in item:
+                        listing[index] = cache[item["id"]]
+                    elif hasattr(item, "__serialize__") and not callable(item) and id(item) not in cache["done"]:
+                        fix_self_reference(item)
+                    elif isinstance(item, dict):
+                        fix_iterator_value(item.items())
+                    elif isinstance(item, (list, tuple)):
+                        fix_iterator_value(enumerate(item))
+
+            for attribute, value in instance.__serialize__.items():
+                if isinstance(value, dict) and "__self__" in value:
+                    setattr(instance, attribute, cache[value["id"]])
+
+                elif isinstance(value, dict):
+                    fix_iterator_value(value.items())
+
+                elif isinstance(value, (list, tuple)):
+                    fix_iterator_value(enumerate(value))
+
+                elif hasattr(value, "__serialize__") and not callable(value) and id(value) not in cache["done"]:
+                    fix_self_reference(value)
+
+        # Prepare content to be parsed
+        deserialized_object = json_loads(source, preserve_order=False, extra_obj_pairs_hooks=(
+            json_date_time_hook, json_class_hook, json_buffer_hook, json_object_hook
+        ))
 
         # Fix self reference. This need to be done after creating the instances.
-        cls._fix_self_reference(source=instance, cache=cache)
+        fix_self_reference(instance=deserialized_object)
 
-        return instance
+        return deserialized_object
