@@ -145,7 +145,7 @@ class FileHashes:
         for hash_name in self._loaded or self._cache.keys():
             hex_value, hash_file, processor = self._cache[hash_name]
             # Compare content with hex_value
-            result = processor.check_hash(object=self.related_file_object, compare_to_hex=hex_value)
+            result = processor.check_hash(object_to_process=self.related_file_object, compare_to_hex=hex_value)
 
             if not result:
                 raise ValidationError(f"File {self.related_file_object} don`t pass the integrity check with "

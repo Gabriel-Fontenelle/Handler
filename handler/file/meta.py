@@ -84,7 +84,7 @@ class FileMetadata:
         Method to create the current object using the keyword arguments.
         """
         for key, value in kwargs.items():
-            if hasattr(self, key) or key in {"checksum", "loaded"}:
+            if hasattr(self, key) or key in {"checksum", "loaded", "thumbnail"}:
                 setattr(self, key, value)
             else:
                 raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
