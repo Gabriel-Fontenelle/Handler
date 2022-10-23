@@ -470,7 +470,7 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Update hash generating the hash file and adding its content
                     if internal_file.chksum:
                         hash_file = CRC32Hasher.create_hash_file(
-                            object_to_process=file_object,
+                            object_to_process=internal_file_object,
                             digested_hex_value=internal_file.chksum
                         )
                         internal_file_object.hashes['crc32'] = internal_file.chksum, hash_file, CRC32Hasher
@@ -627,7 +627,7 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
 
                     # Update hash generating the hash file and adding its content
                     hash_file = CRC32Hasher.create_hash_file(
-                        object_to_process=file_object,
+                        object_to_process=internal_file_object,
                         digested_hex_value=internal_file.CRC
                     )
                     internal_file_object.hashes['crc32'] = internal_file.CRC, hash_file, CRC32Hasher
@@ -784,7 +784,7 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Update hash generating the hash file and adding its content
                     if internal_file.CRC:
                         hash_file = CRC32Hasher.create_hash_file(
-                            object_to_process=file_object,
+                            object_to_process=internal_file_object,
                             digested_hex_value=internal_file.CRC
                         )
                         internal_file_object.hashes['crc32'] = internal_file.CRC, hash_file, CRC32Hasher
@@ -941,7 +941,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
 
                     # Update hash generating the hash file and adding its content
                     hash_file = CRC32Hasher.create_hash_file(
-                        object_to_process=file_object,
+                        object_to_process=internal_file_object,
                         digested_hex_value=internal_file.crc32
                     )
                     internal_file_object.hashes['crc32'] = internal_file.crc32, hash_file, CRC32Hasher
