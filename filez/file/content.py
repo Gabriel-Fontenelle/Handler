@@ -208,7 +208,8 @@ class FileContent:
             elif self.cache_in_file:
                 if not self._cached_path:
                     # Create new temporary file using renamer pipeline to obtain
-                    # a unique filename for temporary file.
+                    # a unique filename for temporary file. The parameter filename is not really used
+                    # so it can be str(None) that it will not affect the result.
                     temp = self.related_file_object.storage.get_temp_directory()
                     filename, extension = UniqueRenamer.get_name(
                         directory_path=temp,
@@ -278,6 +279,9 @@ class FileContent:
                     next(self)
                 except StopIteration:
                     break
+
+        if self._cached_content is None:
+            raise EmptyContentError(f"No content was loaded for file {self.related_file_object.complete_filename}")
 
         # Content in case that it was loaded in memory. If not, it will be None and override below.
         content = self._cached_content
