@@ -91,7 +91,7 @@ def process_hash_file(directory, file_path):
     # We use the stylus of renaming of WindowsFileSystem for our renaming.
     LinuxFileSystem.file_sequence_style = WindowsFileSystem.file_sequence_style
 
-    # Clone will copy the file renaming it if one already exists in destination.
+    # Clone will copy the file, renaming it if one already exists in destination.
     LinuxFileSystem.clone(
         source=file_path,
         destination=destination_directory

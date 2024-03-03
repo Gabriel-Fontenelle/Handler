@@ -940,10 +940,10 @@ class BaseFile:
 
         # Check if extension is being change, raise exception if it is.
         if (
-                self._state.renaming
-                and self._naming.previous_saved_extension is not None
-                and self._naming.previous_saved_extension != self.extension
-                and not allow_extension_change
+            self._state.renaming
+            and self._naming.previous_saved_extension is not None
+            and self._naming.previous_saved_extension != self.extension
+            and not allow_extension_change
         ):
             raise self.OperationNotAllowed("Changing a file extension is not allowed when `allow_extension_change` is "
                                            "set to `False`!")
