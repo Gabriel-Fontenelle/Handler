@@ -107,7 +107,7 @@ Below I list some examples of how you could use this project.
 ### Loading a file
 
 ```python
-from handler import File
+from filez import File
 
 # Load a file from local filesystem
 my_file = File(path='<string: path to my file>')
@@ -124,7 +124,7 @@ my_file = File(
 ### Creating a new file
 
 ```python
-from handler import ContentFile
+from filez import ContentFile
 
 # Create a new file manually without extracting data from any source.
 my_file = ContentFile(run_extract_pipeline=False)
@@ -138,7 +138,7 @@ my_file.save()
 ```
 
 ```python
-from handler import StreamFile
+from filez import StreamFile
 
 # Create a new file from a stream. 
 my_file = StreamFile(metadata='<dict: my stream metadata>') # metadata is required by the 

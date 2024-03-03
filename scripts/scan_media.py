@@ -18,16 +18,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Should there be a need for contact the electronic mail
-`handler <at> gabrielfontenelle.com` can be used.
+`filez <at> gabrielfontenelle.com` can be used.
 """
 import os
 import pwd
-
-from handler import LinuxFileSystem, WindowsFileSystem, JSONSerializer
-
-from handler.file import File
 from os import listdir, getcwd
 from os.path import isdir
+
+from filez import LinuxFileSystem, WindowsFileSystem, JSONSerializer
+from filez.file import File
 
 
 HASH_FILES = ['md5', 'sfv']
