@@ -350,8 +350,8 @@ class FileThumbnail:
         else:
             setattr(self, f"_{name}_file", False)
 
-            # Set state of related file as concluded.
-            getattr(self, f"_conclude_{name}_action")()
+        # Set state of related file as concluded.
+        getattr(self, f"_conclude_{name}_action")()
 
     def _get_files_to_process(self, defaults: Type[ThumbnailDefaults]) -> list[BaseFile]:
         """
