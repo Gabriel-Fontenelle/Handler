@@ -20,13 +20,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
+
 from base64 import b64encode
 from io import StringIO, IOBase, BytesIO
+from typing import Iterator, Any, TYPE_CHECKING
 
-from ..pipelines.renamer import UniqueRenamer
-from ..pipelines import Pipeline
-from ..exception import SerializerError
 from .descriptor import InternalFilesDescriptor
+from ..exception import SerializerError, EmptyContentError
+from ..pipelines import Pipeline
+from ..pipelines.renamer import UniqueRenamer
+
+if TYPE_CHECKING:
+    from . import BaseFile
+
 
 __all__ = [
     "FileContent",
@@ -39,47 +46,49 @@ class FileContent:
     Class that store file instance content.
     """
     # Properties
-    is_binary = False
+    is_binary: bool = False
     """
     Type of stream used in buffer for content.
     """
 
     # Buffer handles
+    buffer: BytesIO | StringIO
     buffer = None
     """
     Stream for file`s content.
     """
+    related_file_object: BaseFile
     related_file_object = None
     """
     Variable to work as shortcut for the current related object for the hashes and other data.
     """
-    _block_size = 256
+    _block_size: int = 256
     """
     Block size of file to be loaded in each step of iterator.
     """
-    _buffer_encoding = 'utf-8'
+    _buffer_encoding: str = 'utf-8'
     """
     Encoding default used to convert the buffer to string.
     """
-    _iterable_in_use = False
+    _iterable_in_use: bool = False
     """
     Indicate whether the method next is currently being used to consume the buffer.
     """
 
     # Cache handles
-    cache_content = False
+    cache_content: bool = False
     """
     Whether the content should be cached.
     """
-    cache_in_memory = True
+    cache_in_memory: bool = True
     """
     Whether the cache will be made in memory.
     """
-    cache_in_file = False
+    cache_in_file: bool = False
     """
     Whether the cache will be made in filesystem.
     """
-    cached = False
+    cached: bool = False
     """
     Whether the content as whole was cached. Being True the current buffer will point to a stream
     of `_cached_content`.
@@ -93,7 +102,12 @@ class FileContent:
     Complete path for temporary file used as cache.
     """
 
-    def __init__(self, raw_value, force=False, **kwargs):
+    def __init__(
+        self,
+        raw_value: str | bytes | BytesIO | StringIO,
+        force: bool = False,
+        **kwargs: Any
+    ) -> None:
         """
         Initial method that set up the buffer to be used.
         The parameter `force` when True will force usage of cache even if is IO is seekable.
@@ -111,7 +125,7 @@ class FileContent:
             return
 
         if not raw_value:
-            raise ValueError(f"Value pass to FileContent must not be empty!")
+            raise ValueError("Value pass to FileContent must not be empty!")
 
         # Binary value of related_file_object should be be set up here, as it came from attribute is_binary from
         # content.
@@ -138,17 +152,14 @@ class FileContent:
             self.cache_content = True
             self.cached = False
 
-        # Default buffer for cache
-        self._cached_content = None
-
-    def __iter__(self):
+    def __iter__(self) -> Iterator[bytes | str | None]:
         """
         Method to return current object as iterator. As it already implements __next__ we just return the current
         object.
         """
         return self
 
-    def __next__(self):
+    def __next__(self) -> bytes | str | None:
         """
         Method that defines the behavior of iterable blocks of current object.
         This method has the potential to double the memory size of current object storing
@@ -160,7 +171,7 @@ class FileContent:
         # Flag to avoid calling this method with self.read()
         self._iterable_in_use = True
 
-        block = self.buffer.read(self._block_size)
+        block: str | bytes | None = self.buffer.read(self._block_size)
 
         # This end the loop if block is None, b'' or ''.
         if not block and block != 0:

@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
+from typing import Any
 
 from ..exception import SerializerError
 
@@ -33,27 +34,27 @@ class FileState:
     Class that store file instance state.
     """
 
-    adding = True
+    adding: bool = True
     """
     Indicate whether an object was already saved or not. If true, we will consider this a new, unsaved
     object in the current file`s filesystem.
     """
-    renaming = False
+    renaming: bool = False
     """
     Indicate whether an object is schedule to being renamed in the current file`s filesystem.
     """
-    changing = False
+    changing: bool = False
     """
     Indicate whether an object has changed or not. If true, we will consider that the current content was
     changed but not saved yet.  
     """
-    processing = True
+    processing: bool = True
     """
     Indicate whether an object has already run its pipeline of extraction or not. If true, we will consider 
     this a new object that needs to be process its pipeline.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """
         Method to create the current object using the keyword arguments.
         """
@@ -64,10 +65,10 @@ class FileState:
                 raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
 
     @property
-    def __serialize__(self):
+    def __serialize__(self) -> dict[str, bool]:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
-        attributes = {"adding", "renaming", "changing", "processing"}
+        attributes: set = {"adding", "renaming", "changing", "processing"}
 
         return {key: getattr(self, key) for key in attributes}

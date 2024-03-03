@@ -20,13 +20,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Iterator, Type, Any
+
+from .descriptor import CacheDescriptor, LoadedDescriptor
+from ..exception import ImproperlyConfiguredFile, SerializerError, ValidationError
+
+if TYPE_CHECKING:
+    from . import BaseFile
+    from ..pipelines.hasher import Hasher
 
 __all__ = [
     "FileHashes"
 ]
-
-from .descriptor import CacheDescriptor, LoadedDescriptor
-from ..exception import ImproperlyConfiguredFile, SerializerError, ValidationError
 
 
 class FileHashes:
@@ -34,21 +41,22 @@ class FileHashes:
     Class that store file instance digested hashes.
     """
 
-    _cache = CacheDescriptor()
+    _cache: CacheDescriptor = CacheDescriptor()
     """
     Descriptor to storage the digested hashes for the file instance.
     """
-    _loaded = LoadedDescriptor()
+    _loaded: LoadedDescriptor = LoadedDescriptor()
     """
     Descriptor to storage the digested hashes that were loaded from external source. 
     """
 
+    related_file_object: BaseFile
     related_file_object = None
     """
     Variable to work as shortcut for the current related object for the hashes.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """
         Method to create the current object using the keyword arguments.
         """
@@ -58,7 +66,7 @@ class FileHashes:
             else:
                 raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
 
-    def __setitem__(self, hasher_name, value):
+    def __setitem__(self, hasher_name: str, value: tuple[str, BaseFile, Type[Hasher]]) -> None:
         """
         Method to set up values for file hash as dict item.
         This method expects a tuple as value to set up the hash hexadecimal value and hash file related
@@ -77,30 +85,30 @@ class FileHashes:
             # Add `hash_file` loaded from external source in a list for easy retrieval of loaded hashes.
             self._loaded.append(hasher_name)
 
-    def __getitem__(self, hasher_name):
+    def __getitem__(self, hasher_name) -> tuple[str, BaseFile, Type[Hasher]]:
         """
         Method to get the hasher value and file associated saved in self._cache.
         """
         return self._cache[hasher_name]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator:
         """
         Method to return iterable from self._cache instead of current class.
         """
         return iter(self._cache)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         """
         Method to check if there is any hash saved in self._cache.
         """
         return bool(self._cache)
 
     @property
-    def __serialize__(self):
+    def __serialize__(self) -> dict[str, Any]:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
-        attributes = {"_cache", "_loaded", "related_file_object"}
+        attributes: set = {"_cache", "_loaded", "related_file_object"}
 
         return {key: getattr(self, key) for key in attributes}
 

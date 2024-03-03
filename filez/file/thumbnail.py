@@ -20,15 +20,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
-import itertools
+from __future__ import annotations
 
-from handler.video import MoviePyVideo
+import itertools
+from typing import Any, Type, TYPE_CHECKING
 
 from ..exception import SerializerError
 from ..image import WandImage
 from ..pipelines import Pipeline
 from ..pipelines.extractor.package import PSDLayersFromPackageExtractor
+from ..video import MoviePyVideo
 
+if TYPE_CHECKING:
+    from . import BaseFile
+    from ..image import ImageEngine
+    from ..video import VideoEngine
 
 __all__ = [
     "FileThumbnail",
@@ -46,46 +52,46 @@ class ThumbnailDefaults:
     """
 
     # Resize data
-    width = 250
+    width: int = 250
     """
     Attribute that define the default width for the thumbnail.
     """
-    height = 375
+    height: int = 375
     """
     Attribute that define the default height for the thumbnail.
     """
-    keep_ratio = True
+    keep_ratio: int = True
     """
     Attribute that define if aspect ratio should be kept when resizing.
     """
-    format = "jpeg"
+    format: str = "jpeg"
     """
     Attribute that define the default extension for the thumbnail as a format for conversion used in Image classes.
     """
-    format_extension = "jpg"
+    format_extension: str = "jpg"
     """
     Attribute that define the default extension for the thumbnail. It should be related to the format attribute.
     """
-    format_dpi = 72
+    format_dpi: int = 72
     """
     Attribute that define the resolution for the thumbnail when rendering a vectorized content.
     """
 
-    color_to_trim = (255, 255, 255)
+    color_to_trim: tuple[int, int, int] = (255, 255, 255)
     """
     Attribute that define which color should be used to trim an image if required.
     """
 
-    filename = None
+    filename: str | None = None
     """
     Attribute that define the default filename for the thumbnail. It can have special characters to be 
     used with format.
     """
-    mode = None
+    mode: str | None = None
     """
     Attribute that define the default color schema for the thumbnail.
     """
-    packed_to_ignore = set(PSDLayersFromPackageExtractor.extensions)
+    packed_to_ignore: set[str] = PSDLayersFromPackageExtractor.extensions
     """
     Attribute that define list of extensions where we should ignore the internal_files.
     """

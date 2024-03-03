@@ -20,6 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
+
+from typing import Any
+
 from ..exception import SerializerError
 
 __all__ = [
@@ -32,48 +36,48 @@ class FileMetadata:
     Class that store file instance metadata.
     """
 
-    packed = False
+    packed: bool = False
     """
     Indicate whether an object was packed in a container or not. As example: .rar, .epub, .tar. 
     """
-    compressed = False
+    compressed: bool = False
     """
     Indicate whether an object was compressed or not. Different from packed, an object can the packed and not 
     compressed or it could be both packed and compressed.
     """
-    lossless = False
+    lossless: bool = False
     """
     Indicate whether an object was lossless compressed or not. 
     """
-    hashable = True
+    hashable: bool = True
     """
     Indicate whether an object can have its hash saved or not. Internal packed files cannot have hash saved to file, 
     it can be generate just not saved in the package.
     """
-    internal = False
+    internal: bool = False
     """
     Indicate whether an object is a file from a packed container or not.
     """
 
     # Hasher files
-    # loaded = None
+    loaded: bool
     """
     Indicate whether an object is a hash file loaded from a file or not.
     This is mostly used for hash files created with hasher and will be set up only in those files.
     """
-    # checksum = None
+    checksum: bool
     """
     Indicate whether an object is a hash file named CHECKSUM.hasher_name file (contains multiple files) or not.
     This is mostly used for hash files created with hasher and will be set up only in those files.
     """
 
     # Thumbnail files
-    # preview = None
+    preview: bool
     """
     Indicate whether an object is a preview file or not.
     This is mostly used for animated thumbnail created with render and will be set up only in those files.
     """
-    # thumbnail = None
+    thumbnail: bool
     """
     Indicate whether an object is a thumbnail file or not.
     This is mostly used for thumbnail created with render and will be set up only in those files.

@@ -22,6 +22,8 @@ Should there be a need for contact the electronic mail
 """
 
 # Python internals
+from __future__ import annotations
+
 import os
 import re
 from datetime import datetime
@@ -42,17 +44,20 @@ from os.path import (
     normpath,
 )
 from pathlib import (
-    _NormalAccessor,
     Path,
-    _PosixFlavour,
-    _WindowsFlavour
+    WindowsPath
 )
 from shutil import copyfile
 # third-party
 from shutil import rmtree
 from sys import version_info
+from typing import Any, TYPE_CHECKING, Generator, Iterator, Pattern
 
 from send2trash import send2trash
+
+if TYPE_CHECKING:
+    from io import BytesIO, StringIO, IOBase
+
 
 __all__ = [
     'Storage',

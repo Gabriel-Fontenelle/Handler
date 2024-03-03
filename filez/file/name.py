@@ -20,8 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
 
-from ..exception import SerializerError, ReservedFilenameError
+from typing import Any, TYPE_CHECKING
+
+from ..exception import SerializerError, ReservedFilenameError, ImproperlyConfiguredFile
+
+if TYPE_CHECKING:
+    from . import BaseFile
 
 __all__ = [
     "FileNaming"
@@ -33,36 +39,38 @@ class FileNaming:
     Class that store file instance filenames and related names content.
     """
 
-    reserved_filenames = {}
+    reserved_filenames: dict[str, dict[str, BaseFile]] = {}
     """
     Dict of reserved filenames so that the correct file can be renamed
     avoiding overwriting a new file that has the same name as the current file in given directory.
     {<directory>: {<current_filename>: <base_file_object>}}
     """
-    reserved_index = {}
+    reserved_index: dict[str, dict[BaseFile, dict[str, BaseFile]]] = {}
     """
     Dict of reference of reserved filenames so that a filename can be easily removed from `reserved_filenames` dict.
     {<filename>: {<base_file_object>: <reference to reserved_index[filename][base_file_object]>}}}
     """
 
+    history: list[tuple]
     history = None
     """
     Storage filenames to allow browsing old ones for current BaseFile.
     """
-    on_conflict_rename = False
+    on_conflict_rename: bool = False
     """
     Option that control behavior of renaming filename.  
     """
+    related_file_object: BaseFile
     related_file_object = None
     """
     Variable to work as shortcut for the current related object for the hashes.
     """
-    previous_saved_extension = None
+    previous_saved_extension: str | None = None
     """
     Storage the previous saved extension to allow `save` method of file to verify if its changing its `extension`. 
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """
         Method to create the current object using the keyword arguments.
         """
@@ -73,7 +81,7 @@ class FileNaming:
                 raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
 
     @property
-    def __serialize__(self):
+    def __serialize__(self) -> dict[str, Any]:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
@@ -89,20 +97,20 @@ class FileNaming:
 
         return {key: getattr(self, key) for key in attributes}
 
-    def remove_reserved_filename(self, old_filename):
+    def remove_reserved_filename(self, old_filename: str) -> None:
         """
         This method remove old filename from list of reserved filenames.
         """
 
-        files = self.reserved_index.get(old_filename, {})
-        reference = files.get(self.related_file_object, None)
+        files: dict[BaseFile, dict[str, BaseFile]] = self.reserved_index.get(old_filename, {})
+        reference: dict[str, BaseFile] | None  = files.get(self.related_file_object, None)
 
         # Remove from `reserved_filename` and current `reserved_index`.
         if reference:
             del reference[old_filename]
             del files[self.related_file_object]
 
-    def rename(self):
+    def rename(self) -> None:
         """
         Method to rename `related_file_object` according to its own rename pipeline.
         TODO: Change how this method used `reserved_filenames` to allow moving or copying of file.

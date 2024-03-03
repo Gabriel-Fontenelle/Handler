@@ -20,14 +20,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
 
 # first-party
+from datetime import datetime
+from io import BytesIO, StringIO
 from os import name
+from typing import Type, Any, Iterator, TYPE_CHECKING, Sequence
 
 # modules
 from .action import FileActions
 from .content import FilePacket, FileContent
-from .descriptor import InternalFilesDescriptor, LoadedDescriptor, CacheDescriptor
 from .hash import FileHashes
 from .meta import FileMetadata
 from .name import FileNaming
@@ -46,6 +49,11 @@ from ..pipelines import Pipeline
 from ..serializer import JSONSerializer
 from ..storage import LinuxFileSystem, WindowsFileSystem
 
+if TYPE_CHECKING:
+    from ..serializer import PickleSerializer
+    from ..mimetype import BaseMimeTyper
+    from ..storage import Storage
+
 __all__ = [
     'BaseFile',
     'ContentFile',
@@ -63,59 +71,61 @@ class BaseFile:
     """
 
     # Filesystem data
-    id = None
+    id: str | None = None
     """
     File`s id in the File System.
     """
-    filename = None
+    filename: str | None = None
     """
     Name of file without extension.
     """
-    extension = None
+    extension: str | None = None
     """
     Extension of file.
     """
-    create_date = None
+    create_date: datetime | None = None
     """
     Datetime when file was created.
     """
-    update_date = None
+    update_date: datetime | None = None
     """
     Datetime when file was updated.
     """
-    _path = None
+    _path: str | None = None
     """
     Full path to file including filename. This is the raw path partially sanitized.
     BaseFile.sanitize_path is available through property.
     """
-    _save_to = None
+    _save_to: str | None = None
     """
     Path of directory to save file. This path will be use for mixing relative paths.
     This path should be accessible through property `save_to`.
     """
-    relative_path = None
+    relative_path: str | None = None
     """
     Relative path to save file. This path will be use for generating whole path together with save_to and 
     complete_filename (e.g save_to + relative_path + complete_filename). 
     """
 
     # Metadata data
-    length = 0
+    length: int = 0
     """
     Size of file content.
     """
-    mime_type = None
+    mime_type: str | None = None
     """
     File`s mime type.
     """
-    type = None
+    type: str | None = None
     """
     File's type (e.g. image, audio, video, application).
     """
+    _meta: FileMetadata
     _meta = None
     """
     Additional metadata info that file can have. Those data not always will exist for all files.
     """
+    hashes: FileHashes
     hashes = None
     """
     Checksum information for file.
@@ -123,6 +133,7 @@ class BaseFile:
     """
 
     # Initializer data
+    _keyword_arguments: dict[str, Any]
     _keyword_arguments = None
     """
     Additional attributes data passed to `__init__` method. This information is important to be able to 
@@ -130,52 +141,54 @@ class BaseFile:
     """
 
     # Handler
+    storage: Type[Storage]
     storage = None
     """
     Storage or file system currently in use for File.
     It can be LinuxFileSystem, WindowsFileSystem or a custom one.
     """
-    serializer = JSONSerializer
+    serializer: Type[JSONSerializer] | Type[PickleSerializer] = JSONSerializer
     """
     Serializer available to make the object portable. 
     This can be changed to any class that implements serialize and deserialize method.
     """
-    mime_type_handler = LibraryMimeTyper()
+    mime_type_handler: BaseMimeTyper = LibraryMimeTyper()
     """
     Mimetype handler that defines the source of know Mimetypes.
     This is used to identify mimetype from extension and vice-verse.
     """
-    uri_handler = URI
+    uri_handler: Type[URI] = URI
     """
     URI handler that defines methods to parser the URL.
     """
 
     # Pipelines
+    extract_data_pipeline: Pipeline
     extract_data_pipeline = None
     """
     Pipeline to extract data from multiple sources. This should be override at child class. This pipeline can be 
     non-blocking and errors that occur in it will be available through attribute `errors` at 
     `extract_data_pipeline.errors`.
     """
-    compare_pipeline = Pipeline(
-        'handler.pipelines.comparer.TypeCompare',
-        'handler.pipelines.comparer.SizeCompare',
-        'handler.pipelines.comparer.BinaryCompare',
-        'handler.pipelines.comparer.HashCompare',
-        'handler.pipelines.comparer.DataCompare'
+    compare_pipeline: Pipeline = Pipeline(
+        'filez.pipelines.comparer.TypeCompare',
+        'filez.pipelines.comparer.SizeCompare',
+        'filez.pipelines.comparer.BinaryCompare',
+        'filez.pipelines.comparer.HashCompare',
+        'filez.pipelines.comparer.DataCompare'
     )
     """
     Pipeline to compare two files.
     """
-    hasher_pipeline = Pipeline(
-        ('handler.pipelines.hasher.MD5Hasher', {'full_check': True}),
-        ('handler.pipelines.hasher.SHA256Hasher', {'full_check': True}),
+    hasher_pipeline: Pipeline = Pipeline(
+        ('filez.pipelines.hasher.MD5Hasher', {'full_check': True}),
+        ('filez.pipelines.hasher.SHA256Hasher', {'full_check': True}),
     )
     """
     Pipeline to generate hashes from content.
     """
-    rename_pipeline = Pipeline(
-        'handler.pipelines.renamer.WindowsRenamer'
+    rename_pipeline: Pipeline = Pipeline(
+        'filez.pipelines.renamer.WindowsRenamer'
     )
     """
     Pipeline to rename file when saving. This pipeline can be 
@@ -184,63 +197,69 @@ class BaseFile:
     """
 
     # Behavior controller for file
+    _state: FileState
     _state = None
     """
     Controller for state of file. The file will be set-up with default state before being loaded or create from stream.
     """
+    _actions: FileActions
     _actions = None
     """
     Controller for pending actions that file must run. The file will be set-up with default (empty) actions.
     """
+    _naming: FileNaming
     _naming = None
     """
     Controller for renaming restrictions that file must adopt.
     """
+    _content: FileContent
     _content = None
     """
     Controller for how the content of file will be handled. 
     """
+    _content_files: FilePacket
     _content_files = None
     """
     Controller for how the internal files packet in content of file will be handled.
     """
+    _thumbnail: FileThumbnail
     _thumbnail = None
     """
     Controller for the thumbnail representation of file. 
     """
 
     # Common Exceptions shortcut
-    ImproperlyConfiguredFile = ImproperlyConfiguredFile
+    ImproperlyConfiguredFile: Type[Exception] = ImproperlyConfiguredFile
     """
     Exception to throw when a required configuration is missing or misplaced.
     """
-    ValidationError = ValidationError
+    ValidationError: Type[Exception] = ValidationError
     """
     Exception to throw when a required attribute to be save is missing or improperly configured.
     """
-    OperationNotAllowed = OperationNotAllowed
+    OperationNotAllowed: Type[Exception] = OperationNotAllowed
     """
     Exception to throw when a operation is no allowed to be performed due to how the options are set-up in `save` 
     method.
     """
-    NoInternalContentError = NoInternalContentError
+    NoInternalContentError: Type[Exception] = NoInternalContentError
     """
     Exception to throw when file was no internal content or being of wrong type to have internal content.
     """
-    ReservedFilenameError = ReservedFilenameError
+    ReservedFilenameError: Type[Exception] = ReservedFilenameError
     """
     Exception to throw when a file is trying to be renamed, but there is already another file with the filename 
     reserved. 
     """
 
     @classmethod
-    def deserialize(cls, source):
+    def deserialize(cls, source: str) -> dict[str, Any]:
         """
         Class method to deserialize the source and return the instance object.
         """
         return cls.serializer.deserialize(source=source)
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """
         Method to instantiate BaseFile. This method can be used for any child class, ony needing
         to change the extract_data_pipeline to be suited for each class.
@@ -250,7 +269,7 @@ class BaseFile:
         """
         # In order to allow multiple versions of the serialized object to be correctly parsed with
         # the last version we should make conversions of attributes here.
-        version = kwargs.pop("__version__", None)
+        version: str = kwargs.pop("__version__", "")
         if version == "1":
             """Do nothing, as version 1 don't have incompatibility with this class version."""
 
@@ -258,7 +277,7 @@ class BaseFile:
         if not self.storage:
             self.storage = WindowsFileSystem if name == 'nt' else LinuxFileSystem
 
-        additional_kwargs = {}
+        additional_kwargs: dict[str, Any] = {}
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
@@ -273,7 +292,7 @@ class BaseFile:
 
         # Set up resources used for `save` and `update` methods.
         if not self._actions:
-            self._actions = FileActions()
+            self._actions: FileActions = FileActions()
 
         # Set up resources used for controlling the state of file.
         if not self._state:
@@ -306,7 +325,7 @@ class BaseFile:
             self._thumbnail.clean_history()
 
         # Get option to run pipeline.
-        run_extractor = additional_kwargs.pop('run_extractor', True)
+        run_extractor: bool = additional_kwargs.pop('run_extractor', True)
 
         # Set up keyword arguments to be used in processor.
         self._keyword_arguments = additional_kwargs
@@ -317,14 +336,14 @@ class BaseFile:
         if version is None and run_extractor:
             self.refresh_from_pipeline()
 
-    def __len__(self):
+    def __len__(self) -> int:
         """
         Method to inform function `len()` where to extract the information of length from.
         When calling `len(BaseFile())` it will return the size of file in bytes.
         """
         return self.length
 
-    def __lt__(self, other_instance):
+    def __lt__(self, other_instance: BaseFile) -> bool:
         """
         Method to allow comparison < to work between BaseFiles.
         TODO: Compare metadata resolution for when type is image, video and bitrate when type
@@ -333,13 +352,13 @@ class BaseFile:
         # Check if size is lower than.
         return len(self) < len(other_instance)
 
-    def __le__(self, other_instance):
+    def __le__(self, other_instance: BaseFile) -> bool:
         """
         Method to allow comparison <= to work between BaseFiles.
         """
         return self.__lt__(other_instance) or self.__eq__(other_instance)
 
-    def __eq__(self, other_instance):
+    def __eq__(self, other_instance: object) -> bool:
         """
         Method to allow comparison == to work between BaseFiles.
         `other_instance` can be an object or a list of objects to be compared.
