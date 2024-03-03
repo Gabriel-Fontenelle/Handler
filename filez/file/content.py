@@ -378,11 +378,7 @@ class FilePacket:
     """
 
     # Pipelines
-    extract_data_pipeline = Pipeline(
-        'handler.pipelines.extractor.SevenZipCompressedFilesFromPackageExtractor',
-        'handler.pipelines.extractor.RarCompressedFilesFromPackageExtractor',
-        'handler.pipelines.extractor.TarCompressedFilesFromPackageExtractor',
-        'handler.pipelines.extractor.ZipCompressedFilesFromPackageExtractor',
+    extract_data_pipeline: Pipeline = Pipeline(
         'filez.pipelines.extractor.SevenZipCompressedFilesFromPackageExtractor',
         'filez.pipelines.extractor.RarCompressedFilesFromPackageExtractor',
         'filez.pipelines.extractor.TarCompressedFilesFromPackageExtractor',

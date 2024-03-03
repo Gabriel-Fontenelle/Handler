@@ -1028,10 +1028,7 @@ class ContentFile(BaseFile):
     a new one from memory using `ContentFile`.
     """
 
-    extract_data_pipeline = Pipeline(
-        'handler.pipelines.extractor.FilenameFromMetadataExtractor',
-        'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
-        'handler.pipelines.extractor.MimeTypeFromContentExtractor',
+    extract_data_pipeline: Pipeline = Pipeline(
         'filez.pipelines.extractor.FilenameFromMetadataExtractor',
         'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
         'filez.pipelines.extractor.MimeTypeFromContentExtractor',
@@ -1046,12 +1043,7 @@ class StreamFile(BaseFile):
     Class to create a file from an HTTP stream that has a header with metadata.
     """
 
-    extract_data_pipeline = Pipeline(
-        'handler.pipelines.extractor.FilenameFromMetadataExtractor',
-        'handler.pipelines.extractor.FilenameFromURLExtractor',
-        'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
-        'handler.pipelines.extractor.MimeTypeFromContentExtractor',
-        'handler.pipelines.extractor.MetadataExtractor'
+    extract_data_pipeline: Pipeline = Pipeline(
         'filez.pipelines.extractor.FilenameFromMetadataExtractor',
         'filez.pipelines.extractor.FilenameFromURLExtractor',
         'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
@@ -1070,11 +1062,7 @@ class File(BaseFile):
     a new one from memory using `ContentFile`.
     """
 
-    extract_data_pipeline = Pipeline(
-        'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
-        'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
-        'handler.pipelines.extractor.FileSystemDataExtractor',
-        'handler.pipelines.extractor.HashFileExtractor',
+    extract_data_pipeline: Pipeline = Pipeline(
         'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
         'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
         'filez.pipelines.extractor.FileSystemDataExtractor',
