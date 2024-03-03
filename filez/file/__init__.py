@@ -154,12 +154,12 @@ class BaseFile:
     """
     mime_type_handler: BaseMimeTyper = LibraryMimeTyper()
     """
-    Mimetype handler that defines the source of know Mimetypes.
+    Mimetype filez that defines the source of know Mimetypes.
     This is used to identify mimetype from extension and vice-verse.
     """
     uri_handler: Type[URI] = URI
     """
-    URI handler that defines methods to parser the URL.
+    URI filez that defines methods to parser the URL.
     """
 
     # Pipelines
@@ -264,7 +264,7 @@ class BaseFile:
         Method to instantiate BaseFile. This method can be used for any child class, ony needing
         to change the extract_data_pipeline to be suited for each class.
 
-        Keyword argument `storage` allow to specify a custom file system handler.
+        Keyword argument `storage` allow to specify a custom file system filez.
         Keyword argument `extract_data_pipeline` allow to specify a custom file extractor pipeline.
         """
         # In order to allow multiple versions of the serialized object to be correctly parsed with
