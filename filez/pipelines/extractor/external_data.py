@@ -569,15 +569,24 @@ class FilenameFromURLExtractor(Extractor):
             return
 
         try:
-            possible_urls = kwargs['url']
-            processed_uri = None
-            results = file_object.uri_handler.get_filenames(possible_urls, file_object.storage)
+            possible_urls: str = kwargs['url']
+            processed_uri: str = ""
 
-            if not results:
+            filenames_from_url: list[URI.Filename] = file_object.uri_handler.get_filenames(
+                possible_urls, file_object.storage
+            )
+
+            if not filenames_from_url:
                 return
 
             # Modify list to also include boolean value to enforce_mimetype or not.
-            results = [(result, True) for result in results] + [(result, False) for result in results]
+            results = [
+                (result, True)
+                for result in filenames_from_url
+            ] + [
+                (result, False)
+                for result in filenames_from_url
+            ]
 
             # Loop through paths to use only the one with valid extension
             # The first part of the loop enforce mimetype, second not enforce mimetype.

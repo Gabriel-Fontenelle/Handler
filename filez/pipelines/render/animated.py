@@ -73,7 +73,10 @@ class AnimatedRender(StaticRender):
         )
 
         # Set content from buffer.
-        animated_file.content = content
+        if isinstance(content, (BytesIO, StringIO)):
+            animated_file.content_as_buffer = content
+        else:
+            animated_file.content = content
 
         # Set metadata for file object of preview.
         animated_file.meta.preview = True
@@ -104,7 +107,12 @@ class StaticAnimatedRender(AnimatedRender):
         defaults = file_object._thumbnail.animated_defaults
 
         # Resize image using the image_engine and default values.
-        image = image_engine(buffer=file_object.buffer)
+        buffer = file_object.content_as_buffer
+
+        if not buffer:
+            raise RenderError("There is no content in buffer format available to render.")
+
+        image: ImageEngine = image_engine(buffer=buffer)
 
         image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
 
@@ -122,7 +130,7 @@ class ImageAnimatedRender(AnimatedRender):
     This class make use of sequences.
     """
 
-    extensions = ["gif", "png", "apng", "webp"]
+    extensions: set[str] = {"gif", "png", "apng", "webp"}
     """
     Attribute to store allowed extensions for use in `validator`.
     """
@@ -132,9 +140,14 @@ class ImageAnimatedRender(AnimatedRender):
         """
         Method to render the animated representation of the file_object that has animation.
         """
-        image_engine = kwargs.pop('image_engine')
+        image_engine: Type[ImageEngine] = kwargs.pop('image_engine')
 
-        defaults = file_object._thumbnail.animated_defaults
+        defaults: Type[PreviewDefaults] = file_object._thumbnail.animated_defaults
+
+        buffer = file_object.content_as_buffer
+
+        if not buffer:
+            raise RenderError("There is no content in buffer format available to render.")
 
         # Resize image using the image_engine and default values.
         image = image_engine(buffer=file_object.buffer)
@@ -166,9 +179,14 @@ class DocumentAnimatedRender(AnimatedRender):
         """
         Method to render the animated representation of the file_object that has pages.
         """
-        image_engine = kwargs.pop('image_engine')
+        image_engine: Type[ImageEngine] = kwargs.pop('image_engine')
 
-        defaults = file_object._thumbnail.animated_defaults
+        defaults: Type[PreviewDefaults] = file_object._thumbnail.animated_defaults
+
+        buffer = file_object.content_as_buffer
+
+        if not buffer:
+            raise RenderError("There is no content in buffer format available to render.")
 
         # Use fitz from PyMuPDF to open the document.
         # Because BufferedReader (default return for file_system.open) is not accept
@@ -232,9 +250,14 @@ class PSDAnimatedRender(AnimatedRender):
         """
         Method to render the animated representation of the file_object that has layers.
         """
-        image_engine = kwargs.pop('image_engine')
+        image_engine: Type[ImageEngine] = kwargs.pop('image_engine')
 
-        defaults = file_object._thumbnail.static_defaults
+        defaults: Type[PreviewDefaults] = file_object._thumbnail.animated_defaults
+
+        buffer = file_object.content_as_buffer
+
+        if not buffer:
+            raise RenderError("There is no content in buffer format available to render.")
 
         # Load PSD from buffer
         psd = PSDImage.open(fp=file_object.buffer)
@@ -287,17 +310,22 @@ class VideoAnimatedRender(AnimatedRender):
         """
         Method to render the animated representation of the file_object that has frames.
         """
-        image_engine = kwargs.pop('image_engine')
-        video_engine = kwargs.pop('video_engine')
+        image_engine: Type[ImageEngine] = kwargs.pop('image_engine')
+        video_engine: Type[VideoEngine] = kwargs.pop('video_engine')
 
-        defaults = file_object._thumbnail.static_defaults
+        defaults: Type[PreviewDefaults] = file_object._thumbnail.animated_defaults
 
-        video = video_engine(buffer=file_object.buffer)
+        buffer = file_object.content_as_buffer
 
-        total_frames = video.get_frame_amount()
-        steps = total_frames // (total_frames * defaults.duration // 100)
+        if not buffer:
+            raise RenderError("There is no content in buffer format available to render.")
 
-        images = []
+        video: VideoEngine = video_engine(buffer=buffer)
+
+        total_frames: int = video.get_frame_amount()
+        steps: int = total_frames // (total_frames * defaults.duration // 100)
+
+        images: list[ImageEngine] = []
 
         for index in set(range(0, total_frames, steps)):
             image = image_engine(buffer=BytesIO(video.get_frame_as_bytes(index=index, encode_format=defaults.format)))

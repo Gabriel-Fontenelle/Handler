@@ -119,8 +119,12 @@ class FileNaming:
         save_to: str | None = self.related_file_object.save_to
         complete_filename: str | None = self.related_file_object.complete_filename
 
-        reserved_folder = self.reserved_filenames.get(save_to, None)
-        object_reserved = reserved_folder.get(complete_filename, None) if reserved_folder else None
+        if save_to is None or not complete_filename:
+            raise ImproperlyConfiguredFile("Renaming a file without a directory set at `save_to` and without a "
+                                           "`complete_filename` is not supported.")
+
+        reserved_folder: dict[str, BaseFile] = self.reserved_filenames.get(save_to, {})
+        object_reserved: BaseFile | None = reserved_folder.get(complete_filename, None)
 
         # Check if filename already reserved name. Reserved names cannot be renamed even if overwrite is used in save,
         # so the only option is to have a new filename created, but only if `on_conflict_rename` is `True`.

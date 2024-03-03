@@ -198,7 +198,7 @@ class URI:
         """
         Method to return from cache the processed URI dictionary.
         """
-        return cls.cache.get(value, None) if cls.cache else None
+        return cls.cache.get(value, None)
 
     @classmethod
     def get_paths(cls, value: str, file_system: Type[Storage]) -> list[Path]:
