@@ -317,13 +317,22 @@ class FileContent:
             return self.buffer
 
     @property
+    def content_as_bytes(self) -> bytes:
+        """
+        Method to obtain the content as bytes.
+        """
+        content = self.content.encode("uft-8") if isinstance(self.content, str) else self.content
+
+        return bytes(content)
+
+    @property
     def content_as_base64(self) -> bytes:
         """
         Method to obtain the content as a base64 encoded, loading it in memory if it is allowed and is not
         loaded already.
         TODO: Change the code to work with BaseIO to avoid loading all content to memory for larger files.
         """
-        return b64encode(self.content)
+        return b64encode(self.content_as_bytes)
 
     def reset(self) -> None:
         """
