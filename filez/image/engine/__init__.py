@@ -20,10 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
+
 import base64
 import warnings
-from io import BytesIO
-
+from io import BytesIO, StringIO
+from typing import Any, Type
 
 __all__ = [
     "ImageEngine",
@@ -34,21 +36,23 @@ class ImageEngine:
     """
     Class that standardized methods of different image manipulators.
     """
+    image: Any
     image = None
     """
     Attribute where the current image converted from buffer is stored.
     """
-    class_image = None
+    class_image: Type[Any] | None = None
     """
     Attribute used to store the class reference responsible to create an image.
     This attribute should be override by child class.
     """
+    metadata: dict[str, Any]
     metadata = None
     """
     Attribute used to store image metadata if available.
     """
 
-    def __init__(self, buffer):
+    def __init__(self, buffer: StringIO | BytesIO) -> None:
         """
         Method to instantiate the current class using a buffer for the image content as a source
         for manipulation by the class to be used.
@@ -58,7 +62,7 @@ class ImageEngine:
         if buffer:
             self.prepare_image()
 
-    def append_to_sequence(self, images, **kwargs):
+    def append_to_sequence(self, images: list[Any], **kwargs: Any) -> None:
         """
         Method to append a list of images to the current image, if the current image is not a sequence
         this method should convert it to a sequence.
@@ -66,14 +70,14 @@ class ImageEngine:
         """
         raise NotImplementedError("The method append_to_sequence should be override in child class.")
 
-    def change_color(self, colorspace="gray"):
+    def change_color(self, colorspace: str = "gray", **kwargs: Any) -> None:
         """
         Method to change the color space of the current image.
         This method should be overwritten in child class.
         """
         raise NotImplementedError("The method change_color should be override in child class.")
 
-    def clone(self):
+    def clone(self) -> Any:
         """
         Method to copy the current image object and return it.
         This method should be overwritten in child class.
@@ -81,7 +85,7 @@ class ImageEngine:
         raise NotImplementedError("The method clone should be override in child class.")
 
     @classmethod
-    def create_empty_image(cls):
+    def create_empty_image(cls) -> ImageEngine:
         """
         Method to instantiate the current class with an empty image.
         """
@@ -91,7 +95,7 @@ class ImageEngine:
         return cls.create_from_image(image=cls.class_image())
 
     @classmethod
-    def create_from_image(cls, image):
+    def create_from_image(cls, image: Any) -> ImageEngine:
         """
         Method to instantiate the current class using a preprocessed image of the same class.
         """
@@ -100,7 +104,7 @@ class ImageEngine:
 
         return self
     
-    def crop(self, width, height):
+    def crop(self, width: int, height: int, **kwargs: Any) -> None:
         """
         Method to crop the current image object.
         This method must affect the current image object.
@@ -109,7 +113,7 @@ class ImageEngine:
         raise NotImplementedError("The method crop should be override in child class.")
 
     @staticmethod
-    def get_aspect_ratio(width, height):
+    def get_aspect_ratio(width: int, height: int) -> tuple[float, float]:
         """
         Method to obtain the width and height proportion (aspect ratio) to use in transformations.
         """
@@ -118,7 +122,7 @@ class ImageEngine:
 
         return ratio_width, ratio_height
 
-    def get_base64(self, encode_format="jpeg"):
+    def get_base64(self, encode_format: str = "jpeg") -> str:
         """
         Method to obtain the base64 representation for the content of the current image object.
         """
@@ -127,13 +131,13 @@ class ImageEngine:
         # Convert buffer to base64 string representation in ASCII
         return base64.b64encode(content).decode('ascii')
 
-    def get_buffer(self, encode_format="jpeg"):
+    def get_buffer(self, encode_format: str = "jpeg") -> BytesIO:
         """
         Method to get a buffer IO from the current image.
         """
         return BytesIO(self.get_bytes(encode_format=encode_format))
 
-    def get_bytes(self, encode_format="jpeg"):
+    def get_bytes(self, encode_format: str = "jpeg") -> bytes:
         """
         Method to obtain the bytes' representation for the content of the current image object.
         This method must return bytes already compressed by format.
@@ -141,7 +145,14 @@ class ImageEngine:
         """
         raise NotImplementedError("The method get_bytes_from_image should be override in child class.")
 
-    def get_relative_size(self, width, height, new_width, new_height, constraint=True):
+    def get_relative_size(
+        self,
+        width: int,
+        height: int,
+        new_width: int,
+        new_height: int,
+        constraint: bool = True
+    ) -> tuple[int, int]:
         """
         Method to obtain a new size relative to width and height that respect the aspect ratio
         keeping it constraining to new_width and new_height or not.
@@ -161,7 +172,7 @@ class ImageEngine:
 
         return int(ratio[0] * a * size), int(b * ratio[1] * size)
 
-    def get_size(self):
+    def get_size(self) -> tuple[int, int]:
         """
         Method to obtain the size of current image.
         This method should return a tuple with width and height.
@@ -169,21 +180,21 @@ class ImageEngine:
         """
         raise NotImplementedError("The method get_size should be override in child class.")
 
-    def has_sequence(self):
+    def has_sequence(self) -> bool:
         """
         Method to verify if image has multiple frames, e.g `.gif`, or distinct sizes, e.g `.ico`.
         This method should be overwritten in child class.
         """
         raise NotImplementedError("The method has_sequence should be override in child class.")
 
-    def has_transparency(self):
+    def has_transparency(self) -> bool:
         """
         Method to verify if image has a channel for transparency.
         This method should be overwritten in child class.
         """
         raise NotImplementedError("The method has_transparency should be override in child class.")
 
-    def prepare_image(self):
+    def prepare_image(self) -> None:
         """
         Method to prepare the image using the stored buffer as the source.
         This method should use `self.source_buffer` and `self.image` to set the current image object.
@@ -191,7 +202,7 @@ class ImageEngine:
         """
         raise NotImplementedError("The method prepare_image should be override in child class.")
 
-    def resample(self, percentual=10, encode_format="webp"):
+    def resample(self, percentual: int = 10, encode_format: str = "webp") -> None:
         """
         Method to re sample the image sequence with only the percentual amount of items distributed through the image
         sequences.
@@ -234,21 +245,21 @@ class ImageEngine:
         # Scale image with the new width, height
         self.scale(width, height)
 
-    def scale(self, width, height):
+    def scale(self, width: int, height: int, **kwargs: Any) -> None:
         """
         Method to scale the current image object without implementing additional logic.
         This method should be overwritten in child class.
         """
         raise NotImplementedError("The method scale should be override in child class.")
 
-    def show(self):
+    def show(self) -> None:
         """
         Method to display the image for debugging purposes.
         This method should be overwritten in child class with the appropriate mode of displaying the image.
         """
         raise NotImplementedError("The method show should be override in child class.")
 
-    def trim(self, color=None):
+    def trim(self, color: tuple[int, int, int] | None = None) -> None:
         """
         Method to trim the current image object.
         This method must affect the current image object.
