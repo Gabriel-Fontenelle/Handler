@@ -114,6 +114,7 @@ class FileNaming:
         """
         Method to rename `related_file_object` according to its own rename pipeline.
         TODO: Change how this method used `reserved_filenames` to allow moving or copying of file.
+        TODO: Check if save_to exists before doing rename.
         """
         save_to = self.related_file_object.save_to
         complete_filename = self.related_file_object.complete_filename

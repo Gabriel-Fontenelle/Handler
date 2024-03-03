@@ -174,6 +174,7 @@ class FileContent:
         block: str | bytes | None = self.buffer.read(self._block_size)
 
         # This end the loop if block is None, b'' or ''.
+        # TODO: Check mypy in this block.
         if not block and block != 0:
             # Change buffer to be cached content
             if self.cache_content and not self.cached:
