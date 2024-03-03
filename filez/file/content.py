@@ -26,7 +26,6 @@ from base64 import b64encode
 from io import StringIO, IOBase, BytesIO
 from typing import Iterator, Any, TYPE_CHECKING
 
-from .descriptor import InternalFilesDescriptor
 from ..exception import SerializerError, EmptyContentError
 from ..pipelines import Pipeline
 from ..pipelines.renamer import UniqueRenamer
@@ -374,10 +373,11 @@ class FilePacket:
     Class that store internal files from file instance content.
     """
 
-    _internal_files: dict = InternalFilesDescriptor()
+    _internal_files: dict[str, Any]
     """
     Dictionary used for storing the internal files data. Each file is reserved through its <directory>/<name> inside
     the package.
+    This must be instantiated at `__init__` method.
     """
 
     history: list
@@ -401,6 +401,9 @@ class FilePacket:
         """
         Method to create the current object using the keyword arguments.
         """
+        # Set class dict attribute
+        self._internal_files = {}
+
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
