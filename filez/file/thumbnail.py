@@ -335,8 +335,6 @@ class FileThumbnail:
                     # Set state of related file as concluded.
                     getattr(self, f"_conclude_{name}_action")()
 
-                    return self._animated_file
-
                 to_be_processed.append(file_processed)
 
         if to_be_processed:
