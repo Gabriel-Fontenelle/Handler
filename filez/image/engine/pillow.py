@@ -203,6 +203,7 @@ class PillowImage(ImageEngine):
         """
         Method to scale the current image object without implementing additional logic.
         """
+        encode_format: str = kwargs.get("encode_format", "webp")
 
         if self.has_sequence():
             def resize_frame(image):
