@@ -24,7 +24,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Iterator, Type, Any
 
-from .descriptor import CacheDescriptor, LoadedDescriptor
 from ..exception import ImproperlyConfiguredFile, SerializerError, ValidationError
 
 if TYPE_CHECKING:
@@ -41,13 +40,15 @@ class FileHashes:
     Class that store file instance digested hashes.
     """
 
-    _cache: CacheDescriptor = CacheDescriptor()
+    _cache: dict[str, Any]
     """
     Descriptor to storage the digested hashes for the file instance.
+    This must be instantiated at `__init__` class. 
     """
-    _loaded: LoadedDescriptor = LoadedDescriptor()
+    _loaded: list[Any]
     """
     Descriptor to storage the digested hashes that were loaded from external source. 
+    This must be instantiated at `__init__` class.
     """
 
     related_file_object: BaseFile
@@ -60,6 +61,10 @@ class FileHashes:
         """
         Method to create the current object using the keyword arguments.
         """
+        # Set class dict and list attributes
+        self._cache = {}
+        self._loaded = []
+
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
