@@ -333,7 +333,7 @@ class BaseFile:
         # Process extractor pipeline. We only run the pipeline if the criterion below is accomplished:
         # It should not come from the serializer (don't have version)
         # and option run_extractor should not be false.
-        if version is None and run_extractor:
+        if not version and run_extractor:
             self.refresh_from_pipeline()
 
     def __len__(self) -> int:
@@ -503,9 +503,9 @@ class BaseFile:
         Method to set content attribute. This method can be override in child class.
         This method can receive value as string, bytes or buffer.
         """
-        if isinstance(value, (BytesIO, StringIO)):
-            raise ValueError("The method `content` should not be used for setter of `BytesIO` or `StringIO`."
-                             "Use `content_as_buffer` instead.")
+        if not isinstance(value, (str, bytes)):
+            raise ValueError(f"The method `content` should not be used for setter of `{type(value)}`."
+                             "Try using `content_as_buffer` instead.")
 
         # Storage information if content is being loaded to generator for the first time
         loading_content: bool = self._content is None
@@ -554,7 +554,7 @@ class BaseFile:
         return self._content.content_as_buffer
 
     @content_as_buffer.setter
-    def content_as_buffer(self, value: BytesIO | StringIO) -> None:
+    def content_as_buffer(self, value: BytesIO | StringIO | IO) -> None:
         if isinstance(value, (str, bytes)):
             raise ValueError("The method `content_as_buffer` should not be used for setter of `str` or `bytes`."
                              "Use `content` instead.")
