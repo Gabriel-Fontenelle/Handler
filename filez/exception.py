@@ -44,6 +44,12 @@ class NoInternalContentError(Exception):
 	"""
 
 
+class EmptyContentError(Exception):
+	"""
+	Exception that defines errors for when a content was not loaded because its empty.
+	"""
+
+
 class ImproperlyConfiguredFile(Exception):
 	"""
 	Exception that defines error for when a File has a missing configuration.
@@ -65,4 +71,10 @@ class ValidationError(Exception):
 class ReservedFilenameError(Exception):
 	"""
 	Exception that defines error for when trying to rename a file to an already reserved one.
+	"""
+
+
+class RenderError(Exception):
+	"""
+	Exception that defines error for when trying to render a file.
 	"""
