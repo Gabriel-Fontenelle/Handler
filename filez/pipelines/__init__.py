@@ -20,10 +20,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
-from inspect import isclass
+from __future__ import annotations
+
 from importlib import import_module
+from inspect import isclass
+from typing import Any, TYPE_CHECKING, Iterator
 
 from ..exception import ValidationError
+
+if TYPE_CHECKING:
+    from ..file import BaseFile
 
 __all__ = [
     'Processor',
@@ -38,16 +44,18 @@ class Processor:
     and the class with the methods to be run on pipelines.
     """
 
-    classname = None
+    classname: str
+    classname: str = None
     """
     The class for the processor, this is the class that actually run the processor`s method for pipeline.
     """
+    parameters: dict
     parameters = None
     """
     The parameters informed when instantiating Processor to be passed for the processor`s method.
     """
 
-    def __init__(self, source, **kwargs):
+    def __init__(self, source: Any, **kwargs: Any) -> None:
         """
         Method to instantiate the Processor object.
         """
@@ -70,7 +78,7 @@ class Processor:
             if hasattr(self, key):
                 setattr(self, key, value)
 
-    def __getattr__(self, item):
+    def __getattr__(self, item: str) -> Any:
         """
         Method to return classname.<item> if no attribute is found in current object.
         """
@@ -80,7 +88,7 @@ class Processor:
         return getattr(self.classname, item)
 
     @staticmethod
-    def get_classname(dotted_path):
+    def get_classname(dotted_path: str) -> str:
         """
         Method to obtain and import the processor`s class from the path informed at `dotted_path`.
         """
@@ -98,7 +106,7 @@ class Pipeline:
     Class to initiate a pipelines with given processors to be run.
     """
 
-    def __init__(self, *processors_candidate, **kwargs):
+    def __init__(self, *processors_candidate: Any, **kwargs: Any) -> None:
         """
         This method can receive multiples
         This method can receive a single path to a class in string format that implement methods
@@ -111,19 +119,19 @@ class Pipeline:
         if not processors_candidate and "processors_candidate" not in kwargs:
             raise ValueError("A processor candidate must be informed for pipeline to be initialized")
 
-        self.processors_ran = 0
+        self.processors_ran: int = 0
         """
         Variable to register the amount of processors ran for this pipelines.
         """
-        self.last_result = None
+        self.last_result: bool | None = None
         """
         Variable to register the last result obtained from pipeline.
         """
-        self.pipeline_processors = []
+        self.pipeline_processors: list[Processor] = []
         """
         Variable to register the available processors for the current pipeline object.
         """
-        self.errors = []
+        self.errors: list = []
         """
         Variable to register the errors found by processors for the current pipeline object.
         """
@@ -144,20 +152,20 @@ class Pipeline:
             except ValidationError:
                 continue
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int) -> Processor:
         """
         Method to allow extraction of processor class from pipeline_processors directly from Pipeline object.
         """
         return self.pipeline_processors[item]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator:
         """
         Method to allow direct usage of `pipeline_processors` in loops from Pipeline object.
         """
         return iter(self.pipeline_processors)
 
     @property
-    def __serialize__(self):
+    def __serialize__(self) -> dict[str, Any]:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
 
@@ -168,13 +176,13 @@ class Pipeline:
             "processors_candidate": self.processors_candidate
         }
 
-    def add_processor(self, processor):
+    def add_processor(self, processor) -> None:
         """
         Method adds a processor object to list of processors.
         """
         self.pipeline_processors.append(processor)
 
-    def run(self, object_to_process, **parameters):
+    def run(self, object_to_process: BaseFile, **parameters: Any) -> None:
         """
         Method to run the entire pipelines.
         The processor will define if method will stop or not the pipelines.
@@ -183,9 +191,9 @@ class Pipeline:
         its use when loading hashes from files.
         """
         # For each processor
-        ran = 0
-        result = None
-        errors_found = []
+        ran: int = 0
+        result: bool | None = None
+        errors_found: list = []
 
         for processor in self.pipeline_processors:
             result = processor.process(object_to_process=object_to_process, **processor.parameters, **parameters)
@@ -200,12 +208,16 @@ class Pipeline:
                 # condition is True, but can be any value set-up in stop_value and
                 # returned by processor.
                 try:
-                    stop_value = processor.stop_value
+                    stop_value: bool | list | tuple | set = processor.stop_value
                 except AttributeError:
                     # Don`t have stop value, so we consider the default `True`.
                     stop_value = True
 
-                should_stop = result in stop_value if isinstance(stop_value, (list, tuple)) else result == stop_value
+                should_stop: bool = (
+                    result in stop_value
+                    if isinstance(stop_value, (list, tuple, set))
+                    else result == stop_value
+                )
 
                 if should_stop:
                     break
