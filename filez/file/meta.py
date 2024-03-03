@@ -83,7 +83,10 @@ class FileMetadata:
     This is mostly used for thumbnail created with render and will be set up only in those files.
     """
 
-    def __init__(self, **kwargs):
+    extra_data: dict[str, Any]
+    extra_data = None
+
+    def __init__(self, **kwargs: Any) -> None:
         """
         Method to create the current object using the keyword arguments.
         """
@@ -92,6 +95,31 @@ class FileMetadata:
                 setattr(self, key, value)
             else:
                 raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """
+        Method to set attributes that are additional to its own dict at `extra_data`.
+        """
+        if name in self.__dict__:
+            self.__dict__[name] = value
+            return
+
+        if 'extra_data' not in self.__dict__:
+            self.__dict__['extra_data'] = {}
+
+        self.__dict__['extra_data'][name] = value
+
+    def __getattr(self, name: str) -> Any:
+        """
+        Method to get attributes that are additional to its own dict at `extra_data`.
+        """
+        if name in self.__dict__:
+            return self.__dict__[name]
+
+        if 'extra_data' not in self.__dict__:
+            raise AttributeError(f"{name} is not an attribute of {self}.")
+
+        return self.__dict__['extra_data'][name]
 
     @property
     def __serialize__(self):
@@ -103,7 +131,8 @@ class FileMetadata:
             "packed",
             "compressed",
             "lossless",
-            "hashable"
+            "hashable",
+            "extra_data"
         }
         optional_attributes = {
             "checksum",
