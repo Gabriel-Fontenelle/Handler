@@ -363,6 +363,9 @@ class BaseFile:
         Method to allow comparison == to work between BaseFiles.
         `other_instance` can be an object or a list of objects to be compared.
         """
+        if not isinstance(other_instance, BaseFile):
+            raise NotImplementedError(f"The {type(other_instance)} was not implemented to compare.")
+
         # Run compare pipeline
         try:
             return self.compare_to(other_instance) or False
