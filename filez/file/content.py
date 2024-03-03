@@ -383,6 +383,10 @@ class FilePacket:
         'handler.pipelines.extractor.RarCompressedFilesFromPackageExtractor',
         'handler.pipelines.extractor.TarCompressedFilesFromPackageExtractor',
         'handler.pipelines.extractor.ZipCompressedFilesFromPackageExtractor',
+        'filez.pipelines.extractor.SevenZipCompressedFilesFromPackageExtractor',
+        'filez.pipelines.extractor.RarCompressedFilesFromPackageExtractor',
+        'filez.pipelines.extractor.TarCompressedFilesFromPackageExtractor',
+        'filez.pipelines.extractor.ZipCompressedFilesFromPackageExtractor',
     )
     """
     Pipeline to extract data from multiple sources. For it to work, its classes should implement stopper as True.

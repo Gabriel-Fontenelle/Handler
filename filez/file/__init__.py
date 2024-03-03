@@ -863,10 +863,10 @@ class BaseFile:
         """
         # Set-up pipeline to extract data from.
         pipeline = Pipeline(
-            'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
-            'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
-            'handler.pipelines.extractor.FileSystemDataExtractor',
-            'handler.pipelines.extractor.HashFileExtractor'
+            'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+            'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
+            'filez.pipelines.extractor.FileSystemDataExtractor',
+            'filez.pipelines.extractor.HashFileExtractor'
         )
 
         # Run the pipeline.
@@ -1032,6 +1032,9 @@ class ContentFile(BaseFile):
         'handler.pipelines.extractor.FilenameFromMetadataExtractor',
         'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
         'handler.pipelines.extractor.MimeTypeFromContentExtractor',
+        'filez.pipelines.extractor.FilenameFromMetadataExtractor',
+        'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
+        'filez.pipelines.extractor.MimeTypeFromContentExtractor',
     )
     """
     Pipeline to extract data from multiple sources.
@@ -1049,6 +1052,11 @@ class StreamFile(BaseFile):
         'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
         'handler.pipelines.extractor.MimeTypeFromContentExtractor',
         'handler.pipelines.extractor.MetadataExtractor'
+        'filez.pipelines.extractor.FilenameFromMetadataExtractor',
+        'filez.pipelines.extractor.FilenameFromURLExtractor',
+        'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
+        'filez.pipelines.extractor.MimeTypeFromContentExtractor',
+        'filez.pipelines.extractor.MetadataExtractor'
     )
     """
     Pipeline to extract data from multiple sources.
@@ -1067,6 +1075,10 @@ class File(BaseFile):
         'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
         'handler.pipelines.extractor.FileSystemDataExtractor',
         'handler.pipelines.extractor.HashFileExtractor',
+        'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+        'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
+        'filez.pipelines.extractor.FileSystemDataExtractor',
+        'filez.pipelines.extractor.HashFileExtractor',
     )
     """
     Pipeline to extract data from multiple sources.

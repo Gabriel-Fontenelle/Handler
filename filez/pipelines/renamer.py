@@ -273,6 +273,6 @@ class UniqueRenamer(Renamer):
             filename = str(uuid4())
 
         if i == 100:
-            raise BlockingIOError("Too many files being handler simultaneous!")
+            raise BlockingIOError("Too many files being filez simultaneous!")
 
         return filename, extension
