@@ -195,10 +195,10 @@ class WindowsRenamer(Renamer):
     """
     Class following Windows style of renaming existing file to be used on Renamer pipelines.
     """
-    enumeration_pattern = re.compile(r' ?\([0-9]+\)$|\[[0-9]+\]$|$')
+    enumeration_pattern: Pattern = re.compile(r' ?\([0-9]+\)$|\[[0-9]+\]$|$')
 
     @classmethod
-    def get_name(cls, directory_path, filename, extension):
+    def get_name(cls, directory_path: str, filename: str, extension: str | None) -> tuple[str, str | None]:
         """
         Method to get the new generated name.
         If there is a duplicated name the new name will follow
@@ -207,7 +207,7 @@ class WindowsRenamer(Renamer):
         # Prepare filename and extension removing enumeration from filename
         # and setting up a empty string is extension is None
         filename = cls.enumeration_pattern.sub('', filename)
-        formatted_extension = f'.{extension}' if extension else ''
+        formatted_extension: str = f'.{extension}' if extension else ''
 
         i = 0
         while (
@@ -224,10 +224,10 @@ class LinuxRenamer(Renamer):
     """
     Class following Linux style of renaming existing file to be used on Renamer pipelines.
     """
-    enumeration_pattern = re.compile(r'( +)?\- +[0-9]+$|$')
+    enumeration_pattern: Pattern = re.compile(r'( +)?\- +[0-9]+$|$')
 
     @classmethod
-    def get_name(cls, directory_path, filename, extension):
+    def get_name(cls, directory_path: str, filename: str, extension: str | None) -> tuple[str, str | None]:
         """
         Method to get the new generated name.
         If there is a duplicated name the new name will follow
@@ -236,7 +236,7 @@ class LinuxRenamer(Renamer):
         # Prepare filename and extension removing enumeration from filename
         # and setting up a empty string is extension is None
         filename = cls.enumeration_pattern.sub('', filename)
-        formatted_extension = f'.{extension}' if extension else ''
+        formatted_extension: str = f'.{extension}' if extension else ''
 
         i = 0
         while (
@@ -252,13 +252,13 @@ class LinuxRenamer(Renamer):
 class UniqueRenamer(Renamer):
 
     @classmethod
-    def get_name(cls, directory_path, filename, extension):
+    def get_name(cls, directory_path: str, filename: str, extension: str | None) -> tuple[str, str | None]:
         """
         Method to get the new generated name. The new name will be the UUID version 4.
         This method will throw a BlockingIOError if there is more then
         100 tries to generate a unique UUID4.
         """
-        formatted_extension = f'.{extension}' if extension else ''
+        formatted_extension: str = f'.{extension}' if extension else ''
 
         #Generate Unique filename
         filename = str(uuid4())

@@ -622,7 +622,7 @@ class PathFromURLExtractor(Extractor):
     """
 
     @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+    def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
         Method to extract the information necessary from a URL.
         This method will return the last relative_path found with a filename, regardless of having a valid extension

@@ -122,7 +122,7 @@ class FileMetadata:
         return self.__dict__['extra_data'][name]
 
     @property
-    def __serialize__(self):
+    def __serialize__(self) -> dict[str, bool | dict]:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """

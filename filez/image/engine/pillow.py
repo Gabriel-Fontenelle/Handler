@@ -209,13 +209,13 @@ class PillowImage(ImageEngine):
             def resize_frame(image):
                 return image.resize((width, height), resample=self.class_image.Resampling.LANCZOS)
 
-            images = PillowSequence.all_frames(self.image, resize_frame)
+            images: list = PillowSequence.all_frames(self.image, resize_frame)
 
             self._set_image_sequence(images, encode_format)
         else:
             self.image = self.image.resize((width, height), resample=self.class_image.Resampling.LANCZOS)
 
-    def show(self):
+    def show(self) -> None:
         """
         Method to display the image for debugging purposes.
         """
@@ -225,7 +225,7 @@ class PillowImage(ImageEngine):
         else:
             self.image.show()
 
-    def trim(self, color=None):
+    def trim(self, color: tuple[int, int, int] | None = None) -> None:
         """
         Method to trim the current image object.
         The parameter color is used to indicate the color to trim else it will use transparency.
