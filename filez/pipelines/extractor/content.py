@@ -81,8 +81,8 @@ class VideoMetadataFromContentExtractor(Extractor):
             # if already cached. The next time property buffer is called it will reset again.
             video: MoviePyVideo = MoviePyVideo(buffer=buffer)
 
-        for attribute, value in video.metadata or {}:
-            setattr(file_object.meta, attribute, value)
+            for attribute, value in video.metadata:
+                setattr(file_object.meta, attribute, value)
 
 
 class ImageMetadataFromContentExtractor(Extractor):
@@ -156,8 +156,8 @@ class DocumentMetadataFromContentExtractor(Extractor):
                 filetype=file_object.extension,
             )
 
-        for attribute, value in doc.metadata or {}:
-            setattr(file_object.meta, attribute, value)
+            for attribute, value in doc.metadata:
+                setattr(file_object.meta, attribute, value)
 
 
 class AudioMetadataFromContentExtractor(Extractor):

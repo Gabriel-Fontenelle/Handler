@@ -508,7 +508,6 @@ class MetadataExtractor(Extractor):
             # Set-up type from mimetype and extension
             if file_object.mime_type and file_object.extension and (not file_object.type or overrider):
                 file_object.type = file_object.mime_type_handler.get_type(file_object.mime_type, file_object.extension)
-                file_object.is_binary = file_object.type != 'text'
 
             # Set-up created date from metadata
             create_date = cls.get_date(meta)
@@ -601,13 +600,14 @@ class FilenameFromURLExtractor(Extractor):
                 # Filename without valid extension, so we
                 # set it as complete_filename the last one.
                 # There will be no additional metadata `compressed` and `lossless`.
-                file_object.complete_filename = results[-1].filename.rsplit('.', 1)
-                processed_uri = results[-1].processed_uri
+                file_object.complete_filename_as_tuple = filenames_from_url[-1].filename.rsplit('.', 1)
+                processed_uri = filenames_from_url[-1].processed_uri
 
             # Set-up relative path
             if not file_object.relative_path or overrider:
-                cache = file_object.uri_handler.get_processed_uri(processed_uri)
-                file_object.relative_path = cache.directory
+                cache: URI.Cache | None = file_object.uri_handler.get_processed_uri(processed_uri)
+                if cache:
+                    file_object.relative_path = cache.directory
 
         except KeyError:
             raise ValueError('Parameter `url` must be informed as key argument for '

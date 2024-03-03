@@ -385,8 +385,10 @@ class FileThumbnail:
         This method make use of property thumbnail to generate the thumbnail image if not
         processed already.
         """
-        image = self.image_engine(buffer=self.thumbnail.buffer)
-        image.show()
+        buffer = self.thumbnail.content_as_buffer
+        if buffer:
+            image = self.image_engine(buffer=buffer)
+            image.show()
 
     def display_animation(self):
         """
@@ -394,8 +396,10 @@ class FileThumbnail:
         This method make use of property preview to generate the thumbnail image if not
         processed already.
         """
-        image = self.image_engine(buffer=self.preview.buffer)
-        image.show()
+        buffer = self.preview.content_as_buffer
+        if buffer:
+            image = self.image_engine(buffer=buffer)
+            image.show()
 
     def reset(self, name="_static_file"):
         """

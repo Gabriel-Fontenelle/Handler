@@ -112,7 +112,13 @@ class FileHashes:
 
         return {key: getattr(self, key) for key in attributes}
 
-    def rename(self, new_filename):
+    def keys(self) -> set:
+        """
+        Method to return the keys availabke at `_cache`.
+        """
+        return set(self._cache.keys())
+
+    def rename(self, new_filename) -> None:
         """
         This method will rename file for each hash file existing in _caches.
         This method don`t save files, only prepare the filename and content to be correct before saving it.

@@ -756,12 +756,16 @@ class BaseFile:
 
             # Use first class Renamer declared in pipeline because `prepare_filename` is a class method from base
             # Renamer class, and we don't require any other specialized methods from Renamer children.
-            self.complete_filename = self.rename_pipeline[0].prepare_filename(complete_filename, possible_extension)
+            self.complete_filename_as_tuple = self.rename_pipeline[0].prepare_filename(
+                complete_filename,
+                possible_extension
+            )
 
             # Save additional metadata to file.
-            self._meta.compressed = self.mime_type_handler.is_extension_compressed(self.extension)
-            self._meta.lossless = self.mime_type_handler.is_extension_lossless(self.extension)
-            self._meta.packed = self.mime_type_handler.is_extension_packed(self.extension)
+            if self.extension:
+                self._meta.compressed = self.mime_type_handler.is_extension_compressed(self.extension)
+                self._meta.lossless = self.mime_type_handler.is_extension_lossless(self.extension)
+                self._meta.packed = self.mime_type_handler.is_extension_packed(self.extension)
 
             if self._meta.packed:
                 self._actions.to_list()
@@ -792,10 +796,16 @@ class BaseFile:
 
         return result
 
-    def extract(self, destination=None, force=False):
+    def extract(self, destination: str | None = None, force: bool = False) -> bool | None:
         """
         Method to extract the content of the file, only if object is packed and extractable.
         """
+        if not self.save_to:
+            raise ValueError("There is no directory defined at `save_to` to use for extraction.")
+
+        if not self.filename:
+            raise ValueError("There is no filename defined at `filename` to use for extraction.")
+
         if self.meta.packed:
             # Define directory location for extraction of content from path.
             destination = destination or self.storage.join(self.save_to, self.filename)
@@ -810,7 +820,9 @@ class BaseFile:
                 except NotImplementedError:
                     continue
 
-    def generate_hashes(self, force=False):
+        return None
+
+    def generate_hashes(self, force: bool = False) -> None:
         """
         Method to run the pipeline, to generate hashes, set-up for the file.
         The parameter `force` will make the pipeline always generate hash from content instead of trying to
@@ -992,7 +1004,9 @@ class BaseFile:
             raise self.ValidationError("The attribute `content` must be set for the file!")
 
         # Check if mimetype is compatible with extension
-        if self.extension and self.extension not in self.mime_type_handler.get_extensions(self.mime_type):
+        if self.extension and self.mime_type and self.extension not in self.mime_type_handler.get_extensions(
+            self.mime_type
+        ):
             raise self.ValidationError("The attribute `extension` is not compatible with the set-up mimetype for the "
                                        "file!")
 

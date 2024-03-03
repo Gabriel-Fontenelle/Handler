@@ -489,9 +489,9 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
                     if internal_file.chksum:
                         hash_file = CRC32Hasher.create_hash_file(
                             object_to_process=internal_file_object,
-                            digested_hex_value=internal_file.chksum
+                            digested_hex_value=str(internal_file.chksum)
                         )
-                        internal_file_object.hashes['crc32'] = internal_file.chksum, hash_file, CRC32Hasher
+                        internal_file_object.hashes['crc32'] = str(internal_file.chksum), hash_file, CRC32Hasher
 
                     # Set up action to be extracted instead of to save.
                     internal_file_object._actions.to_extract()

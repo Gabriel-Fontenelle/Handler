@@ -73,8 +73,10 @@ class PillowImage(ImageEngine):
         """
         Method to change the color space of the current image.
         """
+        encode_format: str = kwargs.pop("encode_format", "webp")
+
         # Convert to grey scale
-        colorscheme = {
+        colorscheme: dict[str, str] = {
             "gray": "L",
             "Lab": "",
             "YCrCb": "",
@@ -102,6 +104,7 @@ class PillowImage(ImageEngine):
         Method to crop the current image object.
         """
         current_width, current_height = self.get_size()
+        encode_format: str = kwargs.pop("encode_format", "webp")
 
         # Set `top` based on center gravity
         top = current_height // 2 - height // 2
@@ -175,6 +178,7 @@ class PillowImage(ImageEngine):
 
         steps = total_frames // (total_frames * percentual // 100)
 
+        duration: int | None
         try:
             # There is duration information for Gif, but not for WebP.
             duration = int(self.image.info["duration"] * percentual / 100)
