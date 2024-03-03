@@ -20,10 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
+
 import inspect
 from datetime import time, datetime
 from importlib import import_module
 from io import IOBase
+from typing import Any, Type
 
 import pytz
 from dill import dumps, loads, HIGHEST_PROTOCOL
@@ -47,14 +50,14 @@ class PickleSerializer:
     """
 
     @classmethod
-    def serialize(cls, source):
+    def serialize(cls, source: Any) -> Any:
         """
         Method to serialize the input `source` using dill as extension to `pickle`.
         """
         return dumps(source, protocol=HIGHEST_PROTOCOL, recurse=True)
 
     @classmethod
-    def deserialize(cls, source):
+    def deserialize(cls, source: Any) -> Any:
         """
         Method to deserialize the input `source` using dill as extension to `pickle`.
         """
@@ -67,7 +70,7 @@ class JSONSerializer:
     """
 
     @classmethod
-    def serialize(cls, source):
+    def serialize(cls, source: Any) -> str:
         """
         Method to serialize the input `source` using json_tricks as extension to `json`.
         This method implements internal functions to handle custom types available in Handler that should be
@@ -76,9 +79,9 @@ class JSONSerializer:
         """
 
         # List object to use as cache to allow retrieving ids already processed.
-        cache = []
+        cache: list = []
 
-        def json_date_time_encode(obj, primitives=False):
+        def json_date_time_encode(obj: object, primitives: bool = False) -> object | hashodict:
             """
             Internal function to solve a problem with the original encoder where `obj.tzinfo.zone` results in attribute
             error.
@@ -111,7 +114,7 @@ class JSONSerializer:
 
             return dct
 
-        def json_class_encode(obj, primitives=False):
+        def json_class_encode(obj: object, primitives: bool = False) -> object | str | hashodict:
             """
             Internal function to encode a class reference.
             """
@@ -123,7 +126,7 @@ class JSONSerializer:
 
             return obj
 
-        def json_buffer_encode(obj, primitives=False):
+        def json_buffer_encode(obj: object, primitives: bool = False) -> object | str | hashodict:
             """
             Internal function to encode a IO Buffer.
             To avoid circular reference error in json encoder we call json_class_encode to encode the storage's class.
@@ -145,7 +148,7 @@ class JSONSerializer:
 
             return obj
 
-        def json_self_reference_encode(obj, primitives=False):
+        def json_self_reference_encode(obj: object, primitives: bool = False) -> object | tuple | hashodict:
             """
             Internal function to encode a BaseFile or any class that inherent from source and has `__serialize__`
             property.
@@ -185,16 +188,16 @@ class JSONSerializer:
         ), check_circular=False)
 
     @classmethod
-    def deserialize(cls, source):
+    def deserialize(cls, source: Any) -> dict[str, Any]:
         """
         Method to deserialize the input `source` using json_tricks as extension to `json`.
         """
 
         # Create cache dictionary to fix __self__ reference. The dictionary will have a numeric key with
         # instance as value. The `done` list will be used when fixing reference for related objects.
-        cache = {"done": []}
+        cache: dict[str, list] = {"done": []}
 
-        def json_date_time_hook(dct):
+        def json_date_time_hook(dct) -> dict | datetime | None:
             """
             Internal function to parse the __datetime__ and __time__ dictionary.
             This function solves a problem with the original decoder where importing pytz results in attribute error.
@@ -228,7 +231,7 @@ class JSONSerializer:
 
             return dct
 
-        def json_class_hook(dct):
+        def json_class_hook(dct: object) -> dict | object:
             """
             Internal function to parse the __class__ dictionary.
             """
@@ -240,7 +243,7 @@ class JSONSerializer:
 
             return dct
 
-        def json_buffer_hook(dct):
+        def json_buffer_hook(dct: object) -> dict | object:
             """
             Internal function to parse the __buffer__ dictionary.
             """
@@ -257,7 +260,7 @@ class JSONSerializer:
 
             return dct
 
-        def json_object_hook(dct):
+        def json_object_hook(dct: object) -> dict | object:
             """
             Internal function to parse the __object__ dictionary.
             """
@@ -265,8 +268,8 @@ class JSONSerializer:
                 return dct
 
             if "__object__" in dct and dct.get("id"):
-                class_instance = dct.get('class')
-                parsed_object = class_instance(**dct.get('attributes'))
+                class_instance: Type[Any] = dct.get('class')
+                parsed_object: Any = class_instance(**dct.get('attributes'))
 
                 cache[dct.get('id')] = parsed_object
 
@@ -280,7 +283,7 @@ class JSONSerializer:
 
             return dct
 
-        def fix_self_reference(instance):
+        def fix_self_reference(instance: Any) -> dict:
             """
             Internal function to fix the references present in instance source that were not able to be
             converted in decoder to allow the deserialization to finish.
@@ -318,7 +321,7 @@ class JSONSerializer:
                     fix_self_reference(value)
 
         # Prepare content to be parsed
-        deserialized_object = json_loads(source, preserve_order=False, extra_obj_pairs_hooks=(
+        deserialized_object: dict = json_loads(source, preserve_order=False, extra_obj_pairs_hooks=(
             json_date_time_hook, json_class_hook, json_buffer_hook, json_object_hook
         ))
 

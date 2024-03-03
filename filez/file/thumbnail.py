@@ -122,21 +122,21 @@ class PreviewDefaults(ThumbnailDefaults):
     This class should be used for setting the size and extension of preview to be created.
     """
 
-    format = "webp"
+    format: str = "webp"
     """
     Attribute that define the default extension for the thumbnail as a format for conversion used in Image classes.
     """
-    format_extension = "webp"
+    format_extension: str = "webp"
     """
     Attribute that define the default extension for the thumbnail. It should be related to the format attribute.
     """
 
     # Animation data
-    delay = 1
+    delay: int = 1
     """
     Attribute that defines the delay between each frame in the animation in seconds.
     """
-    duration = 10
+    duration: int = 10
     """
     Attribute that defines a fix percentual duration for the animation.
     """
@@ -148,43 +148,47 @@ class FileThumbnail:
     """
 
     # Default properties
-    static_defaults = ThumbnailDefaults
+    static_defaults: Type[ThumbnailDefaults] = ThumbnailDefaults
     """
     Attribute to store the default values to be used for handling thumbnails.
     This attribute must be a class, not instance, so any change will affect all usages. 
     """
-    animated_defaults = PreviewDefaults
+    animated_defaults: Type[PreviewDefaults] = PreviewDefaults
     """
     Attribute to store the default values to be used for handling animated previews.
     This attribute must be a class, not instance, so any change will affect all usages. 
     """
 
     # Thumbnail and preview data
+    history: dict[str, list[BaseFile]]
     history = None
     """
     Attribute to store previous generated thumbnails to allow browsing old ones for current file.
     This attribute will be a dictionary with history for static and animated files.
     """
+    related_file_object: BaseFile
     related_file_object = None
     """
     Attribute to store the current file object associated with the FileThumbnail.
     """
+    _static_file: BaseFile
     _static_file = None
     """
     Attribute to store the File object for the cover of the file, also known as thumbnail.
     """
+    _animated_file: BaseFile
     _animated_file = None
     """
     Attribute to store the File object for the animated preview of the file.
     """
 
     # Engines
-    image_engine = WandImage
+    image_engine: Type[ImageEngine] = WandImage
     """
     Attribute that identifies the current engine for use with the thumbnails. This engine must be inherent from 
     ImageEngine or implement its methods to avoid errors.
     """
-    video_engine = MoviePyVideo
+    video_engine: Type[VideoEngine] = MoviePyVideo
     """
     Attribute that identifies the current engine for use with videos for the thumbnails. This engine must be inherent 
     from VideoEngine or implement its methods to avoid errors.
@@ -210,7 +214,7 @@ class FileThumbnail:
     implement stopper as True.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """
         Method to create the current object using the keyword arguments.
         """
@@ -221,7 +225,7 @@ class FileThumbnail:
                 raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
 
     @property
-    def __serialize__(self):
+    def __serialize__(self) -> dict[str, Any]:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
@@ -242,7 +246,7 @@ class FileThumbnail:
         return {key: getattr(self, key) for key in attributes}
 
     @property
-    def thumbnail(self):
+    def thumbnail(self) -> BaseFile:
         """
         Method to compose the cover for the file, also known as thumbnail.
         This method should return only one image.
@@ -261,7 +265,7 @@ class FileThumbnail:
         return self._static_file
 
     @property
-    def preview(self):
+    def preview(self) -> BaseFile:
         """
         Method to compose the preview animated for the file.
         This method should return only one animated image.
@@ -279,21 +283,21 @@ class FileThumbnail:
 
         return self._animated_file
 
-    def _conclude_static_action(self):
+    def _conclude_static_action(self) -> None:
         """
         Method to apply the action related with generating a static thumbnail file.
         As convention this method should be considered private and not called outside internal use.
         """
         self.related_file_object._actions.thumbnailed()
 
-    def _conclude_animated_action(self):
+    def _conclude_animated_action(self) -> None:
         """
         Method to apply the action related with generating an animate preview file.
         As convention this method should be considered private and not called outside internal use.
         """
         self.related_file_object._actions.previewed()
 
-    def _generate_file(self, defaults, name="static"):
+    def _generate_file(self, defaults: Type[ThumbnailDefaults], name: str = "static") -> None:
         """
         Method to process a list of files in order to generate thumbnail's or previews' files.
         This method use name to retrieve the related files in thumbnail. Possible names are static and animated.
@@ -308,7 +312,7 @@ class FileThumbnail:
         # Obtain the current list of files that could be used for generating previews.
         files = self._get_files_to_process(defaults)
 
-        to_be_processed = []
+        to_be_processed: list[BaseFile] = []
 
         for file_object in files:
             # Call processor for each file running the pipeline to render an animated image
@@ -320,7 +324,7 @@ class FileThumbnail:
             )
 
             # Check if animated image was generated
-            file_processed = getattr(file_object._thumbnail, f"_{name}_file")
+            file_processed: BaseFile = getattr(file_object._thumbnail, f"_{name}_file")
 
             if file_processed is not None:
 

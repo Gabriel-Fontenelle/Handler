@@ -28,12 +28,11 @@ from os.path import isdir
 from filez import LinuxFileSystem, WindowsFileSystem, JSONSerializer
 from filez.file import File
 
-
 HASH_FILES = ['md5', 'sfv']
 
 
-def recursive_get_all_files(path):
-    files = []
+def recursive_get_all_files(path: str) -> list[str]:
+    files: list[str] = []
     for item in listdir(path):
         filepath = f"{path}/{item}"
         if isdir(filepath):
@@ -44,10 +43,10 @@ def recursive_get_all_files(path):
     return files
 
 
-def interactive_get_all_files(path):
-    files = []
+def interactive_get_all_files(path: str) -> list[str]:
+    files: list[str] = []
 
-    paths = [path]
+    paths: list[str] = [path]
 
     while paths:
         path = paths.pop()

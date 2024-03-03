@@ -20,11 +20,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
-from . import ImageEngine
+# python internals
+from __future__ import annotations
 
+from typing import Any, Type
+
+from wand.color import Color
+# Third-party
 from wand.display import display as wand_display
 from wand.image import Image as WandImageClass
-from wand.color import Color
+
+# modules
+from . import ImageEngine
 
 __all__ = [
     "WandImage"
@@ -37,12 +44,12 @@ class WandImage(ImageEngine):
     This class depends on Wand being installed in the system.
     """
 
-    class_image = WandImageClass
+    class_image: Type[type] = WandImageClass
     """
     Attribute used to store the class reference responsible to create an image.
     """
 
-    def append_to_sequence(self, images, **kwargs):
+    def append_to_sequence(self, images: list[Any], **kwargs: Any) -> None:
         """
         Method to append a list of images to the current image, if the current image is not a sequence
         this method should convert it to a sequence.
@@ -50,11 +57,11 @@ class WandImage(ImageEngine):
 
         self.image.sequence.append(images)
 
-    def change_color(self, colorspace="gray"):
+    def change_color(self, colorspace: str = "gray", **kwargs: Any) -> None:
         """
         Method to change the color space of the current image.
         """
-        colorscheme = {
+        colorscheme: dict[str, str] = {
             "gray": "gray",
             "Lab": "",
             "YCrCb": "",
@@ -63,51 +70,51 @@ class WandImage(ImageEngine):
         # Convert to grey scale
         self.image.transform_colorspace(colorscheme[colorspace])
 
-    def clone(self):
+    def clone(self) -> Any:
         """
         Method to copy the current image object and return it.
         """
         return self.image.clone()
 
-    def crop(self, width, height):
+    def crop(self, width: int, height: int, **kwargs: Any) -> None:
         """
         Method to crop the current image object.
         """
         self.image.crop(width=width, height=height, gravity='center')
 
-    def get_bytes(self, encode_format="jpeg"):
+    def get_bytes(self, encode_format: str = "jpeg") -> bytes:
         """
         Method to obtain the bytes' representation for the content of the current image object.
         """
         return self.image.make_blob(encode_format)
 
-    def get_size(self):
+    def get_size(self) -> tuple[int, int]:
         """
         Method to obtain the size of current image.
         """
         return self.image.size[0], self.image.size[1]
 
-    def has_sequence(self):
+    def has_sequence(self) -> bool:
         """
         Method to verify if image has multiple frames, e.g `.gif`, or distinct sizes, e.g `.ico`.
         The current version of Wand doesn't support apng, treating it as a normal single layer png.
         """
         return len(self.image.sequence) > 1
 
-    def has_transparency(self):
+    def has_transparency(self) -> bool:
         """
         Method to verify if image has a channel for transparency.
         """
         return self.image.alpha_channel
 
-    def prepare_image(self):
+    def prepare_image(self) -> None:
         """
         Method to prepare the image using the stored buffer as the source.
         """
         self.image = self.class_image(file=self.source_buffer)
         self.metadata = self.image.metadata
 
-    def resample(self, percentual=10, encode_format="webp"):
+    def resample(self, percentual: int = 10, encode_format: str = "webp") -> None:
         """
         Method to re sample the image sequence with only the percentual amount of items distributed through the image
         sequences.
@@ -115,20 +122,20 @@ class WandImage(ImageEngine):
         if not self.has_sequence():
             return
 
-        total_frames = len(self.image.sequence)
+        total_frames: int = len(self.image.sequence)
 
-        steps = total_frames // (total_frames * percentual // 100)
+        steps: int = total_frames // (total_frames * percentual // 100)
 
         for index in list(set(range(0, total_frames, 1)) - set(range(0, total_frames, steps)))[::-1]:
             del self.image.sequence[index]
 
-    def scale(self, width, height):
+    def scale(self, width: int, height: int, **kwargs: Any) -> None:
         """
         Method to scale the current image object without implementing additional logic.
         """
         self.image.resize(width, height, filter="lanczos2sharp")
 
-    def show(self):
+    def show(self) -> None:
         """
         Method to display the image for debugging purposes.
         """
@@ -138,7 +145,7 @@ class WandImage(ImageEngine):
         else:
             wand_display(self.image)
 
-    def trim(self, color=None):
+    def trim(self, color: tuple[int, int, int] | None = None) -> None:
         """
         Method to trim the current image object.
         The parameter color is used to indicate the color to trim else it will use transparency.

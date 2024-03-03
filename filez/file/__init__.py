@@ -382,7 +382,7 @@ class BaseFile:
 
         return not self.__eq__(other_instance)
 
-    def __gt__(self, other_instance):
+    def __gt__(self, other_instance: BaseFile) -> bool:
         """
         Method to allow comparison > to work between BaseFiles.
         TODO: Compare metadata resolution for when type is image, video and bitrate when type
@@ -391,14 +391,14 @@ class BaseFile:
         # Check if size is greater than.
         return len(self) > len(other_instance)
 
-    def __ge__(self, other_instance):
+    def __ge__(self, other_instance: BaseFile) -> bool:
         """
         Method to allow comparison >= to work between BaseFiles.
         """
         return self.__gt__(other_instance) or self.__eq__(other_instance)
 
     @property
-    def __version__(self):
+    def __version__(self) -> str:
         """
         Method to indicate the current version of BaseFile in order to allow changes between serialization
         to be handled by `__init__()`
@@ -406,11 +406,11 @@ class BaseFile:
         return "1"
 
     @property
-    def __serialize__(self):
+    def __serialize__(self) -> dict[str, Any]:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
-        attributes = {
+        attributes: set[str] = {
             "id",
             "filename",
             "extension",
@@ -444,7 +444,7 @@ class BaseFile:
         return {key: getattr(self, key) for key in attributes}
 
     @property
-    def complete_filename(self):
+    def complete_filename(self) -> str:
         """
         Method to return as attribute the complete filename from file.
         """
