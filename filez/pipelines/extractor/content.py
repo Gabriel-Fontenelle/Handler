@@ -93,7 +93,7 @@ class ImageMetadataFromContentExtractor(Extractor):
     """
 
     @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+    def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
         Method to extract additional metadata information from content.
         """
@@ -128,7 +128,7 @@ class DocumentMetadataFromContentExtractor(Extractor):
     """
 
     @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+    def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
         Method to extract additional metadata information from content.
         """
@@ -169,7 +169,7 @@ class AudioMetadataFromContentExtractor(Extractor):
     """
 
     @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+    def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
         Method to extract additional metadata information from content.
         """
@@ -186,12 +186,12 @@ class AudioMetadataFromContentExtractor(Extractor):
 
         # We don't need to reset the buffer before calling it, because it will be reset
         # if already cached. The next time property buffer is called it will reset again.
-        tinytag = TinyTag(file_object.buffer, len(file_object))
+        tinytag: TinyTag = TinyTag(file_object.content_as_buffer, len(file_object))
         tinytag.load(tags=True, duration=True, image=False)
         # Same as code in tinytag, it turn default dict into dict so that it can throw KeyError
         tinytag.extra = dict(tinytag.extra)
 
-        attributes_to_extract = [
+        attributes_to_extract: set[str] = {
             'album',
             'albumartist',
             'artist',
@@ -210,7 +210,7 @@ class AudioMetadataFromContentExtractor(Extractor):
             'track',
             'track_total',
             'year'
-        ]
+        }
         for attribute in attributes_to_extract:
             tinytag_attribute = getattr(tinytag, attribute, None)
             if tinytag_attribute and (not getattr(file_object.meta, attribute, None) or overrider):

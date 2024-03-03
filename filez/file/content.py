@@ -213,7 +213,7 @@ class FileContent:
                     temp = self.related_file_object.storage.get_temp_directory()
                     filename, extension = UniqueRenamer.get_name(
                         directory_path=temp,
-                        filename=self.related_file_object.filename,
+                        filename=str(self.related_file_object.filename),
                         extension=self.related_file_object.extension
                     )
                     formatted_extension = f'.{extension}' if extension else ''
@@ -223,14 +223,14 @@ class FileContent:
                     self._cached_path = temp + filename + formatted_extension
 
                 # Open file, append block to file and close file.
-                write_mode = 'b' if self.is_binary else ''
+                write_mode: str = 'b' if self.is_binary else ''
                 self.related_file_object.storage.save_file(self._cached_path, block, file_mode='a',
                                                            write_mode=write_mode)
 
         return block
 
     @property
-    def __serialize__(self):
+    def __serialize__(self) -> dict[str, Any]:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
@@ -251,14 +251,14 @@ class FileContent:
         return {key: getattr(self, key) for key in attributes}
 
     @property
-    def should_load_to_memory(self):
+    def should_load_to_memory(self) -> bool:
         """
         Method to indicate whether the current buffer is seekable or not. Not seekable object should
         """
         return not self.buffer.seekable() and not self.cached
 
     @property
-    def content(self):
+    def content(self) -> bytes | str | None:
         """
         Method to load in memory the content of the file.
         This method uses the buffer cached, if the file wasn't cached before this method will cache it, and load
@@ -284,7 +284,7 @@ class FileContent:
             raise EmptyContentError(f"No content was loaded for file {self.related_file_object.complete_filename}")
 
         # Content in case that it was loaded in memory. If not, it will be None and override below.
-        content = self._cached_content
+        content: str | bytes = self._cached_content
 
         # Override `content` with content from file.
         if self.cache_in_file and self._cached_path:
@@ -299,7 +299,7 @@ class FileContent:
         return content
 
     @property
-    def content_as_buffer(self):
+    def content_as_buffer(self) -> BytesIO | StringIO:
         """
         Method to obtain the content as a buffer, loading it in memory if it is allowed and is not loaded already.
         """
@@ -317,7 +317,7 @@ class FileContent:
             return self.buffer
 
     @property
-    def content_as_base64(self):
+    def content_as_base64(self) -> bytes:
         """
         Method to obtain the content as a base64 encoded, loading it in memory if it is allowed and is not
         loaded already.
@@ -325,14 +325,14 @@ class FileContent:
         """
         return b64encode(self.content)
 
-    def reset(self):
+    def reset(self) -> None:
         """
         Method to reset the content cached or buffer if allowed.
         """
         if self.buffer.seekable():
             self.buffer.seek(0)
 
-    def read(self, size=None):
+    def read(self, size: int | None = None) -> bytes | str | None:
         """
         Method to return part or whole content cached or buffered.
         This method should not be used while the iter(self) is being consumed in a loop, due to concurrency problem
@@ -365,12 +365,13 @@ class FilePacket:
     Class that store internal files from file instance content.
     """
 
-    _internal_files = InternalFilesDescriptor()
+    _internal_files: dict = InternalFilesDescriptor()
     """
     Dictionary used for storing the internal files data. Each file is reserved through its <directory>/<name> inside
     the package.
     """
 
+    history: list
     history = None
     """
     Storage internal files to allow browsing old ones for current BaseFile.
