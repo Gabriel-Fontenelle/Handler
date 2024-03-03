@@ -93,11 +93,12 @@ class FileContent:
     Whether the content as whole was cached. Being True the current buffer will point to a stream
     of `_cached_content`.
     """
+    _cached_content: str | bytes
     _cached_content = None
     """
     Stream for file`s content cached.
     """
-    _cached_path = None
+    _cached_path: str | None = None
     """
     Complete path for temporary file used as cache.
     """

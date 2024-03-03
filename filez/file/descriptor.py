@@ -20,6 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
+
+from typing import Any
+
+from typing_extensions import Self
 
 __all__ = [
     "CacheDescriptor",
@@ -34,7 +39,7 @@ class CacheDescriptor:
     This class is used for FileHashes._cache.
     """
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance: None | Self, owner: Any) -> dict | Self:
         """
         Method `get` to automatically set-up empty values in an instance.
         """
@@ -51,7 +56,7 @@ class LoadedDescriptor:
     This class is used for FileHashes._loaded.
     """
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance: None | Self, owner: Any) -> list | Self:
         """
         Method `get` to automatically set-up empty values in an instance.
         """
@@ -68,7 +73,7 @@ class InternalFilesDescriptor:
     This class is used for FileHashes._loaded.
     """
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance: None | Self, owner: Any) -> dict | Self:
         """
         Method `get` to automatically set-up empty values in an instance.
         """

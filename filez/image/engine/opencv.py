@@ -20,8 +20,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
+
+from typing import Any
+
 import cv2
 import numpy as np
+from numpy import ndarray
 
 from . import ImageEngine
 
@@ -37,19 +42,19 @@ class OpenCVImage(ImageEngine):
     In OpenCV the image is basically a numpy matrix.
     """
 
-    def append_to_sequence(self, images, **kwargs):
+    def append_to_sequence(self, images: list[Any], **kwargs: Any) -> None:
         """
         Method to append a list of images to the current image, if the current image is not a sequence
         this method should convert it to a sequence.
         """
         return
 
-    def change_color(self, colorspace="gray"):
+    def change_color(self, colorspace="gray", **kwargs: Any):
         """
         Method to change the color space of the current image.
         """
         # Convert to grey scale
-        colorscheme = {
+        colorscheme: dict[str, int] = {
             "gray": cv2.COLOR_BGR2GRAY,
             "Lab": cv2.COLOR_BGR2LAB,
             "YCrCb": cv2.COLOR_BGR2YCrCb,
@@ -58,31 +63,31 @@ class OpenCVImage(ImageEngine):
 
         self.image = cv2.cvtColor(self.image, colorscheme[colorspace])
 
-    def clone(self):
+    def clone(self) -> Any:
         """
         Method to copy the current image object and return it.
         """
         return self.image.copy()
 
-    def crop(self, width, height):
+    def crop(self, width: int, height: int, **kwargs: Any) -> None:
         """
         Method to crop the current image object.
         """
         current_width, current_height = self.get_size()
 
         # Set `top` based on center gravity
-        top = current_height // 2 - height // 2
+        top: int = current_height // 2 - height // 2
 
         # Set `left` based on center gravity
-        left = current_width // 2 - width // 2
+        left: int = current_width // 2 - width // 2
 
         self.image = self.image[top:top+height, left:left+width]
 
-    def get_bytes(self, encode_format="jpeg"):
+    def get_bytes(self, encode_format: str = "jpeg") -> bytes | ndarray:
         """
         Method to obtain the bytes' representation for the content of the current image object.
         """
-        formats = {
+        formats: dict[str, str] = {
             "jpeg": ".jpg"
         }
         success, buffer = cv2.imencode(formats[encode_format], self.image)
@@ -92,26 +97,26 @@ class OpenCVImage(ImageEngine):
 
         return buffer
 
-    def get_size(self):
+    def get_size(self) -> tuple[int, int]:
         """
         Method to obtain the size of current image.
         OpenCV shape attribute is a tuple (height, width, channels).
         """
         return self.image.shape[1], self.image.shape[0]
 
-    def has_sequence(self):
+    def has_sequence(self) -> bool:
         """
         Method to verify if image has multiple frames, e.g `.gif`, or distinct sizes, e.g `.ico`.
         """
         return False
 
-    def has_transparency(self):
+    def has_transparency(self) -> bool:
         """
         Method to verify if image has a channel for transparency.
         """
         return self.image.shape[2] > 3 or self.image.shape[2] == 2
 
-    def prepare_image(self):
+    def prepare_image(self) -> None:
         """
         Method to prepare the image using the stored buffer as the source.
         """
@@ -120,7 +125,7 @@ class OpenCVImage(ImageEngine):
 
         self.image = cv2.imdecode(array, cv2.IMREAD_UNCHANGED)
 
-    def resample(self, percentual=10, encode_format="webp"):
+    def resample(self, percentual: int = 10, encode_format: str = "webp") -> None:
         """
         Method to re sample the image sequence with only the percentual amount of items distributed through the image
         sequences.
@@ -128,13 +133,13 @@ class OpenCVImage(ImageEngine):
         """
         return
 
-    def scale(self, width, height):
+    def scale(self, width: int, height: int, **kwargs: Any) -> None:
         """
         Method to scale the current image object without implementing additional logic.
         """
         self.image = cv2.resize(self.image, (width, height), interpolation=cv2.INTER_AREA)
 
-    def show(self):
+    def show(self) -> None:
         """
         Method to display the image for debugging purposes.
         """
@@ -142,14 +147,14 @@ class OpenCVImage(ImageEngine):
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    def trim(self, color=None):
+    def trim(self, color: tuple[int, int, int] | None = None) -> None:
         """
         Method to trim the current image object.
         The parameter color is used to indicate the color to trim else it will use transparency.
         """
         if color:
             # Create new image with same color
-            background = np.zeros(self.image.shape, np.uint8)
+            background: ndarray = np.zeros(self.image.shape, np.uint8)
 
             if self.has_transparency():
                 background[:] = tuple([*color, 255])

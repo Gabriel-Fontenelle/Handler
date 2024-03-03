@@ -116,8 +116,8 @@ class FileNaming:
         TODO: Change how this method used `reserved_filenames` to allow moving or copying of file.
         TODO: Check if save_to exists before doing rename.
         """
-        save_to = self.related_file_object.save_to
-        complete_filename = self.related_file_object.complete_filename
+        save_to: str | None = self.related_file_object.save_to
+        complete_filename: str | None = self.related_file_object.complete_filename
 
         reserved_folder = self.reserved_filenames.get(save_to, None)
         object_reserved = reserved_folder.get(complete_filename, None) if reserved_folder else None

@@ -20,7 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
+
 from io import BytesIO
+from typing import Any, Type, Iterator
 
 from PIL import Image as PillowImageClass, ImageChops, ImageSequence as PillowSequence
 
@@ -36,16 +39,16 @@ class PillowImage(ImageEngine):
     Class that standardized methods of Pillow library.
     """
 
-    class_image = PillowImageClass
+    class_image: Type[PillowImageClass] = PillowImageClass
     """
     Attribute used to store the class reference responsible to create an image.
     """
 
-    def _set_image_sequence(self, images, encode_format):
+    def _set_image_sequence(self, images: list[Any], encode_format: str) -> None:
         """
         Method to convert a list of images into a single one.
         """
-        output = BytesIO()
+        output: BytesIO = BytesIO()
 
         images[0].save(
             output,
@@ -57,16 +60,16 @@ class PillowImage(ImageEngine):
 
         self.image = self.class_image.open(fp=output)
 
-    def append_to_sequence(self, images, **kwargs):
+    def append_to_sequence(self, images: list[Any], **kwargs: Any) -> None:
         """
         Method to append a list of images to the current image, if the current image is not a sequence
         this method should convert it to a sequence.
         """
-        encode_format = kwargs.pop("encode_format", "webp")
+        encode_format: str = kwargs.pop("encode_format", "webp")
 
         self._set_image_sequence(images, encode_format=encode_format)
 
-    def change_color(self, colorspace="gray", encode_format="webp"):
+    def change_color(self, colorspace: str = "gray", **kwargs: Any) -> None:
         """
         Method to change the color space of the current image.
         """
