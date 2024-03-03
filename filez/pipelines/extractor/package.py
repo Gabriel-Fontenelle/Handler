@@ -136,7 +136,7 @@ class PackageExtractor(Extractor):
             Buffer must exist for this method to work, else no action will be taken.
             """
             if not hasattr(self, "buffer"):
-                return
+                return 0
 
             return self.buffer.seek(*args, **kwargs)
 
