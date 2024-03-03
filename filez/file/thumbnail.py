@@ -364,7 +364,7 @@ class FileThumbnail:
             first, second = itertools.tee(self.related_file_object.files, 2)
             try:
                 next(second)
-                files = first
+                files = list(first)
             except StopIteration:
                 files = [self.related_file_object]
         else:

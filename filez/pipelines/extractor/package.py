@@ -646,9 +646,9 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Update hash generating the hash file and adding its content
                     hash_file = CRC32Hasher.create_hash_file(
                         object_to_process=internal_file_object,
-                        digested_hex_value=internal_file.CRC
+                        digested_hex_value=str(internal_file.CRC)
                     )
-                    internal_file_object.hashes['crc32'] = internal_file.CRC, hash_file, CRC32Hasher
+                    internal_file_object.hashes['crc32'] = str(internal_file.CRC), hash_file, CRC32Hasher
 
                     # Set up action to be extracted instead of to save.
                     internal_file_object._actions.to_extract()

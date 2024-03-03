@@ -629,7 +629,7 @@ class LinuxFileSystem(Storage):
         Method to get the file system id for a path.
         Path can be both a directory or file.
         """
-        return os.stat(path, follow_symlinks=False).st_ino
+        return str(os.stat(path, follow_symlinks=False).st_ino)
 
     @classmethod
     def get_created_date(cls, path: str) -> datetime:
