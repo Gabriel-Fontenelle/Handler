@@ -161,7 +161,7 @@ class FilenameFromMetadataExtractor(Extractor):
                 if complete_filename:
                     filenames.append(complete_filename)
 
-            file_object.complete_filename = (filenames[0], "")
+            file_object.complete_filename_as_tuple = (filenames[0], "")
 
         except KeyError:
             # kwargs has no parameter metadata

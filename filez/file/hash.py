@@ -130,14 +130,14 @@ class FileHashes:
                 # Rename filename if is not `checksum.hasher_name`
                 # complete_filename is a property that will set up additional action to rename the file`s filename if
                 # it was already saved before.
-                hash_file.complete_filename = new_filename, hasher_name
+                hash_file.complete_filename_as_tuple = new_filename, hasher_name
 
             # Load content from generator.
             # First we set up content of type binary or string.
             content: str | bytes = b"" if hash_file.is_binary else ""
 
             # Then we load content from generator using a loop.
-            for block in hash_file.content:
+            for block in hash_file.content_as_iterator:
                 content += block
 
             # Change file`s filename inside content of hash file.

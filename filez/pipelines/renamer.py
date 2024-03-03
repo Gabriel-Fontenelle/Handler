@@ -151,7 +151,7 @@ class Renamer:
         # Set new name at File's object.
         # The File class should set the old name at File`s cache/history automatically,
         # filename and extension should be property functions.
-        object_to_process.complete_filename = (new_filename, extension)
+        object_to_process.complete_filename_as_tuple = (new_filename, extension)
 
         return True
 

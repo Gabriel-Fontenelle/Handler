@@ -93,8 +93,8 @@ def process_hash_file(directory, file_path):
 
     # Clone will copy the file renaming it if one already exists in destination.
     LinuxFileSystem.clone(
-        file_path_origin=file_path,
-        file_path_destination=destination_directory
+        source=file_path,
+        destination=destination_directory
     )
 
 
