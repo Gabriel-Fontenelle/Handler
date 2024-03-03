@@ -655,7 +655,7 @@ class PathFromURLExtractor(Extractor):
                     file_object.relative_path = path.directory
 
                     if not file_object.filename:
-                        file_object.complete_filename = cache.filename.rsplit('.', 1)
+                        file_object.complete_filename_as_tuple = cache.filename.rsplit('.', 1)
 
                     return
 
