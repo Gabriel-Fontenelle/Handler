@@ -774,7 +774,7 @@ class BaseFile:
 
         return False
 
-    def compare_to(self, *files: tuple):
+    def compare_to(self, *files: BaseFile) -> bool:
         """
         Method to run the pipeline, for comparing files.
         This method set-up for current file object with others.
@@ -789,7 +789,7 @@ class BaseFile:
         # Run pipeline passing objects to be compared
         self.compare_pipeline.run(object_to_process=self)
 
-        result = self.compare_pipeline.last_result
+        result: None | bool = self.compare_pipeline.last_result
 
         if result is None:
             raise ValueError("There is not enough data in files for comparison at `File.compare_to`.")
@@ -830,7 +830,7 @@ class BaseFile:
         """
         if self._actions.hash:
             # If content is being changed a new hash need to be generated instead of load from hash files.
-            try_loading_from_file = False if self._state.changing or force else self._actions.was_saved
+            try_loading_from_file: bool = False if self._state.changing or force else self._actions.was_saved
 
             # Reset `try_loading_from_file` in pipeline.
             for processor in self.hasher_pipeline:
@@ -840,7 +840,7 @@ class BaseFile:
 
             self._actions.hashed()
 
-    def get_content(self, item):
+    def get_content(self, item: int | str) -> BaseFile:
         """
         Method to return an internal content by index or filename.
         """
@@ -856,7 +856,7 @@ class BaseFile:
 
         return self._content_files[item]
 
-    def refresh_from_disk(self):
+    def refresh_from_disk(self) -> None:
         """
         This method will reset all attributes, calling the pipeline to extract data again from disk.
         Both the content and metadata will be reloaded from disk.
@@ -875,7 +875,7 @@ class BaseFile:
         # Set up its processing state to False
         self._state.processing = False
 
-    def refresh_from_pipeline(self):
+    def refresh_from_pipeline(self) -> None:
         """
         This method will load all attributes, calling the pipeline to extract data. By default, this method will
         not overwrite data already loaded.
@@ -887,7 +887,7 @@ class BaseFile:
         # Set up its processing state to False
         self._state.processing = False
 
-    def save(self, **options):
+    def save(self, **options: bool) -> None:
         """
         Method to save file to file system. In this method we do some validation and verify if file can be saved
         following some options informed through parameter `options`.
@@ -914,16 +914,16 @@ class BaseFile:
         self.validate()
 
         # Extract options like `overwrite=bool` file, `save_hashes=False`.
-        overwrite = options.pop('overwrite', False)
-        save_hashes = options.pop('save_hashes', False)
-        allow_search_hashes = options.pop('allow_search_hashes', True)
-        allow_update = options.pop('allow_update', True)
-        allow_rename = options.pop('allow_rename', False)
-        allow_extension_change = options.pop('allow_extension_change', True)
-        create_backup = options.pop('create_backup', False)
+        overwrite: bool = options.pop('overwrite', False)
+        save_hashes: bool = options.pop('save_hashes', False)
+        allow_search_hashes: bool = options.pop('allow_search_hashes', True)
+        allow_update: bool = options.pop('allow_update', True)
+        allow_rename: bool = options.pop('allow_rename', False)
+        allow_extension_change: bool = options.pop('allow_extension_change', True)
+        create_backup: bool = options.pop('create_backup', False)
 
         # If overwrite is False and file exists a new filename must be created before renaming.
-        file_exists = self.storage.exists(self.sanitize_path)
+        file_exists: bool = self.storage.exists(self.sanitize_path)
 
         # Verify which actions are allowed to perform while saving.
         if self._state.adding and file_exists and not overwrite:
@@ -980,13 +980,13 @@ class BaseFile:
         self._state.renaming = False
         self._naming.previous_saved_extension = self.extension
 
-    def serialize(self):
+    def serialize(self) -> str:
         """
         Method to serialize the current object using the serializer declared in attribute `serializer`.
         """
         return self.serializer.serialize(source=self)
 
-    def validate(self):
+    def validate(self) -> None:
         """
         Method to validate if minimum attributes of file were set to allow saving.
         TODO: This method should be changed to allow more easy override similar to how Django do with `clean`.
@@ -1010,12 +1010,12 @@ class BaseFile:
             raise self.ValidationError("The attribute `extension` is not compatible with the set-up mimetype for the "
                                        "file!")
 
-    def write_content(self, path):
+    def write_content(self, path: str) -> None:
         """
         Method to write content to a given path.
         This method will truncate the file before saving content to it.
         """
-        write_mode = 'b' if self.is_binary else 't'
+        write_mode: str = 'b' if self.is_binary else 't'
 
         self.storage.save_file(path, self.content, file_mode='w', write_mode=write_mode)
 

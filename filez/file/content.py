@@ -388,7 +388,7 @@ class FilePacket:
     Pipeline to extract data from multiple sources. For it to work, its classes should implement stopper as True.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         """
         Method to create the current object using the keyword arguments.
         """
@@ -398,7 +398,7 @@ class FilePacket:
             else:
                 raise SerializerError(f"Class {self.__class__.__name__} doesn't have an attribute called {key}.")
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: int | str) -> BaseFile:
         """
         Method to serve as shortcut to allow return of item in _internal_files in instance of FilePacket.
         This method will try to retrieve an element from the dictionary by index if item is numeric.
@@ -408,13 +408,13 @@ class FilePacket:
 
         return self._internal_files[item]
 
-    def __contains__(self, item):
+    def __contains__(self, item: str) -> bool:
         """
         Method to serve as shortcut to allow verification if item contains in _internal_files in instance of FilePacket.
         """
         return item in self._internal_files
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: BaseFile) -> None:
         """
         Method to serve as shortcut to allow adding an item in _internal_files in instance of FilePacket.
         """
@@ -425,14 +425,14 @@ class FilePacket:
 
         self._internal_files[key] = value
 
-    def __len__(self):
+    def __len__(self) -> int:
         """
         Method that defines the size of current object. We will consider the size as being the same of
         `_internal_files`
         """
         return len(self._internal_files)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator:
         """
         Method to return current object as iterator. As it already implements __next__ we just return the current
         object.
@@ -440,7 +440,7 @@ class FilePacket:
         return iter(self._internal_files.items())
 
     @property
-    def __serialize__(self):
+    def __serialize__(self) -> dict[str, Any]:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
@@ -448,7 +448,7 @@ class FilePacket:
 
         return {key: getattr(self, key) for key in attributes}
 
-    def clean_history(self):
+    def clean_history(self) -> None:
         """
         Method to clean the history of internal_files.
         The data will still be in memory while the Garbage Collector don't remove it.
@@ -461,13 +461,13 @@ class FilePacket:
         """
         return set(self._internal_files.values())
 
-    def names(self):
+    def names(self) -> set[str]:
         """
         Method to obtain the list of names of internal files stored at `_internal_files`.
         """
-        return self._internal_files.keys()
+        return set(self._internal_files.keys())
 
-    def reset(self):
+    def reset(self) -> None:
         """
         Method to clean the internal files keeping a history of changes.
         """

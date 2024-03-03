@@ -545,7 +545,7 @@ class FilenameFromURLExtractor(Extractor):
     """
 
     @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+    def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
         Method to extract the filename from a URL. The priority will be finding a filename with a
         registered extension, not founding it will use the last one available.
@@ -642,9 +642,9 @@ class PathFromURLExtractor(Extractor):
             return
 
         try:
-            possible_urls = kwargs['url']
+            possible_urls: str = kwargs['url']
 
-            paths = file_object.uri_handler.get_paths(possible_urls, file_object.storage)
+            paths: list[URI.Path] = file_object.uri_handler.get_paths(possible_urls, file_object.storage)
 
             if not paths:
                 return

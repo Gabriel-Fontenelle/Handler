@@ -134,7 +134,7 @@ class FileHashes:
 
             # Load content from generator.
             # First we set up content of type binary or string.
-            content = b"" if hash_file.is_binary else ""
+            content: str | bytes = b"" if hash_file.is_binary else ""
 
             # Then we load content from generator using a loop.
             for block in hash_file.content:
@@ -147,7 +147,7 @@ class FileHashes:
             hash_file.content = content
             hash_file._actions.to_save()
 
-    def validate(self, force=False):
+    def validate(self, force: bool=False) -> None:
         """
         Method to validate the integrity of file comparing hashes`s hex value with file content.
         This method will only check the first hex value from files loaded, or any cached hash if no hash loaded from
@@ -168,7 +168,7 @@ class FileHashes:
             if not force:
                 break
 
-    def save(self, overwrite=False):
+    def save(self, overwrite: bool=False) -> None:
         """
         Method to save all hashes files if it was not saved already.
         """

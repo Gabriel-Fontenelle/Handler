@@ -353,7 +353,7 @@ class FileThumbnail:
             # Set state of related file as concluded.
             getattr(self, f"_conclude_{name}_action")()
 
-    def _get_files_to_process(self, defaults):
+    def _get_files_to_process(self, defaults: Type[ThumbnailDefaults]) -> list[BaseFile]:
         """
         Method to obtain the list of files to process considering if current related file object is a package with
         internal files or not.
@@ -372,14 +372,14 @@ class FileThumbnail:
 
         return files
 
-    def clean_history(self):
+    def clean_history(self) -> None:
         """
         Method to clean the history of file thumbnail.
         The data will still be in memory while the Garbage Collector don't remove it.
         """
-        self.history = {"_static_file": [], "_animated_file": []}
+        self.history: dict[str, list[BaseFile]] = {"_static_file": [], "_animated_file": []}
 
-    def display_image(self):
+    def display_image(self) -> None:
         """
         Method to debug the current static image showing it with the available image engine.
         This method make use of property thumbnail to generate the thumbnail image if not
@@ -390,7 +390,7 @@ class FileThumbnail:
             image = self.image_engine(buffer=buffer)
             image.show()
 
-    def display_animation(self):
+    def display_animation(self) -> None:
         """
         Method to debug the current animated image showing it with the available image engine.
         This method make use of property preview to generate the thumbnail image if not
@@ -401,7 +401,7 @@ class FileThumbnail:
             image = self.image_engine(buffer=buffer)
             image.show()
 
-    def reset(self, name="_static_file"):
+    def reset(self, name: str = "_static_file") -> None:
         """
         Method to clean the generated thumbnail keeping a history of changes.
         This method can be used for both static file and animated file, informing the attribute related
@@ -410,7 +410,7 @@ class FileThumbnail:
         if self.history is None:
             self.clean_history()
 
-        file_generated = getattr(self, name)
+        file_generated: BaseFile | None = getattr(self, name)
 
         if file_generated:
             # Add current generated file to memory

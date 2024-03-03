@@ -93,13 +93,13 @@ class PillowImage(ImageEngine):
         else:
             self.image = self.image.convert(colorscheme[colorspace])
 
-    def clone(self):
+    def clone(self) -> Any:
         """
         Method to copy the current image object and return it.
         """
         return self.image.copy()
 
-    def crop(self, width, height, encode_format="webp"):
+    def crop(self, width: int, height: int, **kwargs: Any) -> None:
         """
         Method to crop the current image object.
         """
@@ -107,10 +107,10 @@ class PillowImage(ImageEngine):
         encode_format: str = kwargs.pop("encode_format", "webp")
 
         # Set `top` based on center gravity
-        top = current_height // 2 - height // 2
+        top: int = current_height // 2 - height // 2
 
         # Set `left` based on center gravity
-        left = current_width // 2 - width // 2
+        left: int = current_width // 2 - width // 2
 
         if self.has_sequence():
             def crop_frame(image):
@@ -132,7 +132,7 @@ class PillowImage(ImageEngine):
         self.image.save(output, save_all=True, format=encode_format)
         return output
 
-    def get_bytes(self, encode_format="jpeg"):
+    def get_bytes(self, encode_format: str = "jpeg") -> bytes:
         """
         Method to obtain the bytes' representation for the content of the current image object.
         """
@@ -140,43 +140,43 @@ class PillowImage(ImageEngine):
         self.image.save(output, format=encode_format)
         return output.read()
 
-    def get_size(self):
+    def get_size(self) -> tuple[int, int]:
         """
         Method to obtain the size of current image.
         This method should return a tuple with width and height.
         """
         return self.image.size[0], self.image.size[1]
 
-    def has_sequence(self):
+    def has_sequence(self) -> bool:
         """
         Method to verify if image has multiple frames, e.g `.gif`, or distinct sizes, e.g `.ico`.
         """
         return hasattr(self.image, 'n_frames') and self.image.n_frames > 1
 
-    def has_transparency(self):
+    def has_transparency(self) -> bool:
         """
         Method to verify if image has a channel for transparency.
         """
         return self.image.info.get("transparency") is not None
 
-    def prepare_image(self):
+    def prepare_image(self) -> None:
         """
         Method to prepare the image using the stored buffer as the source.
         """
         self.image = self.class_image.open(fp=self.source_buffer)
 
-    def resample(self, percentual=10, encode_format="webp"):
+    def resample(self, percentual: int = 10, encode_format: str = "webp") -> None:
         """
         Method to re sample the image sequence with only the percentual amount of items distributed through the image
         sequences.
         """
 
-        total_frames = self.image.n_frames
+        total_frames: int = self.image.n_frames
 
         if total_frames <= 1:
             return
 
-        steps = total_frames // (total_frames * percentual // 100)
+        steps: int = total_frames // (total_frames * percentual // 100)
 
         duration: int | None
         try:
@@ -185,9 +185,9 @@ class PillowImage(ImageEngine):
         except KeyError:
             duration = None
 
-        images = []
+        images: list = []
 
-        sequence = PillowSequence.Iterator(self.image)
+        sequence: Iterator = PillowSequence.Iterator(self.image)
 
         for index in set(range(0, total_frames, steps)):
             # Convert to SingleImage
@@ -199,7 +199,7 @@ class PillowImage(ImageEngine):
 
         self._set_image_sequence(images, encode_format)
 
-    def scale(self, width, height, encode_format="webp"):
+    def scale(self, width: int, height: int, **kwargs: Any) -> None:
         """
         Method to scale the current image object without implementing additional logic.
         """

@@ -520,7 +520,7 @@ class Storage:
         return os.open(*args, **kwargs)
 
     @classmethod
-    def get_pathlib_path(cls, path):
+    def get_pathlib_path(cls, path: str) -> Path:
         """
         Method to get the custom Path class with accessor override.
         This method should be overwritten in child specific for Operational System.
@@ -533,11 +533,11 @@ class WindowsFileSystem(Storage):
     Class that standardized methods of file systems for Windows Operational System.
     """
 
-    temporary_folder = "C:\\temp\\Handler"
+    temporary_folder: str = "C:\\temp\\Handler"
     """
     Define the location of temporary content in filesystem.
     """
-    file_sequence_style = (re.compile(r"(\ *\(\d+?\))?(\.[^.]*$)"), r" ({sequence})\2")
+    file_sequence_style: Pattern = (re.compile(r"(\ *\(\d+?\))?(\.[^.]*$)"), r" ({sequence})\2")
     """
     Define the pattern to use to replace a sequence in the stylus of the filesystem.
     The first part identify the search and the second the replace value.
@@ -545,7 +545,7 @@ class WindowsFileSystem(Storage):
     """
 
     @classmethod
-    def get_path_id(cls, path):
+    def get_path_id(cls, path: str) -> str:
         """
         Method to get the file system id for a path.
         Path can be both a directory or file.
@@ -559,7 +559,7 @@ class WindowsFileSystem(Storage):
         return str(output)
 
     @classmethod
-    def get_created_date(cls, path):
+    def get_created_date(cls, path: str) -> datetime:
         """
         Try to get the date that a file was created, falling back to when it was
         last modified if that isn't possible.
@@ -580,7 +580,7 @@ class WindowsFileSystem(Storage):
         return normpath(normcase(path))
 
     @classmethod
-    def get_pathlib_path(cls, path):
+    def get_pathlib_path(cls, path: str) -> Path:
         """
         Method to get the custom Path class with accessor override.
         """
@@ -612,11 +612,11 @@ class LinuxFileSystem(Storage):
     Class that standardized methods of file systems for Linux Operational System.
     """
 
-    temporary_folder = "/tmp/Handler"
+    temporary_folder: str = "/tmp/Handler"
     """
     Define the location of temporary content in filesystem.
     """
-    file_sequence_style = (re.compile(r"(\ *-\ *\d+?)?(\.[^.]*$)"), r" - {sequence}\2")
+    file_sequence_style: Pattern = (re.compile(r"(\ *-\ *\d+?)?(\.[^.]*$)"), r" - {sequence}\2")
     """
     Define the pattern to use to replace a sequence in the stylus of the filesystem.
     The first part identify the search and the second the replace value.
@@ -624,7 +624,7 @@ class LinuxFileSystem(Storage):
     """
 
     @classmethod
-    def get_path_id(cls, path):
+    def get_path_id(cls, path: str) -> str:
         """
         Method to get the file system id for a path.
         Path can be both a directory or file.
@@ -632,7 +632,7 @@ class LinuxFileSystem(Storage):
         return os.stat(path, follow_symlinks=False).st_ino
 
     @classmethod
-    def get_created_date(cls, path):
+    def get_created_date(cls, path: str) -> datetime:
         """
         Try to get the date that a file was created, falling back to when it was
         last modified if that isn't possible.
@@ -650,7 +650,7 @@ class LinuxFileSystem(Storage):
         return datetime.fromtimestamp(time)
 
     @classmethod
-    def get_pathlib_path(cls, path):
+    def get_pathlib_path(cls, path: str) -> Path:
         """
         Method to get the custom Path class with accessor override.
         """
