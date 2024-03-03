@@ -195,19 +195,19 @@ class FileThumbnail:
     """
 
     # Pipelines
-    render_static_pipeline = Pipeline(
-        "handler.pipelines.render.static.DocumentFirstPageRender",
-        "handler.pipelines.render.static.ImageRender",
-        "handler.pipelines.render.static.PSDRender",
-        "handler.pipelines.render.static.VideoRender",
+    render_static_pipeline: Pipeline = Pipeline(
+        "filez.pipelines.render.static.DocumentFirstPageRender",
+        "filez.pipelines.render.static.ImageRender",
+        "filez.pipelines.render.static.PSDRender",
+        "filez.pipelines.render.static.VideoRender",
     )
     """
     Pipeline to render thumbnail representation from multiple source. For it to work, its classes should implement 
     stopper as True.
     """
-    render_animated_pipeline = Pipeline(
-        "handler.pipelines.render.animated.StaticAnimatedRender",
-        "handler.pipelines.render.animated.ImageAnimatedRender",
+    render_animated_pipeline: Pipeline = Pipeline(
+        "filez.pipelines.render.animated.StaticAnimatedRender",
+        "filez.pipelines.render.animated.ImageAnimatedRender",
     )
     """
     Pipeline to render animated thumbnail representation from multiple source. For it to work, its classes should 
