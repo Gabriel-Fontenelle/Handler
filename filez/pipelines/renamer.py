@@ -182,6 +182,14 @@ class Renamer:
         """
         cls.reserved_names = []
 
+    @classmethod
+    def register_error(cls, error: Exception) -> None:
+        """
+        Method to log error in system. It could be override to register error in list or distinct output.
+        """
+        # Log error message
+        logging.error(str(error))
+
 
 class WindowsRenamer(Renamer):
     """
