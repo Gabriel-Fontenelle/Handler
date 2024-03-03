@@ -143,7 +143,7 @@ class MoviePyVideo(VideoEngine):
         Method to return content of the frame at index as bytes.
         TODO: Test that buffer is really bytes.
         """
-        formats = {
+        formats: dict[str, str] = {
             "jpeg": ".jpg"
         }
         success, buffer = cv2.imencode(formats[encode_format], self.video.get_frame(index))
@@ -153,24 +153,24 @@ class MoviePyVideo(VideoEngine):
 
         return buffer
 
-    def get_frame_image(self, index):
+    def get_frame_image(self, index) -> Any:
         """
         Method to return the array representing the frame at index.
         """
         return self.video.get_frame(index)
 
-    def get_size(self):
+    def get_size(self) -> tuple[int, int]:
         """
         Method to return the width and height of the video.
         """
         return self.video.size
 
-    def prepare_video(self):
+    def prepare_video(self) -> None:
         """
         Method to prepare the video using the stored buffer as the source.
         """
-        video_array = iio.imopen(self.source_buffer, io_mode="r")
-        self.metadata = video_array.metadata()
+        video_array: PluginV3 = iio.imopen(self.source_buffer, io_mode="r")
+        self.metadata: dict[str, Any] = video_array.metadata()
 
         def make_frame(t):
             """
@@ -182,13 +182,13 @@ class MoviePyVideo(VideoEngine):
         self.video = VideoClip(make_frame, duration=self.metadata['duration'])
         self.video.fps = self.metadata['fps']
 
-    def show(self):
+    def show(self) -> None:
         """
         Method to display the video for debugging purposes.
         """
-        total_frames = self.get_frame_amount()
+        total_frames: int = self.get_frame_amount()
 
-        frame = 0
+        frame: int = 0
 
         while frame < total_frames:
             cv2.imshow("Video", self.get_frame_image(frame))
