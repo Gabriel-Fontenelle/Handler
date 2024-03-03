@@ -483,7 +483,7 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
                     internal_file_object.update_date = internal_file.mtime
 
                     # Update size of file
-                    internal_file_object.size = internal_file.size
+                    internal_file_object.length = internal_file.size
 
                     # Update hash generating the hash file and adding its content
                     if internal_file.chksum:
@@ -641,7 +641,7 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     internal_file_object.update_date = internal_file_object.create_date
 
                     # Update size of file
-                    internal_file_object.size = internal_file.file_size
+                    internal_file_object.length = internal_file.file_size
 
                     # Update hash generating the hash file and adding its content
                     hash_file = CRC32Hasher.create_hash_file(
@@ -797,7 +797,7 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
                     internal_file_object.update_date = internal_file.mtime
 
                     # Update size of file
-                    internal_file_object.size = internal_file.file_size
+                    internal_file_object.length = internal_file.file_size
 
                     # Update hash generating the hash file and adding its content
                     if internal_file.CRC:
@@ -955,7 +955,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     internal_file_object.update_date = internal_file.creationtime
 
                     # Update size of file
-                    internal_file_object.size = internal_file.uncompressed
+                    internal_file_object.length = internal_file.uncompressed
 
                     # Update hash generating the hash file and adding its content
                     hash_file = CRC32Hasher.create_hash_file(
