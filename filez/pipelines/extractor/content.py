@@ -20,12 +20,22 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
+
+from io import StringIO
+from typing import TYPE_CHECKING, Any
+
 import fitz
 from tinytag import TinyTag
 
 from .extractor import Extractor
 from ...image import WandImage
 from ...video import MoviePyVideo
+
+if TYPE_CHECKING:
+    from fitz import Document
+    from ...file import BaseFile
+
 
 __all__ = [
     'AudioMetadataFromContentExtractor',
@@ -43,7 +53,7 @@ class VideoMetadataFromContentExtractor(Extractor):
     """
 
     @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+    def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
         Method to extract additional metadata information from content.
         """

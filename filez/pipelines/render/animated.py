@@ -20,13 +20,24 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
+
 from io import BytesIO
+from typing import Any, TYPE_CHECKING, Type
 
 import fitz
 from psd_tools import PSDImage
 
 from .static import StaticRender
 from .. import Pipeline
+from ...exception import RenderError
+
+if TYPE_CHECKING:
+    from io import StringIO
+    from ...file import BaseFile
+    from ...file.thumbnail import PreviewDefaults
+    from ...image.engine import ImageEngine
+    from ...video.engine import VideoEngine
 
 __all__ = [
     'AnimatedRender',
@@ -44,15 +55,15 @@ class AnimatedRender(StaticRender):
     """
 
     @classmethod
-    def create_file(cls, object_to_process, content):
+    def create_file(cls, object_to_process: BaseFile, content: str | bytes | BytesIO | StringIO) -> BaseFile:
         """
         Method to create a file structured for the animated image on same class as object_to_process.
         """
-        defaults = object_to_process._thumbnail.animated_defaults
+        defaults: Type[PreviewDefaults] = object_to_process._thumbnail.animated_defaults
 
         # Create file object for image, change filename from parent to use
         # the new format as base for extension.
-        animated_file = object_to_process.__class__(
+        animated_file: BaseFile = object_to_process.__class__(
             path=f"{object_to_process.sanitize_path}.{defaults.format_extension}",
             extract_data_pipeline=Pipeline(
                 'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
