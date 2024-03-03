@@ -448,10 +448,17 @@ class BaseFile:
         """
         Method to return as attribute the complete filename from file.
         """
-        return self.filename if not self.extension else f"{self.filename}.{self.extension}"
+        return f"{self.filename}" if not self.extension else f"{self.filename}.{self.extension}"
 
-    @complete_filename.setter
-    def complete_filename(self, value):
+    @property
+    def complete_filename_as_tuple(self) -> tuple[str, str | None]:
+        """
+        Method to return as attribute the complete filename from file in tuple format.
+        """
+        return (self.filename or "", self.extension)
+
+    @complete_filename_as_tuple.setter
+    def complete_filename_as_tuple(self, value: tuple[str, str | None]) -> None:
         """
         Method to set complete_filename attribute. For this method
         to work value must be a tuple of <filename, extension>.
@@ -465,10 +472,11 @@ class BaseFile:
                 return
 
             # Remove old filename from reserved filenames
-            self._naming.remove_reserved_filename(self.complete_filename)
+            if self.complete_filename:
+                self._naming.remove_reserved_filename(self.complete_filename)
 
-            # Add old filename to history
-            self._naming.history.append((self.filename, self.extension))
+                # Add old filename to history
+                self._naming.history.append((self.filename, self.extension))
 
         # Set-up new filename (only if it is different from previous one).
         self.filename, self.extension = new_filename, new_extension
