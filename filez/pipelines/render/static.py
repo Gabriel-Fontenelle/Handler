@@ -22,7 +22,7 @@ Should there be a need for contact the electronic mail
 """
 from __future__ import annotations
 
-from io import BytesIO
+from io import BytesIO, StringIO
 from typing import Any, TYPE_CHECKING, Type
 
 import fitz
@@ -32,8 +32,6 @@ from .. import ValidationError, Pipeline
 from ...exception import RenderError
 
 if TYPE_CHECKING:
-    from io import StringIO
-
     from ...file import BaseFile
     from ...file.thumbnail import ThumbnailDefaults
     from ...image.engine import ImageEngine
