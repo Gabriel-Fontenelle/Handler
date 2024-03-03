@@ -111,7 +111,7 @@ def process_file(directory, file_path):
         file_object.generate_hashes(force=True)
     except (OSError, UnicodeDecodeError) as e:
         # file_to_save = os.path.join(home_dir, f'{filename}-bad.txt')
-        with open(LinuxFileSystem.join(directory, f"error_processing_new_hashes.txt"), mode='a') as fp:
+        with open(LinuxFileSystem.join(directory, "error_processing_new_hashes.txt"), mode='a') as fp:
             fp.write(file_object.complete_filename)
             fp.write("\n")
             fp.write(str(e))

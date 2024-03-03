@@ -21,7 +21,6 @@ Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
 
-from .file import BaseFile, File, ContentFile, StreamFile
 from .exception import (
     ImproperlyConfiguredFile,
     NoInternalContentError,
@@ -29,17 +28,12 @@ from .exception import (
     ReservedFilenameError,
     ValidationError,
 )
+from .file import BaseFile, File, ContentFile, StreamFile
 from .handler import System, URI
-from .storage import WindowsFileSystem, LinuxFileSystem, Storage
 from .mimetype import LibraryMimeTyper, APIMimeTyper
-
-# Module with classes for serializing/deserializing objects.
-from .serializer import PickleSerializer, JSONSerializer
-
 # Module with classes that define the pipelines and its processors classes.
 # A Pipeline is a sequence that loop processors to be run.
 from .pipelines import Processor, Pipeline
-
 # Module with pipeline classes for comparing Files.
 from .pipelines.comparer import (
     Comparer,
@@ -74,7 +68,9 @@ from .pipelines.extractor import (
 from .pipelines.hasher import Hasher, CRC32Hasher, MD5Hasher, SHA256Hasher
 # Module with pipeline classes for renaming files.
 from .pipelines.renamer import Renamer, WindowsRenamer, LinuxRenamer, UniqueRenamer
-
+# Module with classes for serializing/deserializing objects.
+from .serializer import PickleSerializer, JSONSerializer
+from .storage import WindowsFileSystem, LinuxFileSystem, Storage
 
 __all__ = [
     'APIMimeTyper', 'AudioMetadataFromContentExtractor', 'BaseFile', 'BinaryCompare',
@@ -90,5 +86,5 @@ __all__ = [
     'SHA256Hasher', 'SevenZipCompressedFilesFromPackageExtractor',
     'SizeCompare', 'Storage', 'StreamFile', 'System', 'TypeCompare', 'URI', 'UniqueRenamer',
     'ValidationError', 'WandImage', 'WindowsFileSystem', 'WindowsRenamer',
-    'ZipCompressedFilesFromPackageExtractor'
+    'ZipCompressedFilesFromPackageExtractor',
 ]
