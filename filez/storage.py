@@ -362,7 +362,7 @@ class Storage:
             return iglob(f"{path}")
 
     @classmethod
-    def get_filename_from_path(cls, path):
+    def get_filename_from_path(cls, path: str) -> str:
         """
         Method used to get the filename from a complete path.
         """
@@ -520,30 +520,6 @@ class Storage:
         return os.open(*args, **kwargs)
 
     @classmethod
-    def get_accessor(cls):
-        """
-        Method to obtain the related Accessor customized for use in pathlib.Path.
-        """
-        class CustomAccessor(_NormalAccessor):
-            stat = os.stat
-            lstat = os.lstat
-            open = cls.opener
-            listdir = cls.list_files_and_directories
-            scandir = os.scandir
-            chmod = os.chmod
-            # lchmod = lchmod
-            mkdir = cls.create_directory
-            unlink = os.unlink
-            rmdir = cls.delete
-            rename = cls.rename
-            replace = cls.replace
-            # symlink
-            utime = os.utime
-            # readlink
-
-        return CustomAccessor()
-
-    @classmethod
     def get_pathlib_path(cls, path):
         """
         Method to get the custom Path class with accessor override.
@@ -573,10 +549,14 @@ class WindowsFileSystem(Storage):
         """
         Method to get the file system id for a path.
         Path can be both a directory or file.
+
+        TODO: Test it at Windows.
         """
         # TODO: Conclude function after testing on Windows.
         file = r"C:\Users\Grandmaster\Desktop\testing.py"
         output = os.popen(fr"fsutil file queryfileid {file}").read()
+
+        return str(output)
 
     @classmethod
     def get_created_date(cls, path):
@@ -604,12 +584,25 @@ class WindowsFileSystem(Storage):
         """
         Method to get the custom Path class with accessor override.
         """
-        class CustomPath(Path):
-            _flavour = _WindowsFlavour()
+        class CustomPath(WindowsPath):
 
-            def _init(self):
-                self._closed = False
-                self._accessor = cls.get_accessor()
+            def open(self, *args: Any, **kwargs: Any) -> Any:
+                return cls.opener(*args, **kwargs)
+
+            def listdir(self, *args: Any, **kwargs: Any) -> Any:
+                return cls.list_files_and_directories(*args, **kwargs)
+
+            def mkdir(self, *args: Any, **kwargs: Any) -> Any:
+                return cls.create_directory(*args, **kwargs)
+
+            def rmdir(self, *args: Any, **kwargs: Any) -> Any:
+                return cls.delete(*args, **kwargs)
+
+            def rename(self, *args: Any, **kwargs: Any) -> Any:
+                return cls.rename(*args, **kwargs)
+
+            def replace(self, *args: Any, **kwargs: Any) -> Any:
+                return cls.replace(*args, **kwargs)
 
         return CustomPath(path)
 
@@ -662,11 +655,24 @@ class LinuxFileSystem(Storage):
         Method to get the custom Path class with accessor override.
         """
 
-        class CustomPath(Path):
-            _flavour = _PosixFlavour()
+        class CustomPath(PosixPath):
 
-            def _init(self):
-                self._closed = False
-                self._accessor = cls.get_accessor()
+            def open(self, *args: Any, **kwargs: Any) -> Any:
+                return cls.opener(*args, **kwargs)
+
+            def listdir(self, *args: Any, **kwargs: Any) -> Any:
+                return cls.list_files_and_directories(*args, **kwargs)
+
+            def mkdir(self, *args: Any, **kwargs: Any) -> Any:
+                return cls.create_directory(*args, **kwargs)
+
+            def rmdir(self, *args: Any, **kwargs: Any) -> Any:
+                return cls.delete(*args, **kwargs)
+
+            def rename(self, *args: Any, **kwargs: Any) -> Any:
+                return cls.rename(*args, **kwargs)
+
+            def replace(self, *args: Any, **kwargs: Any) -> Any:
+                return cls.replace(*args, **kwargs)
 
         return CustomPath(path)
