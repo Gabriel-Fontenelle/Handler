@@ -323,8 +323,8 @@ class PSDLayersFromPackageExtractor(PackageExtractor):
                 internal_file_object = file_class(
                     path=file_system.join(file_object.save_to, file_object.filename, filename),
                     extract_data_pipeline=Pipeline(
-                        'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
-                        'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+                        'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                        'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
                     ),
                     file_system_handler=file_system
                 )
@@ -472,8 +472,8 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
                     internal_file_object = file_class(
                         path=file_system.join(file_object.save_to, internal_file.name),
                         extract_data_pipeline=Pipeline(
-                            'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
-                            'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+                            'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                            'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
                         ),
                         file_system_handler=file_system
                     )
@@ -629,8 +629,8 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     internal_file_object = file_class(
                         path=file_system.join(file_object.save_to, path=internal_file.filename),
                         extract_data_pipeline=Pipeline(
-                            'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
-                            'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+                            'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                            'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
                         ),
                         file_system_handler=file_system
                     )
@@ -786,8 +786,8 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
                     internal_file_object = file_class(
                         path=file_system.join(file_object.save_to, internal_file.filename),
                         extract_data_pipeline=Pipeline(
-                            'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
-                            'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+                            'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                            'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
                         ),
                         file_system_handler=file_system
                     )
@@ -944,8 +944,8 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     internal_file_object = file_class(
                         path=file_system.join(file_object.save_to, internal_file.filename),
                         extract_data_pipeline=Pipeline(
-                            'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
-                            'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+                            'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                            'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
                         ),
                         file_system_handler=file_system
                     )

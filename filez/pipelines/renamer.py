@@ -125,7 +125,7 @@ class Renamer:
         # Prepare filename from File's object
         filename, extension = cls.prepare_filename(object_to_process.filename, object_to_process.extension)
 
-        # Save current file system handler
+        # Save current file system filez
         class_file_system_handler = cls.file_system_handler
 
         # Get new name

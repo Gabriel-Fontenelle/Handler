@@ -101,14 +101,16 @@ class ThumbnailDefaults:
     """
     Attribute that identifies the current engine for composing thumbnails in case there is multiples candidates. If 
     this value is None no composition will be made and the first image found should be used instead.
-    Available composer can be found at `handler.image.composer.merger`.
+    Available composer can be found at `filez.image.composer.merger`.
+    TODO: Create composer
     """
     default_engine = None
     """
     Attribute that identifies the current engine for composing the default image.
     If this value is None no default image will be created and _static_image will be set to False case there is 
     no thumbnail to be created.
-    Available default composers can be found at `handler.image.composer.default`.
+    Available default composers can be found at `filez.image.composer.default`.
+    TODO: Create composer
     """
 
 

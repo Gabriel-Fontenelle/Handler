@@ -66,8 +66,8 @@ class AnimatedRender(StaticRender):
         animated_file: BaseFile = object_to_process.__class__(
             path=f"{object_to_process.sanitize_path}.{defaults.format_extension}",
             extract_data_pipeline=Pipeline(
-                'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
-                'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+                'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
             ),
             file_system_handler=object_to_process.storage
         )
