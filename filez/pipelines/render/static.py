@@ -20,12 +20,25 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
+
 from io import BytesIO
+from typing import Any, TYPE_CHECKING, Type
 
 import fitz
 from psd_tools import PSDImage
 
 from .. import ValidationError, Pipeline
+from ...exception import RenderError
+
+if TYPE_CHECKING:
+    from io import StringIO
+
+    from ...file import BaseFile
+    from ...file.thumbnail import ThumbnailDefaults
+    from ...image.engine import ImageEngine
+    from ...video.engine import VideoEngine
+
 
 __all__ = [
     "DocumentFirstPageRender",
@@ -41,27 +54,28 @@ class StaticRender:
     Render class with focus to processing information from file's content to create a static representation of it.
     """
 
+    extensions: set[str]
     extensions = None
     """
     Attribute to store allowed extensions for use in `validator`.
     This attribute should be override in children classes.
     """
 
-    stopper = True
+    stopper: bool = True
     """
     Variable that define if this class used as processor should stop the pipeline.
     """
 
     @classmethod
-    def create_file(cls, object_to_process, content):
+    def create_file(cls, object_to_process: BaseFile, content: str | bytes | BytesIO | StringIO) -> BaseFile:
         """
         Method to create a file structured for the static image on same class as object_to_process.
         """
-        defaults = object_to_process._thumbnail.static_defaults
+        defaults: Type[ThumbnailDefaults] = object_to_process._thumbnail.static_defaults
 
         # Create file object for image, change filename from parent to use
         # the new format as base for extension.
-        static_file = object_to_process.__class__(
+        static_file: BaseFile = object_to_process.__class__(
             path=f"{object_to_process.sanitize_path}.{defaults.format_extension}",
             extract_data_pipeline=Pipeline(
                 'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',

@@ -20,11 +20,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Should there be a need for contact the electronic mail
 `filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
 
 from datetime import datetime
 from time import strptime, mktime
+from typing import Any, TYPE_CHECKING, Type
 
 from .extractor import Extractor
+
+if TYPE_CHECKING:
+    from io import BytesIO, StringIO
+
+    from ...file import BaseFile
+    from ...storage import Storage
+    from ...handler import URI
 
 __all__ = [
     'FileSystemDataExtractor',
@@ -44,7 +53,7 @@ class FilenameAndExtensionFromPathExtractor(Extractor):
     """
 
     @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+    def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
         Method to extract the filename and extension information from attribute `path` of file_object.
 
@@ -71,7 +80,7 @@ class FilenameAndExtensionFromPathExtractor(Extractor):
         if not (file_object.filename is None or overrider):
             return
 
-        file_system_handler = file_object.storage
+        file_system_handler: Type[Storage] = file_object.storage
 
         # Set-up save_to and relative_path
         file_object.save_to = file_system_handler.get_directory_from_path(file_object.path)
@@ -97,7 +106,7 @@ class FilenameFromMetadataExtractor(Extractor):
     """
 
     @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+    def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
         Method to extract the information necessary for a file_object from metadata.
         This method will extract filename from `Content-Disposition` if there is one.
@@ -115,13 +124,13 @@ class FilenameFromMetadataExtractor(Extractor):
             return
 
         try:
-            content_disposition = MetadataExtractor.get_content_disposition(kwargs['metadata'])
+            content_disposition: list[str] = MetadataExtractor.get_content_disposition(kwargs['metadata'])
 
             if not content_disposition:
                 return
 
             # Save metadata disposition as historic
-            file_object.add_metadata('disposition', content_disposition)
+            file_object.meta.disposition = content_disposition
 
             candidates = [
                 content.strip()
@@ -135,12 +144,12 @@ class FilenameFromMetadataExtractor(Extractor):
             # Make `filename*=` be priority
             candidates.sort()
 
-            filenames = []
+            filenames: list[str] = []
 
             for candidate in candidates:
                 # Get indexes of `"`.
-                begin = candidate.index('"') + 1
-                end = candidate[begin:].index('"')
+                begin: int = candidate.index('"') + 1
+                end: int = candidate[begin:].index('"')
 
                 # Get filename with help of those indexes.
                 complete_filename = candidate[begin:end]
@@ -166,7 +175,7 @@ class FilenameFromMetadataExtractor(Extractor):
 class FileSystemDataExtractor(Extractor):
 
     @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+    def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
         Method to extract the file system information related a file_object.
 
@@ -188,7 +197,7 @@ class FileSystemDataExtractor(Extractor):
         if not file_object.type:
             raise ValueError("Attribute `type` must be settled before calling `FileSystemDataExtractor.extract`.")
 
-        file_system_handler = file_object.storage
+        file_system_handler: Type[Storage] = file_object.storage
 
         # Check if path exists
         if not file_system_handler.exists(file_object.path):
@@ -214,17 +223,17 @@ class FileSystemDataExtractor(Extractor):
             file_object.update_date = file_system_handler.get_modified_date(file_object.path)
 
         # Define mode from file type
-        mode = 'r'
+        mode: str = 'r'
 
         if file_object.type != 'text':
             mode += 'b'
 
         # Get buffer io
-        buffer = file_object.storage.open_file(file_object.path, mode=mode)
+        buffer: BytesIO | StringIO = file_object.storage.open_file(file_object.path, mode=mode)
 
         # Set content with buffer, as content is a property it will validate the buffer and
         # add it as a generator allowing to just loop through chunks of content.
-        file_object.content = buffer
+        file_object.content_as_buffer = buffer
 
         # Set-up state for saved file.
         file_object._state.adding = False
@@ -237,7 +246,7 @@ class HashFileExtractor(Extractor):
     """
 
     @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+    def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
         Method to extract the hash information from a hash file related to file_object.
 
@@ -255,10 +264,10 @@ class HashFileExtractor(Extractor):
         if not file_object.path:
             raise ValueError("Attribute `path` must be settled before calling `HashFileExtractor.extract`.")
 
-        full_check = kwargs.pop('full_check', True)
+        full_check: bool = kwargs.pop('full_check', True)
 
         for processor in file_object.hasher_pipeline:
-            hasher = processor.classname
+            hasher: Any = processor.classname
 
             if hasher in file_object.hashes and file_object.hashes[hasher] and not overrider:
                 continue
@@ -273,7 +282,7 @@ class MimeTypeFromFilenameExtractor(Extractor):
     """
 
     @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+    def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
         Method to extract the mimetype information from a file_object.
 
@@ -325,17 +334,17 @@ class MetadataExtractor(Extractor):
         https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Etag
         """
         try:
-            etag = metadata['ETag']
+            etag: str = metadata['ETag']
 
-            begin = etag.index('"') + 1
-            end = etag[begin:].index('"')
+            begin: int = etag.index('"') + 1
+            end: int = etag[begin:].index('"')
 
             return etag[begin:end]
         except KeyError:
             return ""
 
     @staticmethod
-    def get_mime_type(metadata: dict):
+    def get_mime_type(metadata: dict[str, str]) -> str | None:
         """
         Static method to extract mimetype from metadata.
         https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
@@ -347,7 +356,7 @@ class MetadataExtractor(Extractor):
             return None
 
     @staticmethod
-    def get_length(metadata: dict) -> int:
+    def get_length(metadata: dict[str, str]) -> int:
         """
         Static method to extract length from metadata.
         https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Length
@@ -358,7 +367,7 @@ class MetadataExtractor(Extractor):
             return 0
 
     @staticmethod
-    def get_last_modified(metadata: dict):
+    def get_last_modified(metadata: dict[str, str]) -> datetime | None:
         """
         Static method to extract last modified date from metadata.
         https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Last-Modified
@@ -370,17 +379,17 @@ class MetadataExtractor(Extractor):
             return None
 
     @staticmethod
-    def get_date(metadata: dict):
+    def get_date(metadata: dict[str, str]) -> datetime | None:
         """
         Static method to extract creation date from metadata.
         https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Date
         This method is not making use of time zone `%z`.
         This method return the last modified date if no creation date is provided.
         """
-        last_modified = MetadataExtractor.get_last_modified(metadata)
+        last_modified: datetime | None = MetadataExtractor.get_last_modified(metadata)
 
         try:
-            date = datetime.fromtimestamp(mktime(strptime(metadata['Date'], "%a, %d %b %Y %H:%M:%S %z")))
+            date: datetime = datetime.fromtimestamp(mktime(strptime(metadata['Date'], "%a, %d %b %Y %H:%M:%S %z")))
 
             # If Last-Modified is lower than Date return Last-Modified
             if last_modified and last_modified < date:
@@ -391,7 +400,7 @@ class MetadataExtractor(Extractor):
             return last_modified
 
     @staticmethod
-    def get_content_disposition(metadata: dict) -> list:
+    def get_content_disposition(metadata: dict[str, str]) -> list[str]:
         """
         Static method to extract attachment data from metadata.
         https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
@@ -405,7 +414,7 @@ class MetadataExtractor(Extractor):
             return []
 
     @staticmethod
-    def get_expire(metadata: dict):
+    def get_expire(metadata: dict[str, str]) -> datetime | None:
         """
         Static method to extract the expiration date from metadata.
         https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Expires
@@ -416,7 +425,7 @@ class MetadataExtractor(Extractor):
             return None
 
     @staticmethod
-    def get_language(metadata: dict) -> list:
+    def get_language(metadata: dict[str, str]) -> list[str]:
         """
         Method to extract the information of Language from metadata.
         https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Language
@@ -430,7 +439,7 @@ class MetadataExtractor(Extractor):
             return []
 
     @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+    def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None:
         """
         Method to extract the information necessary from a file_object.
         Content-MD5 was deprecated from HTTP because it not allows partial testing.
@@ -452,20 +461,20 @@ class MetadataExtractor(Extractor):
         This method make use of overrider.
         """
         try:
-            meta = kwargs['metadata']
+            meta: dict[str, str] = kwargs['metadata']
 
             if not meta:
                 raise ValueError('Parameter `metadata` must be have value to be extract at '
                                  '`MetadataExtractor.extract`.')
 
             # Set-up id from Etag
-            etag = cls.get_etag(meta)
+            etag: str = cls.get_etag(meta)
 
             if etag and (not file_object.id or overrider):
                 file_object.id = etag
 
             # Set-up mimetype from metadata
-            mimetype = cls.get_mime_type(meta)
+            mimetype: str | None = cls.get_mime_type(meta)
             if mimetype and (not file_object.mime_type or overrider):
                 # Get mimetype
                 file_object.mime_type = mimetype
@@ -477,7 +486,7 @@ class MetadataExtractor(Extractor):
                 # In order to avoid wrong extension being settled is recommended to use an Extractor of
                 # `FilenameFromURLExtractor` and `FilenameFromMetadataExtractor` before this processor.
                 if 'stream' not in mimetype:
-                    possible_extension = file_object.mime_type_handler.guess_extension_from_mimetype(mimetype)
+                    possible_extension: str | None = file_object.mime_type_handler.guess_extension_from_mimetype(mimetype)
 
                     if possible_extension:
                         file_object.extension = possible_extension
