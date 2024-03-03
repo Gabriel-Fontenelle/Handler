@@ -373,7 +373,7 @@ class BaseFile:
         except ValueError:
             return False
 
-    def __ne__(self, other_instance):
+    def __ne__(self, other_instance: object) -> bool:
         """
         Method to allow comparison not equal to work between BaseFiles.
         """
