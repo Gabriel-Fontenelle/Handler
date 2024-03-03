@@ -377,6 +377,9 @@ class BaseFile:
         """
         Method to allow comparison not equal to work between BaseFiles.
         """
+        if not isinstance(other_instance, BaseFile):
+            raise NotImplementedError(f"The {type(other_instance)} was not implemented to compare.")
+
         return not self.__eq__(other_instance)
 
     def __gt__(self, other_instance):
