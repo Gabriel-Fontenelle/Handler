@@ -22,11 +22,13 @@ Should there be a need for contact the electronic mail
 """
 
 __all__ = [
+	'EmptyContentError',
 	'ImproperlyConfiguredFile',
 	'NoInternalContentError',
 	'OperationNotAllowed',
 	'ValidationError',
 	'ReservedFilenameError',
+	'RenderError',
 	'SerializerError'
 ]
 
