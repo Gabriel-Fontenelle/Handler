@@ -129,7 +129,7 @@ from filez import ContentFile
 # Create a new file manually without extracting data from any source.
 my_file = ContentFile(run_extract_pipeline=False)
 my_file.content = '<string or bytes: My content here>'
-my_file.complete_filename = (
+my_file.complete_filename_as_tuple = (
     '<string: filename>',
     '<string: extension without dot (.)>'
 )

@@ -127,6 +127,10 @@ def process_file(directory, file_path):
         
     
 if __name__ == "__main__":
+    """
+    Recursively gets all files from current directory and loads (or generate) its hashes to save it at a new directory 
+    called `Verify` in two txt, one for good files and another for bad ones. 
+    """
     filename = getcwd()
     filename = filename[:-1] if filename[-1:] == LinuxFileSystem.sep else filename
     filename = LinuxFileSystem.get_filename_from_path(filename)
