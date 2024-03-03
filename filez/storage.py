@@ -71,24 +71,25 @@ class Storage:
     Class that standardized methods of different file systems.
     """
 
-    sep = os.sep
+    sep: str = os.sep
     """
     Directory separator in the filesystem.
     """
-    folder_size_limit = 200
+    folder_size_limit: int = 200
     """
     Limit for the length of directory path 
     """
-    path_size_limit = 254
+    path_size_limit: int = 254
     """
     Limit for the whole path
     """
 
-    backup_extension = re.compile(r'\.bak(\.\d*)?$')
+    backup_extension: Pattern = re.compile(r'\.bak(\.\d*)?$')
     """
     Define what is identifiable as a backup`s extension.
     """
 
+    temporary_folder: str
     temporary_folder = None
     """
     Define the location of temporary content in filesystem.
@@ -97,7 +98,7 @@ class Storage:
     # High-end methods to use with files and directories.
     # Those methods were created to be used by BaseFile.
     @classmethod
-    def is_dir(cls, path):
+    def is_dir(cls, path: str) -> bool:
         """
         The default implementation uses `os.path` operations.
         Override this method if that’s not appropriate for your storage.
@@ -105,7 +106,7 @@ class Storage:
         return isdir(cls.get_absolute_path(path))
 
     @classmethod
-    def is_file(cls, path):
+    def is_file(cls, path: str) -> bool:
         """
         The default implementation uses `os.path` operations.
          Override this method if that’s not appropriate for your storage.
@@ -113,7 +114,7 @@ class Storage:
         return not cls.is_dir(path)
 
     @classmethod
-    def is_empty(cls, path):
+    def is_empty(cls, path: str) -> bool:
         """
         The default implementation uses `os.path` operations.
         Override this method if that’s not appropriate for your storage.
@@ -121,7 +122,7 @@ class Storage:
         return getsize(path) == 0
 
     @classmethod
-    def create_directory(cls, path, mode=0o777):
+    def create_directory(cls, path: str, mode: int = 0o777) -> bool:
         """
         Method to create directory in the file system.
         This method will try to create a directory only if it not exists already.
@@ -138,7 +139,7 @@ class Storage:
         return False
 
     @classmethod
-    def create_file(cls, path):
+    def create_file(cls, path: str) -> bool:
         """
         Method to create an empty file.
         This method will try to create a file only if it not exists already.
@@ -148,7 +149,7 @@ class Storage:
         if cls.exists(path):
             return False
 
-        basedir = dirname(path)
+        basedir: str = dirname(path)
 
         cls.create_directory(basedir)
 
@@ -157,7 +158,7 @@ class Storage:
         return True
 
     @classmethod
-    def open_file(cls, path, mode='rb'):
+    def open_file(cls, path: str, mode: str = 'rb') -> StringIO | BytesIO:
         """
         Method to return a buffer to a file. This method don't automatically closes file buffer.
         Override this method if that’s not appropriate for your storage.
@@ -165,7 +166,7 @@ class Storage:
         return open(path, mode=mode)
 
     @classmethod
-    def close_file(cls, file_buffer):
+    def close_file(cls, file_buffer: IOBase) -> None:
         """
         Method to close a buffer previously opened by open_file.
         Override this method if that’s not appropriate for your storage.
@@ -173,7 +174,7 @@ class Storage:
         return file_buffer.close()
 
     @classmethod
-    def save_file(cls, path, content, **kwargs):
+    def save_file(cls, path: str, content: SupportsIter, **kwargs: Any) -> None:
         """
         Method to save content on file.
         This method will throw an exception if content is not iterable.
@@ -194,7 +195,7 @@ class Storage:
                 os.fsync(file_pointer.fileno())
 
     @classmethod
-    def backup(cls, file_path_origin, force=False):
+    def backup(cls, file_path_origin: str, force: str = False) -> bool:
         """
         Method used to copy a file in the same path with .bak append to its name.
         This method only try to copy if file exists.
@@ -216,7 +217,7 @@ class Storage:
         return cls.copy(file_path_origin, file_path_destination, force=True)
 
     @classmethod
-    def copy(cls, file_path_origin, file_path_destination, force=False):
+    def copy(cls, file_path_origin: str, file_path_destination: str, force: bool = False) -> bool:
         """
         Method used to copy a file from origin to destination.
         This method only try to copy if file exists.
@@ -235,7 +236,7 @@ class Storage:
         return False
 
     @classmethod
-    def move(cls, file_path_origin, file_path_destination, force=False):
+    def move(cls, file_path_origin: str, file_path_destination: str, force: bool = False) -> bool:
         """
         Method used to move a file from origin to destination.
         This method do use copy_file to first copy the file and after send file to trash.
@@ -249,7 +250,7 @@ class Storage:
         return False
 
     @classmethod
-    def rename(cls, source, destination):
+    def rename(cls, source: str, destination: str) -> bool:
         """
         Method to rename a file from origin to destination.
         This method try to find a new filename if one already exists.
@@ -262,7 +263,7 @@ class Storage:
         return cls.move(source, destination)
 
     @classmethod
-    def replace(cls, source, destination):
+    def replace(cls, source: str, destination: str) -> bool:
         """
         Method to rename a file from origin to destination.
         This method will replace the destination path if already exists.
@@ -270,7 +271,7 @@ class Storage:
         return cls.move(source, destination, force=True)
 
     @classmethod
-    def clone(cls, source, destination):
+    def clone(cls, source: str, destination: str) -> bool:
         """
         Method to copy a file from origin to destination avoiding override of destination file.
         This method try to find a new filename if one already exists before copying the file.
@@ -285,7 +286,7 @@ class Storage:
         return cls.copy(source, destination, force=False)
 
     @classmethod
-    def delete(cls, path, force=False):
+    def delete(cls, path: str, force: bool = False) -> bool:
         """
         Method to delete a file or a whole directory.
         this method will delete permanently a file or directory
@@ -308,7 +309,7 @@ class Storage:
         return True
 
     @classmethod
-    def exists(cls, path):
+    def exists(cls, path: str) -> bool:
         """
         The default implementation uses `os.path` operations.
         Override this method if that’s not appropriate for your storage.
@@ -316,7 +317,7 @@ class Storage:
         return exists(path)
 
     @classmethod
-    def compare(cls, file_path_1, file_path_2):
+    def compare(cls, file_path_1: str, file_path_2: str) -> bool:
         """
         Method used to compare file from file_path informed.
         Override this method if that’s not appropriate for your storage.
@@ -326,7 +327,7 @@ class Storage:
         return cmp(file_path_1, file_path_2, False)
 
     @classmethod
-    def join(cls, *paths):
+    def join(cls, *paths: str) -> str:
         """
         Method used to concatenate two or more paths.
         Override this method if that’s not appropriate for your storage.
@@ -334,7 +335,7 @@ class Storage:
         return join(*paths)
 
     @classmethod
-    def list_files(cls, path, filter_pattern="*"):
+    def list_files(cls, path: str, filter_pattern: str = "*") -> Generator[str]:
         """
         Method used to list files following pattern in filter.
         Override this method if that’s not appropriate for your storage.
@@ -351,7 +352,7 @@ class Storage:
                 yield file
 
     @classmethod
-    def list_files_and_directories(cls, path):
+    def list_files_and_directories(cls, path: str) -> Iterator:
         """
         Method used to list directories and files.
         """
@@ -368,7 +369,7 @@ class Storage:
         return basename(path)
 
     @classmethod
-    def get_directory_from_path(cls, path):
+    def get_directory_from_path(cls, path: str) -> str:
         """
         Method used to get the path without filename from a complete path.
         """
@@ -378,7 +379,7 @@ class Storage:
         return dirname(path)
 
     @classmethod
-    def get_relative_path(cls, path, relative_to):
+    def get_relative_path(cls, path: str, relative_to: str) -> str:
         """
         Method used to get relative path given two paths. The relative path is based on the path in based_on.
         relative_to = c/a/b/c/d/g/index.html
@@ -389,16 +390,16 @@ class Storage:
         """
         
         # Fix directory without sep on end
-        fix = relative_to.rpartition(cls.sep)
+        fix: list = relative_to.rpartition(cls.sep)
         if '.' not in fix[2]:
             relative_to += cls.sep
 
-        base_length = len(relative_to)
-        path_length = len(path)
-        count = 0
-        last_bar = 0
+        base_length: int = len(relative_to)
+        path_length: int = len(path)
+        count: int = 0
+        last_bar: int = 0
 
-        length = path_length if base_length > path_length else base_length
+        length: int = path_length if base_length > path_length else base_length
 
         for i in range(0, length):
             if path[i] != relative_to[i]:
@@ -414,28 +415,28 @@ class Storage:
         return path
 
     @classmethod
-    def get_absolute_path(cls, path):
+    def get_absolute_path(cls, path: str) -> str:
         """
         Method used to convert the relative path informed in `path` to its absolute version.
         """
         return abspath(path)
 
     @classmethod
-    def get_size(cls, path):
+    def get_size(cls, path: str) -> int:
         """
         Method to get the size of file at path in bytes.
         """
         return getsize(path)
 
     @classmethod
-    def get_modified_date(cls, path):
+    def get_modified_date(cls, path: str) -> datetime:
         """
         Method to get the modified time as datetime converted from float.
         """
         return datetime.fromtimestamp(getmtime(path))
 
     @classmethod
-    def get_created_date(cls, path):
+    def get_created_date(cls, path: str) -> datetime:
         """
         Try to get the date that a file was created, falling back to when it was
         last modified if that isn't possible.
@@ -444,7 +445,7 @@ class Storage:
         raise NotImplementedError("Method get_created_date(path) should be accessed through inherent class.")
 
     @classmethod
-    def get_renamed_path(cls, path, sequence=1):
+    def get_renamed_path(cls, path: str, sequence: int = 1) -> str:
         """
         Method used to get a new filename base on `path`.
         This method requires that attribute `file_sequence_style` be set in child specific for Operational System or
@@ -463,14 +464,14 @@ class Storage:
                                       "to be set in through inherent class as a tuple with a pattern and string value "
                                       "with the placeholder for sequence `{sequence}`.")
 
-        filename = cls.get_filename_from_path(path)
+        filename: str = cls.get_filename_from_path(path)
 
         return path.replace(filename, re.sub(
             cls.file_sequence_style[0], cls.file_sequence_style[1].format(sequence=sequence), filename)
         )
 
     @classmethod
-    def get_path_id(cls, path):
+    def get_path_id(cls, path: str) -> str:
         """
         Method to get the file system id for path.
         This method should be overwritten in child specific for Operational System.
@@ -478,7 +479,7 @@ class Storage:
         raise NotImplementedError("Method get_path_id(path) should be accessed through inherent class.")
 
     @classmethod
-    def get_temp_directory(cls):
+    def get_temp_directory(cls) -> str:
         if cls.temporary_folder is None:
             raise ValueError(f"There is no `temporary_folder` attribute set for {cls.__name__}!")
 
@@ -488,7 +489,7 @@ class Storage:
         return cls.temporary_folder
 
     @classmethod
-    def read_lines(cls, path):
+    def read_lines(cls, path: str) -> Generator[str]:
         """
         Method generator to get lines from file without loading all data in one step.
         """
@@ -511,7 +512,7 @@ class Storage:
     # Those methods were created to be used by pathlib.Path, tough
     # they can be used by BaseFile.
     @classmethod
-    def opener(cls, *args, **kwargs):
+    def opener(cls, *args: Any, **kwargs: Any) -> Any:
         """
         Method to open the file as a file pointer compatible with os.open.
         This method should not be used, it exists only for usage with get_accessor.

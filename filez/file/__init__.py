@@ -596,7 +596,7 @@ class BaseFile:
         return self._content.content_as_base64
 
     @property
-    def files(self):
+    def files(self) -> set[BaseFile]:
         """
         Method to return as attribute the internal files that can be present in content.
         This method can be override in child class, and it should always return a generator.
@@ -615,7 +615,7 @@ class BaseFile:
         return self._content_files.files()
 
     @property
-    def is_binary(self) -> [bool, None]:
+    def is_binary(self) -> bool | None:
         """
         Method to return as attribute if file is binary or not. This information is obtained from `is_binary` from
         `FileContent` that should be set-up when data is loaded to content.
@@ -628,7 +628,7 @@ class BaseFile:
             return None
 
     @property
-    def is_content_wholesome(self) -> [bool, None]:
+    def is_content_wholesome(self) -> bool | None:
         """
         Method to check the integrity of file content given priority to hashes loaded from external source instead of
         generated one. If no hash was loaded from external source, this method will generate new hashes and compare it
@@ -644,21 +644,21 @@ class BaseFile:
         return True
 
     @property
-    def meta(self):
+    def meta(self) -> FileMetadata:
         """
         Method to return as attribute the file`s metadata class.
         """
         return self._meta
 
     @property
-    def path(self):
+    def path(self) -> str | None:
         """
         Method to return as attribute full path of file.
         """
         return self._path
 
     @path.setter
-    def path(self, value):
+    def path(self, value: str | None) -> None:
         """
         Method to set property attribute path. This method check whether path is a directory before setting, as we only
         allow path to files to be set-up.
@@ -673,14 +673,14 @@ class BaseFile:
             raise ValueError("Attribute `path` informed for File cannot be a directory.")
 
     @property
-    def save_to(self):
+    def save_to(self) -> str | None:
         """
         Method to return as attribute directory where the file should be saved.
         """
         return self._save_to
 
     @save_to.setter
-    def save_to(self, value):
+    def save_to(self, value: str) -> None:
         """
         Method to set property all attributes related to path.
         """
@@ -696,7 +696,7 @@ class BaseFile:
             raise ValueError("Attribute `save_to` informed for File must be a directory.")
 
     @property
-    def sanitize_path(self):
+    def sanitize_path(self) -> str:
         """
         Method to return as attribute full sanitized path of file.
         """
@@ -707,7 +707,7 @@ class BaseFile:
         return self.storage.join(save_to, relative_path, complete_filename)
 
     @property
-    def thumbnail(self):
+    def thumbnail(self) -> BaseFile:
         """
         Method to return as attribute the file object for the thumbnail representation of current content.
         """
@@ -717,7 +717,7 @@ class BaseFile:
         return self._thumbnail.thumbnail
 
     @property
-    def preview(self):
+    def preview(self) -> BaseFile:
         """
         Method to return as attribute the file object for the animated preview of current content.
         """
@@ -726,7 +726,7 @@ class BaseFile:
 
         return self._thumbnail.preview
 
-    def add_valid_filename(self, complete_filename, enforce_mimetype=False) -> bool:
+    def add_valid_filename(self, complete_filename: str, enforce_mimetype: bool = False) -> bool:
         """
         Method to add filename and extension to file only if it has a valid extension.
         This method return boolean to indicate whether a filename and extension was added or not.
@@ -745,7 +745,7 @@ class BaseFile:
         # Check if there is known extension in complete_filename.
         # This method break extract extension from filename and get check if it is valid, returning
         # extension only if it is registered.
-        possible_extension = self.mime_type_handler.guess_extension_from_filename(complete_filename)
+        possible_extension: str | None = self.mime_type_handler.guess_extension_from_filename(complete_filename)
 
         if possible_extension:
             # Enforce use of extension that match mimetype if `enforce_mimetype` is True.

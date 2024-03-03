@@ -135,7 +135,7 @@ class FileNaming:
                                             f"{self.related_file_object}!")
             else:
                 # Prepare reserved names to be set-up in `rename_pipeline`
-                reserved_names = [filename for filename in reserved_folder.keys()]
+                reserved_names: list[str] = [filename for filename in reserved_folder.keys()]
 
                 # Generate new name based on file_system and reserved names calling the rename_pipeline.
                 # The pipeline will update `complete_filename` of file to reflect new one. We shouldn`t change `path`
@@ -166,7 +166,7 @@ class FileNaming:
         else:
             self.reserved_index[complete_filename][self] = self.reserved_filenames[save_to]
 
-    def clean_history(self):
+    def clean_history(self) -> None:
         """
         Method to clean the history of internal_files.
         The data will still be in memory while the Garbage Collector don't remove it.

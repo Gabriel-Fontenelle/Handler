@@ -96,13 +96,13 @@ class StaticRender:
         return static_file
 
     @classmethod
-    def process(cls, **kwargs):
+    def process(cls, **kwargs: Any) -> bool:
         """
         Method used to run this class on Processor`s Pipeline for Rendering images from Data.
         This process method is created exclusively to pipeline for objects inherent from BaseFile.
 
         """
-        object_to_process = kwargs.pop('object_to_process', None)
+        object_to_process: BaseFile = kwargs.pop('object_to_process', None)
         try:
             # Validate whether the extension for the current class is compatible with the render.
             cls.validate(file_object=object_to_process)
@@ -126,7 +126,7 @@ class StaticRender:
         return True
 
     @classmethod
-    def render(cls, file_object, **kwargs: dict):
+    def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
         """
         Method to render the image representation of the file_object.
         This method must be override in child class.
@@ -134,7 +134,7 @@ class StaticRender:
         raise NotImplementedError("Method render must be overwritten on child class.")
 
     @classmethod
-    def validate(cls, file_object):
+    def validate(cls, file_object: BaseFile) -> None:
         """
         Method to validate if content can be rendered to given extension.
         """
@@ -153,13 +153,13 @@ class DocumentFirstPageRender(StaticRender):
     page of document.
     """
 
-    extensions = ["pdf", "epub", "fb2", "xps", "oxps"]
+    extensions: set[str] = {"pdf", "epub", "fb2", "xps", "oxps"}
     """
     Attribute to store allowed extensions for use in `validator`.
     """
 
     @classmethod
-    def render(cls, file_object, **kwargs: dict):
+    def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
         """
         Method to render the image representation of the file_object.
         This method will only use the first page of the documents.
@@ -193,7 +193,7 @@ class DocumentFirstPageRender(StaticRender):
             break
 
         # Resize image using the image_engine and default values.
-        image = image_engine(buffer=buffer)
+        image: ImageEngine = image_engine(buffer=buffer)
 
         # Trim white space originated from epub.
         image.trim(color=defaults.color_to_trim)
@@ -213,13 +213,13 @@ class ImageRender(StaticRender):
     Render class for processing information from file's content focusing in rendering the whole image.
     """
 
-    extensions = ["jpeg", "jpg", "png", "gif", "bmp", "tiff", "tif", "webp"]
+    extensions: set[str] = {"jpeg", "jpg", "png", "gif", "bmp", "tiff", "tif", "webp"}
     """
     Attribute to store allowed extensions for use in `validator`.
     """
 
     @classmethod
-    def render(cls, file_object, **kwargs: dict):
+    def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
         """
         Method to render the image representation of the file_object.
         """
@@ -233,7 +233,7 @@ class ImageRender(StaticRender):
             raise RenderError("There is no content in buffer format available to render.")
 
         # Resize image using the image_engine and default values.
-        image = image_engine(buffer=file_object.buffer)
+        image: ImageEngine = image_engine(buffer=buffer)
 
         image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
 
@@ -249,13 +249,13 @@ class PSDRender(StaticRender):
     Render class for processing information from file's content focusing in rendering the whole PSD image.
     """
 
-    extensions = ["psd", "psb"]
+    extensions: set[str] = {"psd", "psb"}
     """
     Attribute to store allowed extensions for use in `validator`.
     """
 
     @classmethod
-    def render(cls, file_object, **kwargs: dict):
+    def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
         """
         Method to render the image representation of the file_object.
         """
@@ -269,17 +269,17 @@ class PSDRender(StaticRender):
             raise RenderError("There is no content in buffer format available to render.")
 
         # Load PSD from buffer
-        psd = PSDImage.open(fp=file_object.buffer)
+        psd: PSDImage = PSDImage.open(fp=buffer_content)
 
         # Compose image from PSD visible layers and
         # convert it to RGB to remove alpha channel before saving it to buffer.
-        buffer = BytesIO()
+        buffer: BytesIO = BytesIO()
         psd.composite().convert(mode="RGB").save(fp=buffer, format=defaults.format)
 
         # Reset buffer to beginning before being loaded in image_engine.
         buffer.seek(0)
 
-        image = image_engine(buffer=buffer)
+        image: ImageEngine = image_engine(buffer=buffer)
 
         image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
 
@@ -296,28 +296,28 @@ class VideoRender(StaticRender):
     video.
     """
 
-    extensions = ["avi", "mkv", "mpg", "mpeg", "mp4", "flv"]
+    extensions: set[str] = {"avi", "mkv", "mpg", "mpeg", "mp4", "flv"}
     """
     Attribute to store allowed extensions for use in `validator`.
     """
 
     @classmethod
-    def render(cls, file_object, **kwargs: dict):
+    def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
         """
         Method to render the image representation of the file_object.
         This method will get the frame in 20% of the video.
         """
-        image_engine = kwargs.pop('image_engine')
-        video_engine = kwargs.pop('video_engine')
+        image_engine: Type[ImageEngine] = kwargs.pop('image_engine')
+        video_engine: Type[VideoEngine] = kwargs.pop('video_engine')
 
-        defaults = file_object._thumbnail.static_defaults
+        defaults: Type[ThumbnailDefaults] = file_object._thumbnail.static_defaults
 
         video: VideoEngine = video_engine(buffer=file_object.content_as_buffer)
 
-        frame_to_select = video.get_frame_amount() * 20 // 100
+        frame_to_select: int = video.get_frame_amount() * 20 // 100
 
-        image = image_engine(buffer=BytesIO(video.get_frame_as_bytes(index=frame_to_select,
-                                                                     encode_format=defaults.format)))
+        image: ImageEngine = image_engine(buffer=BytesIO(video.get_frame_as_bytes(index=frame_to_select,
+                                                                                  encode_format=defaults.format)))
 
         image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
 

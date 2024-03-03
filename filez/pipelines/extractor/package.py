@@ -563,7 +563,7 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
         return ZipContentBuffer(file_object, cls.compressor_class, internal_file_name, mode)
 
     @classmethod
-    def decompress(cls, file_object, overrider: bool, **kwargs: dict):
+    def decompress(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> bool:
         """
         Method to uncompress the content from a file_object.
         """

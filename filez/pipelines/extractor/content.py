@@ -115,8 +115,8 @@ class ImageMetadataFromContentExtractor(Extractor):
             # if already cached. The next time property buffer is called it will reset again.
             image: WandImage = WandImage(buffer=buffer)
 
-        for attribute, value in image.metadata or {}:
-            setattr(file_object.meta, attribute, value)
+            for attribute, value in image.metadata:
+                setattr(file_object.meta, attribute, value)
 
 
 class DocumentMetadataFromContentExtractor(Extractor):

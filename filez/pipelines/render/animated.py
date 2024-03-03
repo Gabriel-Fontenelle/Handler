@@ -90,21 +90,21 @@ class StaticAnimatedRender(AnimatedRender):
     This class not make use of sequences.
     """
 
-    extensions = ["jpeg", "jpg", "bmp", "tiff", "tif"]
+    extensions: set[str] = {"jpeg", "jpg", "bmp", "tiff", "tif"}
     """
     Attribute to store allowed extensions for use in `validator`.
     """
 
     @classmethod
-    def render(cls, file_object, **kwargs: dict):
+    def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
         """
         Method to render the animated representation of the file_object.
         But because those extensions don`t need to be animated to represent the whole image,
         there is no need to animate it.
         """
-        image_engine = kwargs.pop('image_engine')
+        image_engine: Type[ImageEngine] = kwargs.pop('image_engine')
 
-        defaults = file_object._thumbnail.animated_defaults
+        defaults: Type[PreviewDefaults] = file_object._thumbnail.animated_defaults
 
         # Resize image using the image_engine and default values.
         buffer = file_object.content_as_buffer
@@ -136,7 +136,7 @@ class ImageAnimatedRender(AnimatedRender):
     """
 
     @classmethod
-    def render(cls, file_object, **kwargs: dict):
+    def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
         """
         Method to render the animated representation of the file_object that has animation.
         """
@@ -150,7 +150,7 @@ class ImageAnimatedRender(AnimatedRender):
             raise RenderError("There is no content in buffer format available to render.")
 
         # Resize image using the image_engine and default values.
-        image = image_engine(buffer=file_object.buffer)
+        image: ImageEngine = image_engine(buffer=buffer)
 
         image.resample(percentual=defaults.duration, encode_format=defaults.format)
 
@@ -169,13 +169,13 @@ class DocumentAnimatedRender(AnimatedRender):
     This class make use of sequences.
     """
 
-    extensions = ["pdf", "epub", "fb2", "xps", "oxps"]
+    extensions: set[str] = {"pdf", "epub", "fb2", "xps", "oxps"}
     """
     Attribute to store allowed extensions for use in `validator`.
     """
 
     @classmethod
-    def render(cls, file_object, **kwargs: dict):
+    def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
         """
         Method to render the animated representation of the file_object that has pages.
         """
@@ -192,17 +192,17 @@ class DocumentAnimatedRender(AnimatedRender):
         # Because BufferedReader (default return for file_system.open) is not accept
         # we need to consume to get its bytes as bytes are accepted as stream.
         doc = fitz.open(
-            stream=file_object.buffer.read(),
+            stream=buffer.read(),
             filetype=file_object.extension,
             # width and height are only used for content that requires rendering of vectors as `epub`.
             width=defaults.width * 5,
             height=defaults.height * 5
         )
 
-        images = []
+        images: list[ImageEngine] = []
 
-        total_frames = doc.page_count
-        steps = total_frames // (total_frames * defaults.duration // 100)
+        total_frames: int = doc.page_count
+        steps: int = total_frames // (total_frames * defaults.duration // 100)
 
         for page in doc.pages(0, total_frames, steps):
             bitmap = page.get_pixmap(dpi=defaults.format_dpi)
@@ -212,7 +212,7 @@ class DocumentAnimatedRender(AnimatedRender):
             bitmap.pil_save(fp=buffer, format=defaults.format)
             buffer.seek(0)
 
-            image = image_engine(buffer=buffer)
+            image: ImageEngine = image_engine(buffer=buffer)
 
             # Trim white space originated from epub.
             image.trim(color=defaults.color_to_trim)
@@ -240,13 +240,13 @@ class PSDAnimatedRender(AnimatedRender):
     This class make use of sequences.
     """
 
-    extensions = ["psd", "psb"]
+    extensions: set[str] = {"psd", "psb"}
     """
     Attribute to store allowed extensions for use in `validator`.
     """
 
     @classmethod
-    def render(cls, file_object, **kwargs: dict):
+    def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
         """
         Method to render the animated representation of the file_object that has layers.
         """
@@ -260,12 +260,12 @@ class PSDAnimatedRender(AnimatedRender):
             raise RenderError("There is no content in buffer format available to render.")
 
         # Load PSD from buffer
-        psd = PSDImage.open(fp=file_object.buffer)
+        psd: PSDImage = PSDImage.open(fp=buffer)
 
-        images = []
+        images: list[ImageEngine] = []
 
-        total_frames = len(psd.layers)
-        steps = total_frames // (total_frames * defaults.duration // 100)
+        total_frames: int = len(psd.layers)
+        steps: int = total_frames // (total_frames * defaults.duration // 100)
 
         # Compose image from PSD visible layers and
         # convert it to RGB to remove alpha channel before saving it to buffer.
@@ -276,7 +276,7 @@ class PSDAnimatedRender(AnimatedRender):
             # Reset buffer to beginning before being loaded in image_engine.
             buffer.seek(0)
 
-            image = image_engine(buffer=buffer)
+            image: ImageEngine = image_engine(buffer=buffer)
 
             image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
 
@@ -300,13 +300,13 @@ class VideoAnimatedRender(AnimatedRender):
     This class make use of sequences.
     """
 
-    extensions = ["avi", "mkv", "mpg", "mpeg", "mp4", "flv"]
+    extensions: set[str] = {"avi", "mkv", "mpg", "mpeg", "mp4", "flv"}
     """
     Attribute to store allowed extensions for use in `validator`.
     """
 
     @classmethod
-    def render(cls, file_object, **kwargs: dict):
+    def render(cls, file_object: BaseFile, **kwargs: Any) -> None:
         """
         Method to render the animated representation of the file_object that has frames.
         """
@@ -328,7 +328,9 @@ class VideoAnimatedRender(AnimatedRender):
         images: list[ImageEngine] = []
 
         for index in set(range(0, total_frames, steps)):
-            image = image_engine(buffer=BytesIO(video.get_frame_as_bytes(index=index, encode_format=defaults.format)))
+            image: ImageEngine = image_engine(
+                buffer=BytesIO(video.get_frame_as_bytes(index=index, encode_format=defaults.format))
+            )
 
             image.resize(defaults.width, defaults.height, keep_ratio=defaults.keep_ratio)
 
