@@ -85,7 +85,10 @@ class StaticRender:
         )
 
         # Set content from buffer.
-        static_file.content = content
+        if isinstance(content, (BytesIO, StringIO)):
+            static_file.content_as_buffer = content
+        else:
+            static_file.content = content
 
         # Set metadata for file object of thumbnail.
         static_file.meta.thumbnail = True
@@ -161,17 +164,22 @@ class DocumentFirstPageRender(StaticRender):
         Method to render the image representation of the file_object.
         This method will only use the first page of the documents.
         """
-        image_engine = kwargs.pop('image_engine')
+        image_engine: Type[ImageEngine] = kwargs.pop('image_engine')
 
-        defaults = file_object._thumbnail.static_defaults
+        defaults: Type[ThumbnailDefaults] = file_object._thumbnail.static_defaults
 
-        buffer = BytesIO()
+        buffer_content = file_object.content_as_buffer
+
+        if not buffer_content:
+            raise RenderError("There is no content in buffer format available to render.")
+
+        buffer: BytesIO = BytesIO()
 
         # We use fitz from PyMuPDF to open the document.
         # Because BufferedReader (default return for file_system.open) is not accept
         # we need to consume to get its bytes as bytes are accepted as stream.
-        doc = fitz.open(
-            stream=file_object.buffer.read(),
+        doc: fitz.mupdf.FzDocument = fitz.open(
+            stream=buffer_content.read(),
             filetype=file_object.extension,
             # width and height are only used for content that requires rendering of vectors as `epub`.
             width=defaults.width * 5,
@@ -215,9 +223,14 @@ class ImageRender(StaticRender):
         """
         Method to render the image representation of the file_object.
         """
-        image_engine = kwargs.pop('image_engine')
+        image_engine: Type[ImageEngine] = kwargs.pop('image_engine')
 
-        defaults = file_object._thumbnail.static_defaults
+        defaults: Type[ThumbnailDefaults] = file_object._thumbnail.static_defaults
+
+        buffer = file_object.content_as_buffer
+
+        if not buffer:
+            raise RenderError("There is no content in buffer format available to render.")
 
         # Resize image using the image_engine and default values.
         image = image_engine(buffer=file_object.buffer)
@@ -246,9 +259,14 @@ class PSDRender(StaticRender):
         """
         Method to render the image representation of the file_object.
         """
-        image_engine = kwargs.pop('image_engine')
+        image_engine: Type[ImageEngine] = kwargs.pop('image_engine')
 
-        defaults = file_object._thumbnail.static_defaults
+        defaults: Type[ThumbnailDefaults] = file_object._thumbnail.static_defaults
+
+        buffer_content = file_object.content_as_buffer
+
+        if not buffer_content:
+            raise RenderError("There is no content in buffer format available to render.")
 
         # Load PSD from buffer
         psd = PSDImage.open(fp=file_object.buffer)
@@ -294,7 +312,7 @@ class VideoRender(StaticRender):
 
         defaults = file_object._thumbnail.static_defaults
 
-        video = video_engine(buffer=file_object.buffer)
+        video: VideoEngine = video_engine(buffer=file_object.content_as_buffer)
 
         frame_to_select = video.get_frame_amount() * 20 // 100
 

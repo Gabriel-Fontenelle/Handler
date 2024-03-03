@@ -500,7 +500,7 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
                     mode: str = "r" if internal_file_object.type == "text" else "rb"
 
                     # Set up content pointer to internal file using content_buffer
-                    internal_file_object.content = cls.content_buffer(
+                    internal_file_object.content_as_buffer = cls.content_buffer(
                         file_object=file_object,
                         internal_file_name=internal_file.filename,
                         mode=mode)
@@ -657,7 +657,7 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     mode: str = "r" if internal_file_object.type == "text" else "rb"
 
                     # Set up content pointer to internal file using content_buffer
-                    internal_file_object.content = cls.content_buffer(
+                    internal_file_object.content_as_buffer = cls.content_buffer(
                         file_object=file_object,
                         internal_file_name=internal_file.filename,
                         mode=mode)
@@ -771,7 +771,7 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
 
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
-            with cls.compressor(file=file_object.buffer) as compressed_object:
+            with cls.compressor(file=file_object.content_as_buffer) as compressed_object:
 
                 for internal_file in compressed_object.infolist():
                     # Skip directories and symbolic link
@@ -814,7 +814,7 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
                     mode: str = "r" if internal_file_object.type == "text" else "rb"
 
                     # Set up content pointer to internal file using content_buffer
-                    internal_file_object.content = cls.content_buffer(
+                    internal_file_object.content_as_buffer = cls.content_buffer(
                         file_object=file_object,
                         internal_file_name=internal_file.filename,
                         mode=mode)
@@ -867,7 +867,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
                 """
                 if not hasattr(self, "buffer"):
                     # Instantiate the buffer of inner content
-                    compressed = cls.compressor(file=self.source_file_object.buffer)
+                    compressed: SevenZipFile = cls.compressor(file=self.source_file_object.content_as_buffer)
 
                     self.buffer = next(iter(compressed.read(targets=[self.filename]).values()))
 
@@ -886,7 +886,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
 
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
-            with cls.compressor(file=file_object.buffer) as compressed_file:
+            with cls.compressor(file=file_object.content_as_buffer) as compressed_file:
 
                 # targets as None will extract all data, overwriting existing ones.
                 targets: list[str] | None = None
@@ -929,7 +929,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
 
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
-            with cls.compressor(file=file_object.buffer) as compressed_object:
+            with cls.compressor(file=file_object.content_as_buffer) as compressed_object:
 
                 for internal_file in compressed_object.list():
                     # Skip directories
@@ -971,7 +971,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     mode = "r" if internal_file_object.type == "text" else "rb"
 
                     # Set up content pointer to internal file using content_buffer
-                    internal_file_object.content = cls.content_buffer(
+                    internal_file_object.content_as_buffer = cls.content_buffer(
                         file_object=file_object,
                         internal_file_name=internal_file.filename,
                         mode=mode)

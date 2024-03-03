@@ -486,7 +486,7 @@ class BaseFile:
             self._actions.to_rename()
 
     @property
-    def content(self):
+    def content(self) -> str | bytes | None:
         """
         Method to return as attribute the content that can be previous loaded from content,
         or a stream_content or need to be load from file system.
@@ -495,17 +495,20 @@ class BaseFile:
         if self._content is None:
             return None
 
-        return iter(self._content)
+        return self._content.content
 
     @content.setter
-    def content(self, value):
+    def content(self, value: str | bytes) -> None:
         """
         Method to set content attribute. This method can be override in child class.
         This method can receive value as string, bytes or buffer.
         """
+        if isinstance(value, (BytesIO, StringIO)):
+            raise ValueError("The method `content` should not be used for setter of `BytesIO` or `StringIO`."
+                             "Use `content_as_buffer` instead.")
 
         # Storage information if content is being loaded to generator for the first time
-        loading_content = self._content is None
+        loading_content: bool = self._content is None
 
         try:
             self._content = FileContent(value, related_file_object=self)
@@ -530,18 +533,17 @@ class BaseFile:
             self._actions.to_list()
 
     @property
-    def base64(self):
+    def content_as_iterator(self) -> Iterator[Sequence[object]] | None:
         """
-        Method to return the current content as string of base64.
-        This method will load the content to memory before trying to convert to base64.
+        Method to return as an attribute the content that was previous loaded as a buffer.
         """
         if self._content is None:
             return None
 
-        return self._content.content_as_base64
+        return iter(self._content.content_as_buffer)
 
     @property
-    def buffer(self):
+    def content_as_buffer(self) -> BytesIO | StringIO | None:
         """
         Method to return the current content as buffer to be used for extraction or other code
         that require IO objects.
@@ -550,6 +552,48 @@ class BaseFile:
             return None
 
         return self._content.content_as_buffer
+
+    @content_as_buffer.setter
+    def content_as_buffer(self, value: BytesIO | StringIO) -> None:
+        if isinstance(value, (str, bytes)):
+            raise ValueError("The method `content_as_buffer` should not be used for setter of `str` or `bytes`."
+                             "Use `content` instead.")
+
+        # Storage information if content is being loaded to generator for the first time
+        loading_content: bool = self._content is None
+
+        try:
+            self._content = FileContent(value, related_file_object=self)
+
+        except ValueError:
+            return
+
+        # Update file state to changing only if not adding.
+        # Because new content can be changed multiple times, and we not care about
+        # how many times it was changed before saving.
+        if not self._state.adding and not loading_content:
+            self._state.changing = True
+
+        # Update file actions to be saved and hashed.
+        self._actions.to_save()
+        self._actions.to_hash()
+        self._actions.to_preview()
+        self._actions.to_thumbnail()
+
+        if self.meta.packed:
+            # Update file action to be listed only if file allow listing of content.
+            self._actions.to_list()
+
+    @property
+    def content_as_base64(self) -> bytes | None:
+        """
+        Method to return the current content as string of base64.
+        This method will load the content to memory before trying to convert to base64.
+        """
+        if self._content is None:
+            return None
+
+        return self._content.content_as_base64
 
     @property
     def files(self):

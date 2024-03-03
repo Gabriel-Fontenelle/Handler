@@ -125,8 +125,8 @@ class DataCompare(Comparer):
         try:
             # Check if there is a content so we don't compare empty content. It is checked by property content of
             # BaseFile when calling .content
-            content_1 = file_1.content
-            content_2 = file_2.content
+            content_1 = file_1.content_as_iterator
+            content_2 = file_2.content_as_iterator
 
             # Comparing data between binary and string should return False, they are not the same anyway.
             if file_1.is_binary != file_2.is_binary:

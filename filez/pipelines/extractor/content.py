@@ -60,16 +60,26 @@ class VideoMetadataFromContentExtractor(Extractor):
         # Use MoviePy to get additional metadata.
         if not file_object.content:
             raise ValueError(
-                "Attribute `content` must be settled before calling `VideoMetadataFromContentExtractor.extract`!"
+                "Attribute `content` or `content_as_buffer` must be settled before calling "
+                "`VideoMetadataFromContentExtractor.extract`!"
             )
         if not len(file_object):
             raise ValueError(
                 "Length for file's object must set before calling `VideoMetadataFromContentExtractor.extract`!"
             )
 
-        # We don't need to reset the buffer before calling it, because it will be reset
-        # if already cached. The next time property buffer is called it will reset again.
-        video = MoviePyVideo(buffer=file_object.buffer)
+        if isinstance(file_object.content_as_buffer, StringIO):
+            raise ValueError(
+                "Buffer for file's object must be from a stream of Bytes and not String for "
+                "`VideoMetadataFromContentExtractor.extract` to work!"
+            )
+
+        buffer = file_object.content_as_buffer
+
+        if buffer:
+            # We don't need to reset the buffer before calling it, because it will be reset
+            # if already cached. The next time property buffer is called it will reset again.
+            video: MoviePyVideo = MoviePyVideo(buffer=buffer)
 
         for attribute, value in video.metadata or {}:
             setattr(file_object.meta, attribute, value)
@@ -90,16 +100,20 @@ class ImageMetadataFromContentExtractor(Extractor):
         # Use Wand to get additional metadata.
         if not file_object.content:
             raise ValueError(
-                "Attribute `content` must be settled before calling `VideoMetadataFromContentExtractor.extract`!"
+                "Attribute `content` or `content_as_buffer` must be settled before calling "
+                "`VideoMetadataFromContentExtractor.extract`!"
             )
         if not len(file_object):
             raise ValueError(
                 "Length for file's object must set before calling `VideoMetadataFromContentExtractor.extract`!"
             )
 
-        # We don't need to reset the buffer before calling it, because it will be reset
-        # if already cached. The next time property buffer is called it will reset again.
-        image = WandImage(buffer=file_object.buffer)
+        buffer = file_object.content_as_buffer
+
+        if buffer:
+            # We don't need to reset the buffer before calling it, because it will be reset
+            # if already cached. The next time property buffer is called it will reset again.
+            image: WandImage = WandImage(buffer=buffer)
 
         for attribute, value in image.metadata or {}:
             setattr(file_object.meta, attribute, value)
@@ -121,22 +135,26 @@ class DocumentMetadataFromContentExtractor(Extractor):
         # Use fitz to get additional metadata.
         if not file_object.content:
             raise ValueError(
-                "Attribute `content` must be settled before calling `DocumentMetadataFromContentExtractor.extract`!"
+                "Attribute `content` or `content_as_buffer` must be settled before calling "
+                "`DocumentMetadataFromContentExtractor.extract`!"
             )
         if not len(file_object):
             raise ValueError(
                 "Length for file's object must set before calling `DocumentMetadataFromContentExtractor.extract`!"
             )
 
-        # We don't need to reset the buffer before calling it, because it will be reset
-        # if already cached. The next time property buffer is called it will reset again.
-        # We use fitz from PyMuPDF to open the document.
-        # Because BufferedReader (default return for file_system.open) is not accept
-        # we need to consume to get its bytes as bytes are accepted as stream.
-        doc = fitz.open(
-            stream=file_object.buffer.read(),
-            filetype=file_object.extension,
-        )
+        buffer = file_object.content_as_buffer
+
+        if buffer:
+            # We don't need to reset the buffer before calling it, because it will be reset
+            # if already cached. The next time property buffer is called it will reset again.
+            # We use fitz (PyMuPDF) to open the document.
+            # Because BufferedReader (default return for file_system.open) is not accept
+            # we need to consume to get its bytes as bytes are accepted as stream.
+            doc: Document = fitz.open(
+                stream=buffer.read(),
+                filetype=file_object.extension,
+            )
 
         for attribute, value in doc.metadata or {}:
             setattr(file_object.meta, attribute, value)
@@ -158,7 +176,8 @@ class AudioMetadataFromContentExtractor(Extractor):
         # Use tinytag to get additional metadata.
         if not file_object.content:
             raise ValueError(
-                "Attribute `content` must be settled before calling `AudioMetadataFromContentExtractor.extract`!"
+                "Attribute `content` or `content_as_buffer` must be settled before calling "
+                "`AudioMetadataFromContentExtractor.extract`!"
             )
         if not len(file_object):
             raise ValueError(
