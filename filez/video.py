@@ -141,6 +141,7 @@ class MoviePyVideo(VideoEngine):
     def get_frame_as_bytes(self, index: int, encode_format: str = "jpeg") -> ndarray:
         """
         Method to return content of the frame at index as bytes.
+        TODO: Test that buffer is really bytes.
         """
         formats = {
             "jpeg": ".jpg"
