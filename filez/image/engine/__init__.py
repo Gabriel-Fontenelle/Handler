@@ -245,6 +245,14 @@ class ImageEngine:
         # Scale image with the new width, height
         self.scale(width, height)
 
+    def rotate(self, angle: int, background_color: tuple[int, int, int] | None = None):
+        """
+        Method to rotate the current image object given an angle. If `background_color` is set the extra space generated
+         by the transformation will be filled with it.
+        This method should be overwritten in child class.
+        """
+        raise NotImplementedError("The method rotate should be override in child class.")
+
     def scale(self, width: int, height: int, **kwargs: Any) -> None:
         """
         Method to scale the current image object without implementing additional logic.
