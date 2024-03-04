@@ -47,9 +47,8 @@ from pathlib import (
     Path,
     WindowsPath
 )
-from shutil import copyfile
 # third-party
-from shutil import rmtree
+from shutil import copyfile, rmtree
 from sys import version_info
 from typing import Any, TYPE_CHECKING, Generator, Iterator, Pattern
 
@@ -207,11 +206,11 @@ class Storage:
 
         Override this method if that’s not appropriate for your storage.
         """
-        file_path_destination = file_path_origin + '.bak'
+        file_path_destination: str = file_path_origin + '.bak'
 
         i = 1
         while not force and cls.exists(file_path_destination):
-            file_path_destination = re.sub(cls.backup_extension, f'.bak.{i}')
+            file_path_destination = re.sub(cls.backup_extension, f".bak.{i}")
             i += 1
 
         return cls.copy(file_path_origin, file_path_destination, force=True)
