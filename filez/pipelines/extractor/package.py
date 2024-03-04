@@ -516,7 +516,7 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Set up content pointer to internal file using content_buffer
                     internal_file_object.content_as_buffer = cls.content_buffer(
                         file_object=file_object,
-                        internal_file_name=internal_file.filename,
+                        internal_file_name=filename,
                         mode=mode)
 
                     # Set up metadata for internal file
@@ -651,7 +651,7 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
 
                     # Create file object for internal file
                     internal_file_object = file_class(
-                        path=file_system.join(file_object.save_to, path=filename),
+                        path=file_system.join(file_object.save_to, filename),
                         extract_data_pipeline=Pipeline(
                             'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
                             'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
