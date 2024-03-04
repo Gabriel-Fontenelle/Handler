@@ -304,6 +304,9 @@ class PSDLayersFromPackageExtractor(PackageExtractor):
         """
         Method to extract the information necessary from a file_object.
         """
+        if not file_object.save_to:
+            return False
+
         try:
             file_system: Type[Storage] = file_object.storage
             file_class: Type[BaseFile] = file_object.__class__
@@ -451,6 +454,9 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
         """
         Method to extract the information necessary from a file_object.
         """
+        if not file_object.save_to:
+            return False
+
         try:
             file_system: Type[Storage] = file_object.storage
             file_class: Type[BaseFile] = file_object.__class__
@@ -464,13 +470,20 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
                     if internal_file.isdir():
                         continue
 
+                    # Skip inexisting filename if for some reason there is one.
+                    if not internal_file.name:
+                        continue
+
+                    # Cast specifically created to fix a mypy error, as internal_file should always have a filename
+                    filename: str = str(internal_file.name)
+
                     # Skip duplicate only if not choosing to override.
-                    if internal_file.name in file_object._content_files and not overrider:
+                    if filename in file_object._content_files and not overrider:
                         continue
 
                     # Create file object for internal file
                     internal_file_object = file_class(
-                        path=file_system.join(file_object.save_to, internal_file.name),
+                        path=file_system.join(file_object.save_to, filename),
                         extract_data_pipeline=Pipeline(
                             'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
                             'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
@@ -510,7 +523,7 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
                     internal_file_object.meta.internal = True
 
                     # Add internal file as File object to file.
-                    file_object._content_files[internal_file.name] = internal_file_object
+                    file_object._content_files[filename] = internal_file_object
 
             # Update metadata and actions.
             file_object.meta.packed = True
@@ -608,6 +621,9 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
         """
         Method to extract the information necessary from a file_object.
         """
+        if not file_object.save_to:
+            return False
+
         try:
             file_system: Type[Storage] = file_object.storage
             file_class: Type[BaseFile] = file_object.__class__
@@ -621,13 +637,20 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     if internal_file.is_dir():
                         continue
 
+                    # Skip inexisting filename if for some reason there is one.
+                    if not internal_file.filename:
+                        continue
+
+                    # Cast specifically created to fix a mypy error, as internal_file should always have a filename
+                    filename: str = str(internal_file.filename)
+
                     # Skip duplicate only if not choosing to override.
-                    if internal_file.filename in file_object._content_files and not overrider:
+                    if filename in file_object._content_files and not overrider:
                         continue
 
                     # Create file object for internal file
                     internal_file_object = file_class(
-                        path=file_system.join(file_object.save_to, path=internal_file.filename),
+                        path=file_system.join(file_object.save_to, path=filename),
                         extract_data_pipeline=Pipeline(
                             'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
                             'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
@@ -659,7 +682,7 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Set up content pointer to internal file using content_buffer
                     internal_file_object.content_as_buffer = cls.content_buffer(
                         file_object=file_object,
-                        internal_file_name=internal_file.filename,
+                        internal_file_name=filename,
                         mode=mode)
 
                     # Set up metadata for internal file
@@ -667,7 +690,7 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     internal_file_object.meta.internal = True
 
                     # Add internal file as File object to file.
-                    file_object._content_files[internal_file.filename] = internal_file_object
+                    file_object._content_files[filename] = internal_file_object
 
             # Update metadata and actions.
             file_object.meta.packed = True
@@ -765,6 +788,10 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
         """
         Method to extract the information necessary from a file_object.
         """
+
+        if not file_object.save_to:
+            return False
+
         try:
             file_system: Type[Storage] = file_object.storage
             file_class: Type[BaseFile] = file_object.__class__
@@ -778,13 +805,20 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
                     if internal_file.is_dir() or internal_file.is_symlink():
                         continue
 
+                    # Skip inexisting filename if for some reason there is one.
+                    if not internal_file.filename:
+                        continue
+
+                    # Cast specifically created to fix a mypy error, as internal_file should always have a filename
+                    filename: str = str(internal_file.filename)
+
                     # Skip duplicate only if not choosing to override.
-                    if internal_file.filename in file_object._content_files and not overrider:
+                    if filename in file_object._content_files and not overrider:
                         continue
 
                     # Create file object for internal file
                     internal_file_object = file_class(
-                        path=file_system.join(file_object.save_to, internal_file.filename),
+                        path=file_system.join(file_object.save_to, filename),
                         extract_data_pipeline=Pipeline(
                             'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
                             'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
@@ -816,7 +850,7 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Set up content pointer to internal file using content_buffer
                     internal_file_object.content_as_buffer = cls.content_buffer(
                         file_object=file_object,
-                        internal_file_name=internal_file.filename,
+                        internal_file_name=filename,
                         mode=mode)
 
                     # Set up metadata for internal file
@@ -824,7 +858,7 @@ class RarCompressedFilesFromPackageExtractor(PackageExtractor):
                     internal_file_object.meta.internal = True
 
                     # Add internal file as File object to file.
-                    file_object._content_files[internal_file.filename] = internal_file_object
+                    file_object._content_files[filename] = internal_file_object
 
             # Update metadata and actions.
             file_object.meta.packed = True
@@ -921,6 +955,9 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
         """
         Method to extract the information necessary from a file_object.
         """
+        if not file_object.save_to:
+            return False
+
         try:
             cls.validate(file_object)
 
@@ -936,13 +973,20 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     if internal_file.is_directory:
                         continue
 
+                    # Skip inexisting filename if for some reason there is one.
+                    if not internal_file.filename:
+                        continue
+
+                    # Cast specifically created to fix a mypy error, as internal_file should always have a filename
+                    filename: str = str(internal_file.filename)
+
                     # Skip duplicate only if not choosing to override.
-                    if internal_file.filename in file_object._content_files and not overrider:
+                    if filename in file_object._content_files and not overrider:
                         continue
 
                     # Create file object for internal file
                     internal_file_object = file_class(
-                        path=file_system.join(file_object.save_to, internal_file.filename),
+                        path=file_system.join(file_object.save_to, filename),
                         extract_data_pipeline=Pipeline(
                             'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
                             'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
@@ -973,7 +1017,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Set up content pointer to internal file using content_buffer
                     internal_file_object.content_as_buffer = cls.content_buffer(
                         file_object=file_object,
-                        internal_file_name=internal_file.filename,
+                        internal_file_name=filename,
                         mode=mode)
 
                     # Set up metadata for internal file
@@ -981,7 +1025,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
                     internal_file_object.meta.internal = True
 
                     # Add internal file as File object to file.
-                    file_object._content_files[internal_file.filename] = internal_file_object
+                    file_object._content_files[filename] = internal_file_object
 
             # Update metadata and actions.
             file_object.meta.packed = True

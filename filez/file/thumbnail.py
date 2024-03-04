@@ -310,7 +310,7 @@ class FileThumbnail:
         """
 
         # Obtain the current list of files that could be used for generating previews.
-        files = self._get_files_to_process(defaults)
+        files: list[BaseFile] = self._get_files_to_process(defaults)
 
         to_be_processed: list[BaseFile] = []
 

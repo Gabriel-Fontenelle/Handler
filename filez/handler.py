@@ -218,7 +218,7 @@ class URI:
             processed_uri: str = cls.remove_fragments(uri)
 
             # Remove scheme from URI
-            processed_uri: str = cls.uri_scheme.sub('', processed_uri)
+            processed_uri = cls.uri_scheme.sub('', processed_uri)
 
             if processed_uri not in cls.cache:
                 cls.process_path(processed_uri, file_system)

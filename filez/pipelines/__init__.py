@@ -44,8 +44,8 @@ class Processor:
     and the class with the methods to be run on pipelines.
     """
 
-    classname: str
-    classname: str = None
+    classname: Any
+    classname = None
     """
     The class for the processor, this is the class that actually run the processor`s method for pipeline.
     """
@@ -88,7 +88,7 @@ class Processor:
         return getattr(self.classname, item)
 
     @staticmethod
-    def get_classname(dotted_path: str) -> str:
+    def get_classname(dotted_path: str) -> Any:
         """
         Method to obtain and import the processor`s class from the path informed at `dotted_path`.
         """
