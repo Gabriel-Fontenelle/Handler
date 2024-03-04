@@ -100,7 +100,7 @@ class BaseMimeTyper:
         """
         raise NotImplementedError("get_mimetype() method must be overwritten on child class.")
 
-    def guess_extension_from_mimetype(self, mimetype: str) -> str:
+    def guess_extension_from_mimetype(self, mimetype: str) -> str | None:
         """
         Method to get the best extension for given mimetype in case there are more than one extension
         available.

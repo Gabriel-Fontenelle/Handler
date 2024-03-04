@@ -25,7 +25,8 @@ Should there be a need for contact the electronic mail
 from __future__ import annotations
 
 import hashlib
-from typing import Any, Type, TYPE_CHECKING, Iterator
+from typing import Any, Type, TYPE_CHECKING, Iterator, Sequence
+
 from zlib import crc32
 
 # core modules
@@ -286,11 +287,16 @@ class Hasher:
 
             # Check if there is already a hash previously generated in cache.
             if file_id not in cls.get_hash_objects():
+                # Check if there is a content loaded for file before generating a new one
+                content = object_to_process.content_as_iterator
+                if content is None:
+                    return False
+
                 # Get hash_instance
                 hash_instance: Any = cls.get_hash_instance(file_id)
 
                 # Generate hash
-                cls.generate_hash(hash_instance=hash_instance, content_iterator=object_to_process.content_as_iterator)
+                cls.generate_hash(hash_instance=hash_instance, content_iterator=content)
 
             else:
                 hash_instance = cls.get_hash_objects()[file_id]
@@ -301,7 +307,7 @@ class Hasher:
             # Add hash to file
             hash_file: BaseFile = cls.create_hash_file(object_to_process, digested_hex_value)
 
-            object_to_process.hashes[cls.hasher_name]: tuple[str, BaseFile, Type[Hasher]] = (
+            object_to_process.hashes[cls.hasher_name] = (
                 digested_hex_value, hash_file, cls
             )
 
@@ -323,6 +329,11 @@ class Hasher:
         class_file_system_handler: Type[Storage] = cls.file_system_handler
 
         cls.file_system_handler = object_to_process.storage
+
+        # Don't proceed if no path was setted.
+        if not object_to_process.path:
+            return False
+
         path: str = cls.file_system_handler.sanitize_path(object_to_process.path)
         directory_path: str = cls.file_system_handler.get_directory_from_path(path)
 
@@ -416,14 +427,14 @@ class CRC32Hasher(Hasher):
     """
 
     @classmethod
-    def instantiate_hash(cls) -> dict[str, int]:
+    def instantiate_hash(cls) -> dict[str, str]:
         """
         Method to instantiate the hash generator to be used digesting the hash.
         """
-        return {'crc32': 0}
+        return {'crc32': "0"}
 
     @classmethod
-    def digest_hash(cls, hash_instance: dict[str, Any]) -> int:
+    def digest_hash(cls, hash_instance: dict[str, Any]) -> str:
         """
         Method to digest the hash generated at hash_instance.
         As CRC32 don't work as hashlib we used the instantiate_hash to start a dictionary
@@ -432,7 +443,7 @@ class CRC32Hasher(Hasher):
         return hash_instance['crc32']
 
     @classmethod
-    def digest_hex_hash(cls, hash_instance: dict[str, Any]) -> int:
+    def digest_hex_hash(cls, hash_instance: dict[str, Any]) -> str:
         """
         Method to digest the hash generated at hash_instance.
         """
@@ -447,4 +458,4 @@ class CRC32Hasher(Hasher):
         if isinstance(content, str):
             content = content.encode('utf8')
 
-        hash_instance['crc32'] = crc32(content, hash_instance['crc32'])
+        hash_instance['crc32'] = str(crc32(content, hash_instance['crc32']))

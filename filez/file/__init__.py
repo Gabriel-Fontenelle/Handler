@@ -75,7 +75,8 @@ class BaseFile:
     """
     File`s id in the File System.
     """
-    filename: str | None = None
+    filename: str
+    filename = None
     """
     Name of file without extension.
     """
@@ -554,7 +555,7 @@ class BaseFile:
         return self._content.content_as_buffer
 
     @content_as_buffer.setter
-    def content_as_buffer(self, value: BytesIO | StringIO | IO) -> None:
+    def content_as_buffer(self, value: BytesIO | StringIO) -> None:
         if isinstance(value, (str, bytes)):
             raise ValueError("The method `content_as_buffer` should not be used for setter of `str` or `bytes`."
                              "Use `content` instead.")
