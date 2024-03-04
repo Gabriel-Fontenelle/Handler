@@ -491,9 +491,10 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
                         file_system_handler=file_system
                     )
 
-                    # Update creation and modified date
-                    internal_file_object.create_date = internal_file.mtime
-                    internal_file_object.update_date = internal_file.mtime
+                    # Update creation and modified date. As mtime is a integer in TarFile we should convert it to
+                    # datetime.
+                    internal_file_object.create_date = datetime.fromtimestamp(internal_file.mtime)
+                    internal_file_object.update_date = datetime.fromtimestamp(internal_file.mtime)
 
                     # Update size of file
                     internal_file_object.length = internal_file.size
