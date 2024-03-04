@@ -197,7 +197,7 @@ class JSONSerializer:
         # instance as value. The `done` list will be used when fixing reference for related objects.
         cache: dict[str, list] = {"done": []}
 
-        def json_date_time_hook(dct) -> dict | datetime | None:
+        def json_date_time_hook(dct) -> dict | datetime | time | None:
             """
             Internal function to parse the __datetime__ and __time__ dictionary.
             This function solves a problem with the original decoder where importing pytz results in attribute error.

@@ -26,7 +26,7 @@ from base64 import b64encode
 from io import StringIO, IOBase, BytesIO
 from typing import Iterator, Any, TYPE_CHECKING
 
-from ..exception import SerializerError, EmptyContentError
+from ..exception import SerializerError, EmptyContentError, ImproperlyConfiguredFile
 from ..pipelines import Pipeline
 from ..pipelines.renamer import UniqueRenamer
 
@@ -183,6 +183,9 @@ class FileContent:
                     self.buffer = class_name(self._cached_content)
                     self.cached = True
                 elif self.cache_in_file:
+                    if not self._cached_path:
+                        raise ImproperlyConfiguredFile("The attribute `file.content._cached_path` is missing.")
+
                     # Buffer receive stream from file
                     mode = 'r' if self.is_binary else 'rb'
                     self.buffer = self.related_file_object.storage.open_file(self._cached_path, mode=mode)
