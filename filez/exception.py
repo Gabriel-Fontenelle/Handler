@@ -18,15 +18,17 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Should there be a need for contact the electronic mail
-`handler <at> gabrielfontenelle.com` can be used.
+`filez <at> gabrielfontenelle.com` can be used.
 """
 
 __all__ = [
+	'EmptyContentError',
 	'ImproperlyConfiguredFile',
 	'NoInternalContentError',
 	'OperationNotAllowed',
 	'ValidationError',
 	'ReservedFilenameError',
+	'RenderError',
 	'SerializerError'
 ]
 
@@ -41,6 +43,12 @@ class NoInternalContentError(Exception):
 	"""
 	Exception that defines errors for when no internal content is found in file.
 	Meaning that the file is not a container or compacted file.
+	"""
+
+
+class EmptyContentError(Exception):
+	"""
+	Exception that defines errors for when a content was not loaded because its empty.
 	"""
 
 
@@ -65,4 +73,10 @@ class ValidationError(Exception):
 class ReservedFilenameError(Exception):
 	"""
 	Exception that defines error for when trying to rename a file to an already reserved one.
+	"""
+
+
+class RenderError(Exception):
+	"""
+	Exception that defines error for when trying to render a file.
 	"""

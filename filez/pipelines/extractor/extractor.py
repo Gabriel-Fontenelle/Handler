@@ -18,8 +18,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Should there be a need for contact the electronic mail
-`handler <at> gabrielfontenelle.com` can be used.
+`filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ...file import BaseFile
 
 __all__ = [
     'Extractor',
@@ -32,7 +38,7 @@ class Extractor:
     """
 
     @classmethod
-    def extract(cls, file_object, overrider: bool, **kwargs: dict):
+    def extract(cls, file_object: BaseFile, overrider: bool, **kwargs: Any) -> None | bool:
         """
         Method to extract the information necessary from a file_object.
         This method must be override in child class.
@@ -40,18 +46,14 @@ class Extractor:
         raise NotImplementedError("Method extract must be overwritten on child class.")
 
     @classmethod
-    def process(cls, **kwargs: dict):
+    def process(cls, **kwargs: Any) -> bool:
         """
         Method used to run this class on Processor`s Pipeline for Extracting info from Data.
         This method and to_processor() is not need to extract info outside a pipeline.
         This process method is created exclusively to pipeline for objects inherent from BaseFile.
-
-        The processor for renamer uses only one object that must be settled through first argument
-        or through key work `object`.
-
         """
-        object_to_process = kwargs.pop('object_to_process', None)
-        overrider = kwargs.pop('overrider', False)
+        object_to_process: BaseFile = kwargs.pop('object_to_process')
+        overrider: bool = kwargs.pop('overrider', False)
 
         try:
             cls.extract(file_object=object_to_process, overrider=overrider, **kwargs)

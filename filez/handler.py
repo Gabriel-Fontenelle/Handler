@@ -18,49 +18,27 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Should there be a need for contact the electronic mail
-`handler <at> gabrielfontenelle.com` can be used.
+`filez <at> gabrielfontenelle.com` can be used.
 """
+from __future__ import annotations
 
 # Python internals
 import re
 from collections import namedtuple
-from datetime import datetime
-from filecmp import cmp
-from glob import iglob
-from shutil import copyfile
-from sys import version_info
-
-from os import (
-    makedirs,
-    popen,
-    sep as os_sep, remove, fsync,
-    stat
-)
-from os.path import (
-    abspath,
-    basename,
-    dirname,
-    exists,
-    getctime,
-    getmtime,
-    getsize,
-    isdir,
-    join,
-    normcase,
-    normpath,
-)
-from io import open
-
+from typing import Type, TYPE_CHECKING, NamedTuple, Pattern
 # third-party
-from shutil import rmtree
 from urllib.parse import urlparse, parse_qsl, unquote, urlencode
 
-from send2trash import send2trash
 from psutil import (
     disk_usage,
     virtual_memory,
     swap_memory
 )
+
+if TYPE_CHECKING:
+    from .storage import Storage
+    from urllib.parse import ParseResult
+
 
 __all__ = [
     'System',
@@ -74,7 +52,7 @@ class System:
     """
     
     @classmethod
-    def has_available_swap(cls, reversed_data=0):
+    def has_available_swap(cls, reversed_data: int = 0) -> bool:
         """
         Method to verify if there is swap memory available for reserved_data.
         The default implementation uses psutil operations.
@@ -84,7 +62,7 @@ class System:
         return data.available >= reversed_data
 
     @classmethod
-    def has_available_memory(cls, reserved_data=0):
+    def has_available_memory(cls, reserved_data: int = 0) -> bool:
         """
         Method to verify if there is memory available for reserved_data.
         The default implementation uses psutil operations.
@@ -94,7 +72,7 @@ class System:
         return data.free >= reserved_data
 
     @classmethod
-    def has_available_disk(cls, drive, reserved_data=0):
+    def has_available_disk(cls, drive: str, reserved_data: int = 0) -> bool:
         """
         Method to verify if there is available space in disk for reserved_data.
         The default implementation uses psutil operations.
@@ -109,27 +87,27 @@ class URI:
     Class that standardized methods of different URI handlers.
     """
 
-    uri_scheme = re.compile(r'([A-Za-z0-9_-]*:\/\/)')
+    uri_scheme: Pattern = re.compile(r'([A-Za-z0-9_-]*:\/\/)')
     """
     Define what is identifiable as scheme. The parentheses required to allow returning of
     capture string in `re.split()`.
     """
-    uri_fragment = re.compile(r'#[^#\/\\]+$')
+    uri_fragment: Pattern = re.compile(r'#[^#\/\\]+$')
     """
     Define what is identifiable as fragment. 
     e.g. `https://test.com/path/#fragment` or `https://test.com/path/test.php#fragment`.
     """
-    uri_separator = re.compile(r'\/|\\|\?[^=]+=|&[^=]+=|&amp;[^=]+=')
+    uri_separator: Pattern = re.compile(r'\/|\\|\?[^=]+=|&[^=]+=|&amp;[^=]+=')
     """
     Define characters that separate values in URLs. 
     """
-    cache = {}
+    cache: dict = {}
     """
     Dictionary to cache paths and URIs to avoid calculating it again.
     """
-    Path = namedtuple('RelativePath', ['directory', 'processed_uri'])
-    Filename = namedtuple('Filename', ['filename', 'processed_uri'])
-    Cache = namedtuple('Cache', ['filename', 'directory'])
+    Path: NamedTuple = namedtuple('Path', ['directory', 'processed_uri'])
+    Filename: NamedTuple = namedtuple('Filename', ['filename', 'processed_uri'])
+    Cache: NamedTuple = namedtuple('Cache', ['filename', 'directory'])
 
     @classmethod
     def remove_fragments(cls, value: str) -> str:
@@ -147,14 +125,14 @@ class URI:
         return parse_qsl(value)
 
     @classmethod
-    def unparser_query(cls, value):
+    def unparser_query(cls, value: str) -> str:
         """
         Method to undo a parse resulted from using `cls.parse_query`.
         """
         return unquote(urlencode(value))
 
     @classmethod
-    def parse_url(cls, value) -> object:
+    def parse_url(cls, value: str) -> ParseResult:
         """
         Method to parse an URI in a object with the following attributes:
         - scheme
@@ -169,19 +147,20 @@ class URI:
         return urlparse(value)
 
     @classmethod
-    def process_path(cls, value, file_system):
+    def process_path(cls, value: str, file_system: Type[Storage]) -> None:
         """
         This method caches the processed value to allow for dynamic programming.
         """
-        search = ['filename', 'file_name', 'file']
-        parsed_url = cls.parse_url(value)
-        filename = None
+        search: set[str] = {'filename', 'file_name', 'file'}
+        parsed_url: ParseResult = cls.parse_url(value)
+
+        filename: str | None = None
 
         # Remove filename, file_name or file from URI query
         if any(x in parsed_url.query for x in search):
             queries = cls.parse_query(parsed_url.query)
 
-            filename_index = None
+            filename_index: int | None = None
 
             for index, item in enumerate(queries):
                 if item[0] in search:
@@ -195,18 +174,18 @@ class URI:
                 value = value.replace(parsed_url.query, cls.unparser_query(queries))
 
         # Remove separator from URI converting it to path
-        path = cls.uri_separator.sub(file_system.sep, value)
+        path: str = cls.uri_separator.sub(file_system.sep, value)
 
         # Remove filename if there is any (Filename are defined with . in its name)
         if not filename:
-            possible_filename = file_system.get_filename_from_path(path)
+            possible_filename: str = file_system.get_filename_from_path(path)
 
             if '.' in possible_filename:
                 filename = possible_filename
                 path = file_system.get_directory_from_path(path)
 
         # Sanitize path
-        directory = file_system.sanitize_path(path)
+        directory: str = file_system.sanitize_path(path)
 
         # Save in cache
         cls.cache[value] = cls.Cache(
@@ -215,14 +194,14 @@ class URI:
         )
 
     @classmethod
-    def get_processed_uri(cls, value):
+    def get_processed_uri(cls, value: str) -> Cache | None:
         """
         Method to return from cache the processed URI dictionary.
         """
-        return cls.cache.get(value, None) if cls.cache else None
+        return cls.cache.get(value, None)
 
     @classmethod
-    def get_paths(cls, value, file_system) -> list:
+    def get_paths(cls, value: str, file_system: Type[Storage]) -> list[Path]:
         """
         Method to return a list of paths found in URI.
         This method convert the URI to path keeping filename if there is any.
@@ -232,11 +211,11 @@ class URI:
         - directory (directory generate from url)
         - processed_uri (url registered at cache)
         """
-        paths = []
+        paths: list[str] = []
 
         for uri in cls.separate_uris(value):
             # Remove fragments from URI
-            processed_uri = cls.remove_fragments(uri)
+            processed_uri: str = cls.remove_fragments(uri)
 
             # Remove scheme from URI
             processed_uri = cls.uri_scheme.sub('', processed_uri)
@@ -249,7 +228,7 @@ class URI:
         return paths
 
     @classmethod
-    def get_filenames(cls, value, file_system) -> list:
+    def get_filenames(cls, value: str, file_system: Type[Storage]) -> list[Filename]:
         """
         Method to return a list of filenames found in URI.
         This method try to find a filename in path if there is any.
@@ -259,30 +238,30 @@ class URI:
         - filename (filename generate from url)
         - processed_uri (url registered at cache)
         """
-        filenames = []
+        filenames: list[str] = []
 
         for uri in cls.separate_uris(value):
             # Remove fragments from URI
-            processed_uri = cls.remove_fragments(uri)
+            processed_uri: str = cls.remove_fragments(uri)
 
             # Remove scheme from URI
-            processed_uri = cls.uri_scheme.sub('', processed_uri)
+            processed_uri: str = cls.uri_scheme.sub('', processed_uri)
 
             if processed_uri not in cls.cache:
                 cls.process_path(processed_uri, file_system)
 
             if cls.cache[processed_uri].filename:
-                filenames.append(cls.Path(cls.cache[processed_uri].filename, processed_uri))
+                filenames.append(cls.Filename(cls.cache[processed_uri].filename, processed_uri))
 
         return filenames
 
     @classmethod
-    def separate_uris(cls, value: str) -> list:
+    def separate_uris(cls, value: str) -> list[str]:
         """
         Method to return list of URI separated by scheme.
         What define scheme in this method is a word (a-z,A-Z,0-9,_,-) followed by `://`.
         """
-        possible_uris = list(reversed(cls.uri_scheme.split(value)))
+        possible_uris: list = list(reversed(cls.uri_scheme.split(value)))
 
         return [
             element[index + 1] + element

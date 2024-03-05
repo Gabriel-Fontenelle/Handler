@@ -18,10 +18,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Should there be a need for contact the electronic mail
-`handler <at> gabrielfontenelle.com` can be used.
+`filez <at> gabrielfontenelle.com` can be used.
 """
 
-from .file import BaseFile, File, ContentFile, StreamFile
 from .exception import (
     ImproperlyConfiguredFile,
     NoInternalContentError,
@@ -29,17 +28,12 @@ from .exception import (
     ReservedFilenameError,
     ValidationError,
 )
+from .file import BaseFile, File, ContentFile, StreamFile
 from .handler import System, URI
-from .storage import WindowsFileSystem, LinuxFileSystem, Storage
 from .mimetype import LibraryMimeTyper, APIMimeTyper
-
-# Module with classes for serializing/deserializing objects.
-from .serializer import PickleSerializer, JSONSerializer
-
 # Module with classes that define the pipelines and its processors classes.
 # A Pipeline is a sequence that loop processors to be run.
 from .pipelines import Processor, Pipeline
-
 # Module with pipeline classes for comparing Files.
 from .pipelines.comparer import (
     Comparer,
@@ -55,7 +49,7 @@ from .pipelines.comparer import (
 # Module with pipeline classes for extracting data for files from multiple sources.
 from .pipelines.extractor import (
     Extractor,
-    ContentExtractor,
+    PackageExtractor,
     FileSystemDataExtractor,
     FilenameAndExtensionFromPathExtractor,
     MimeTypeFromFilenameExtractor,
@@ -64,30 +58,33 @@ from .pipelines.extractor import (
     PathFromURLExtractor,
     FilenameFromMetadataExtractor,
     MetadataExtractor,
-    SevenZipCompressedFilesFromContentExtractor,
+    SevenZipCompressedFilesFromPackageExtractor,
     AudioMetadataFromContentExtractor,
-    RarCompressedFilesFromContentExtractor,
-    ZipCompressedFilesFromContentExtractor,
+    RarCompressedFilesFromPackageExtractor,
+    ZipCompressedFilesFromPackageExtractor,
     MimeTypeFromContentExtractor
 )
 # Module with pipeline classes for generating or extracting hashed data related to file.
 from .pipelines.hasher import Hasher, CRC32Hasher, MD5Hasher, SHA256Hasher
 # Module with pipeline classes for renaming files.
 from .pipelines.renamer import Renamer, WindowsRenamer, LinuxRenamer, UniqueRenamer
-
+# Module with classes for serializing/deserializing objects.
+from .serializer import PickleSerializer, JSONSerializer
+from .storage import WindowsFileSystem, LinuxFileSystem, Storage
 
 __all__ = [
     'APIMimeTyper', 'AudioMetadataFromContentExtractor', 'BaseFile', 'BinaryCompare',
-    'Comparer', 'ContentExtractor', 'ContentFile', 'CRC32Hasher', 'DataCompare',
+    'Comparer', 'PackageExtractor', 'ContentFile', 'CRC32Hasher', 'DataCompare',
     'Extractor', 'File', 'FileSystemDataExtractor', 'FilenameAndExtensionFromPathExtractor',
     'FilenameFromMetadataExtractor', 'FilenameFromURLExtractor', 'HashCompare', 'HashFileExtractor',
-    'Hasher', 'ImproperlyConfiguredFile', 'JSONSerializer', 'LibraryMimeTyper',
+    'Hasher', 'ImageEngine', 'ImproperlyConfiguredFile', 'JSONSerializer', 'LibraryMimeTyper',
     'LinuxFileSystem',  'LinuxRenamer', 'LousyNameCompare', 'MD5Hasher',
     'MetadataExtractor', 'MimeTypeCompare', 'MimeTypeFromContentExtractor',
-    'MimeTypeFromFilenameExtractor', 'NameCompare', 'NoInternalContentError',
-    'OperationNotAllowed', 'PathFromURLExtractor', 'PickleSerializer', 'Pipeline', 'Processor',
-    'RarCompressedFilesFromContentExtractor', 'Renamer', 'ReservedFilenameError',
-    'SHA256Hasher', 'SevenZipCompressedFilesFromContentExtractor',
+    'MimeTypeFromFilenameExtractor', 'NameCompare', 'NoInternalContentError', 'OpenCVImage',
+    'OperationNotAllowed', 'PathFromURLExtractor', 'PickleSerializer', 'PillowImage', 'Pipeline',
+    'Processor', 'RarCompressedFilesFromPackageExtractor', 'Renamer', 'ReservedFilenameError',
+    'SHA256Hasher', 'SevenZipCompressedFilesFromPackageExtractor',
     'SizeCompare', 'Storage', 'StreamFile', 'System', 'TypeCompare', 'URI', 'UniqueRenamer',
-    'ValidationError', 'WindowsFileSystem', 'WindowsRenamer', 'ZipCompressedFilesFromContentExtractor'
+    'ValidationError', 'WandImage', 'WindowsFileSystem', 'WindowsRenamer',
+    'ZipCompressedFilesFromPackageExtractor',
 ]

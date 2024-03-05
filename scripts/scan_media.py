@@ -1,18 +1,38 @@
+"""
+Handler is a package for creating files in an object-oriented way,
+allowing extendability to any file system.
+
+Copyright (C) 2021 Gabriel Fontenelle Senno Silva
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Should there be a need for contact the electronic mail
+`filez <at> gabrielfontenelle.com` can be used.
+"""
 import os
 import pwd
-
-from handler import LinuxFileSystem, WindowsFileSystem, JSONSerializer
-
-from handler.file import File
 from os import listdir, getcwd
 from os.path import isdir
 
+from filez import LinuxFileSystem, WindowsFileSystem, JSONSerializer
+from filez.file import File
 
 HASH_FILES = ['md5', 'sfv']
 
 
-def recursive_get_all_files(path):
-    files = []
+def recursive_get_all_files(path: str) -> list[str]:
+    files: list[str] = []
     for item in listdir(path):
         filepath = f"{path}/{item}"
         if isdir(filepath):
@@ -23,10 +43,10 @@ def recursive_get_all_files(path):
     return files
 
 
-def interactive_get_all_files(path):
-    files = []
+def interactive_get_all_files(path: str) -> list[str]:
+    files: list[str] = []
 
-    paths = [path]
+    paths: list[str] = [path]
 
     while paths:
         path = paths.pop()
@@ -71,10 +91,10 @@ def process_hash_file(directory, file_path):
     # We use the stylus of renaming of WindowsFileSystem for our renaming.
     LinuxFileSystem.file_sequence_style = WindowsFileSystem.file_sequence_style
 
-    # Clone will copy the file renaming it if one already exists in destination.
+    # Clone will copy the file, renaming it if one already exists in destination.
     LinuxFileSystem.clone(
-        file_path_origin=file_path,
-        file_path_destination=destination_directory
+        source=file_path,
+        destination=destination_directory
     )
 
 
@@ -91,7 +111,7 @@ def process_file(directory, file_path):
         file_object.generate_hashes(force=True)
     except (OSError, UnicodeDecodeError) as e:
         # file_to_save = os.path.join(home_dir, f'{filename}-bad.txt')
-        with open(LinuxFileSystem.join(directory, f"error_processing_new_hashes.txt"), mode='a') as fp:
+        with open(LinuxFileSystem.join(directory, "error_processing_new_hashes.txt"), mode='a') as fp:
             fp.write(file_object.complete_filename)
             fp.write("\n")
             fp.write(str(e))
@@ -107,6 +127,10 @@ def process_file(directory, file_path):
         
     
 if __name__ == "__main__":
+    """
+    Recursively gets all files from current directory and loads (or generate) its hashes to save it at a new directory 
+    called `Verify` in two txt, one for good files and another for bad ones. 
+    """
     filename = getcwd()
     filename = filename[:-1] if filename[-1:] == LinuxFileSystem.sep else filename
     filename = LinuxFileSystem.get_filename_from_path(filename)

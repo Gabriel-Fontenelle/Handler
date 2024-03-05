@@ -18,10 +18,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Should there be a need for contact the electronic mail
-`handler <at> gabrielfontenelle.com` can be used.
+`filez <at> gabrielfontenelle.com` can be used.
 """
-
 # first-party
+from __future__ import annotations
+
 import mimetypes
 from os.path import dirname, realpath, join
 
@@ -39,7 +40,7 @@ class BaseMimeTyper:
     """
 
     @property
-    def lossless_mimetypes(self):
+    def lossless_mimetypes(self) -> list[str]:
         """
         Method to return as attribute the mimetypes that are for lossless encoding.
         This method should be override in child class.
@@ -47,7 +48,7 @@ class BaseMimeTyper:
         raise NotImplementedError("lossless_mimetypes() method must be overwritten on child class.")
 
     @property
-    def lossless_extensions(self):
+    def lossless_extensions(self) -> list[str]:
         """
         Method to return as attribute the extensions that are for lossless encoding.
         This method should be override in child class.
@@ -55,7 +56,7 @@ class BaseMimeTyper:
         raise NotImplementedError("lossless_extensions() method must be overwritten on child class.")
 
     @property
-    def compressed_mimetypes(self):
+    def compressed_mimetypes(self) -> list[str]:
         """
         Method to return as attribute the mimetypes that are for containers of compression.
         This method should be override in child class.
@@ -63,7 +64,7 @@ class BaseMimeTyper:
         raise NotImplementedError("compressed_mimetypes() method must be overwritten on child class.")
 
     @property
-    def compressed_extensions(self):
+    def compressed_extensions(self) -> list[str]:
         """
         Method to return as attribute the extensions that are for containers of compression.
         This method should be override in child class.
@@ -71,35 +72,35 @@ class BaseMimeTyper:
         raise NotImplementedError("compressed_extensions() method must be overwritten on child class.")
 
     @property
-    def packed_extensions(self):
+    def packed_extensions(self) -> list[str]:
         """
         Method to return as attribute the extensions that are for containers of compression.
         This method should be override in child class.
         """
         raise NotImplementedError("packed_extensions() method must be overwritten on child class.")
 
-    def get_extensions(self, mimetype):
+    def get_extensions(self, mimetype: str) -> list[str]:
         """
         Method to get all registered extensions for given mimetype.
         This method should be override in child class.
         """
         raise NotImplementedError("get_extensions() method must be overwritten on child class.")
 
-    def get_mimetype(self, extension):
+    def get_mimetype(self, extension: str) -> str | None:
         """
         Method to get registered mimetype for given extension.
         This method should be override in child class.
         """
         raise NotImplementedError("get_mimetype() method must be overwritten on child class.")
 
-    def get_type(self, mimetype=None, extension=None):
+    def get_type(self, mimetype: str | None = None, extension: str | None = None) -> None | str:
         """
         Method to get the associated type for the given mimetype or extension.
         This method should be override in child class.
         """
         raise NotImplementedError("get_mimetype() method must be overwritten on child class.")
 
-    def guess_extension_from_mimetype(self, mimetype):
+    def guess_extension_from_mimetype(self, mimetype: str) -> str | None:
         """
         Method to get the best extension for given mimetype in case there are more than one extension
         available.
@@ -107,7 +108,7 @@ class BaseMimeTyper:
         """
         raise NotImplementedError("guess_extension() method must be overwritten on child class.")
 
-    def guess_extension_from_filename(self, filename):
+    def guess_extension_from_filename(self, filename: str) -> str | None:
         """
         Method to get the best extension for given filename in case there are more than one extension
         available using as base the filename that can or not have a registered extension in it.
@@ -115,38 +116,38 @@ class BaseMimeTyper:
         """
         raise NotImplementedError("guess_extension_and_mimetype() method must be overwritten on child class.")
 
-    def is_extension_registered(self, extension):
+    def is_extension_registered(self, extension: str) -> bool:
         """
         Method to check if a extension is registered or not in list of mimetypes and extensions.
         This method should be override in child class.
         """
         raise NotImplementedError("is_extension_registered() method must be overwritten on child class.")
 
-    def is_extension_lossless(self, extension):
+    def is_extension_lossless(self, extension: str) -> bool:
         """
         Method to check if a extension is related to a lossless file type or not.
         """
         return extension in self.lossless_extensions
 
-    def is_mimetype_lossless(self, mimetype):
+    def is_mimetype_lossless(self, mimetype: str) -> bool:
         """
         Method to check if a mimetype is related to a lossless file type or not.
         """
         return mimetype in self.lossless_mimetypes
 
-    def is_extension_compressed(self, extension):
+    def is_extension_compressed(self, extension: str) -> bool:
         """
         Method to check if an extension is related to a file that is container of compression or not.
         """
         return extension in self.compressed_extensions
 
-    def is_extension_packed(self, extension):
+    def is_extension_packed(self, extension: str) -> bool:
         """
         Method to check if an extension is related to a file that is extractable container of some sort.
         """
         return extension in self.packed_extensions
 
-    def is_mimetype_compressed(self, mimetype):
+    def is_mimetype_compressed(self, mimetype: str) -> bool:
         """
         Method to check if a mimetype is related to a file that is container of compression or not.
         """
@@ -159,20 +160,20 @@ class LibraryMimeTyper(BaseMimeTyper):
     from an updated `mime.types` file in data directory.
     """
 
-    _known_mimetypes_file = join(dirname(realpath(__file__)), 'data', 'mime.types')
+    _known_mimetypes_file: str = join(dirname(realpath(__file__)), 'data', 'mime.types')
     """
     Path of file `mime.types` to be loaded of known mimetypes.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Method that instantiate the mimetype library and load to it the file of known mimetypes.
         It will output a IOError, that must be caught in stack above, if file don't exists.
         """
-        mimetypes.init(self._known_mimetypes_file)
+        mimetypes.init(files=[self._known_mimetypes_file])
 
     @property
-    def lossless_mimetypes(self):
+    def lossless_mimetypes(self) -> list[str]:
         """
         Method to return as attribute the mimetypes that are for lossless encoding.
         """
@@ -189,7 +190,7 @@ class LibraryMimeTyper(BaseMimeTyper):
         ]
 
     @property
-    def lossless_extensions(self):
+    def lossless_extensions(self) -> list[str]:
         """
         Method to return as attribute the extensions that are for lossless encoding.
         """
@@ -254,7 +255,7 @@ class LibraryMimeTyper(BaseMimeTyper):
         ]
 
     @property
-    def compressed_mimetypes(self):
+    def compressed_mimetypes(self) -> list[str]:
         """
         Method to return as attribute the mimetypes that are for containers of compression.
         """
@@ -281,7 +282,7 @@ class LibraryMimeTyper(BaseMimeTyper):
         ]
 
     @property
-    def compressed_extensions(self):
+    def compressed_extensions(self) -> list[str]:
         """
         Method to return as attribute the extensions that are for containers of compression.
         """
@@ -309,7 +310,7 @@ class LibraryMimeTyper(BaseMimeTyper):
         ]
 
     @property
-    def packed_extensions(self):
+    def packed_extensions(self) -> list[str]:
         """
         Method to return as attribute the extensions that are for extractable containers of some sort.
         """
@@ -320,7 +321,7 @@ class LibraryMimeTyper(BaseMimeTyper):
             'mka',
         ]
 
-    def get_extensions(self, mimetype):
+    def get_extensions(self, mimetype: str) -> list[str]:
         """
         Method to get all registered extensions for given mimetype.
         Because mimetypes.guess_all_extensions return extensions with dot in the begin we should remove it from
@@ -328,13 +329,13 @@ class LibraryMimeTyper(BaseMimeTyper):
         """
         return [extension[1:] for extension in mimetypes.guess_all_extensions(mimetype, False)]
 
-    def get_mimetype(self, extension):
+    def get_mimetype(self, extension: str) -> str | None:
         """
         Method to get registered mimetype for given extension.
         """
         return mimetypes.types_map.get('.' + extension, None)
 
-    def get_type(self, mimetype=None, extension=None):
+    def get_type(self, mimetype: str | None = None, extension: str | None = None) -> None | str:
         """
         Method to get the associated type for the given mimetype or extension.
         """
@@ -342,7 +343,7 @@ class LibraryMimeTyper(BaseMimeTyper):
             raise ValueError("mimetype or extension must be informed at LibraryMimeTyper.get_type.")
 
         # Set-up list of types available from file `mime.types` as a set.
-        known_types = {'application', 'audio', 'binary', 'chemical', 'image', 'interface', 'message', 'model',
+        known_types: set[str] = {'application', 'audio', 'binary', 'chemical', 'image', 'interface', 'message', 'model',
                        'multipart', 'text', 'video', 'x-conference'}
 
         if extension and not mimetype:
@@ -352,12 +353,12 @@ class LibraryMimeTyper(BaseMimeTyper):
             return None
 
         # Get set from mimetype using a list of first element before `/` in mimetype.
-        possible_type = mimetype.split('/', 1)[:1]
+        possible_type: list[str] = mimetype.split('/', 1)[:1]
         possible_type_set = set(possible_type)
 
         return possible_type[0] if possible_type_set.intersection(known_types) else None
 
-    def guess_extension_from_mimetype(self, mimetype):
+    def guess_extension_from_mimetype(self, mimetype: str) -> str | None:
         """
         Method to get the best extension for given mimetype in case there are more than one extension
         available.
@@ -365,7 +366,7 @@ class LibraryMimeTyper(BaseMimeTyper):
         which one if better suited for the mimetype, so we return the first one. Except for jpg, we return it instead
         of jpe and alternatives.
         """
-        extensions = self.get_extensions(mimetype)
+        extensions: list = self.get_extensions(mimetype)
 
         if not extensions:
             return None
@@ -378,22 +379,22 @@ class LibraryMimeTyper(BaseMimeTyper):
 
         return extensions[0]
 
-    def guess_extension_from_filename(self, filename):
+    def guess_extension_from_filename(self, filename: str) -> str | None:
         """
         Method to get the best extension for given filename in case there are more than one extension
         available using as base the filename that can or not have a registered extension in it.
         """
-        splitted = filename.rsplit('.', 1)
-        maybe_extension = splitted[int(len(splitted) == 2)]
+        splitted: list[str] = filename.rsplit('.', 1)
+        maybe_extension: str = splitted[int(len(splitted) == 2)]
 
         if maybe_extension and self.is_extension_registered(maybe_extension):
             return maybe_extension
 
         return None
 
-    def is_extension_registered(self, extension):
+    def is_extension_registered(self, extension: str) -> bool:
         """
-        Method to check if a extension is registered or not in list of mimetypes and extensions.
+        Method to check if an extension is registered or not in list of mimetypes and extensions.
         """
         return bool(self.get_mimetype(extension))
 

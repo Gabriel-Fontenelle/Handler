@@ -18,16 +18,23 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Should there be a need for contact the electronic mail
-`handler <at> gabrielfontenelle.com` can be used.
+`filez <at> gabrielfontenelle.com` can be used.
 """
 
 # Python internals
+from __future__ import annotations
+
+import logging
 import re
-from typing import Union
+from typing import Any
+from typing import Type, Pattern, TYPE_CHECKING
 from uuid import uuid4
 
 # modules
 from ..storage import Storage
+
+if TYPE_CHECKING:
+    from ..file import BaseFile
 
 __all__ = [
     'Renamer',
@@ -42,17 +49,27 @@ class Renamer:
     Base class to be inherent to define class to be used on Renamer pipeline.
     """
 
-    stopper = True
+    stopper: bool = True
     """
     Variable that define if this class used as processor should stop the pipeline.
     """
-
-    file_system_handler = Storage
+    file_system_handler: Type[Storage] = Storage
+    """
+    Variable to store the local storage system.
+    """
+    enumeration_pattern: Pattern
     enumeration_pattern = None
-    reserved_names = []
+    """
+    Variable that define the pattern to detect enumeration in file system.
+    """
+
+    reserved_names: list = []
+    """
+    Variable that define the reversed names by the file system that should be avoid in renaming.
+    """
 
     @classmethod
-    def prepare_filename(cls, filename, extension=None):
+    def prepare_filename(cls, filename: str, extension: str | None = None) -> tuple[str, str | None]:
         """
         Method to separated extension from filename if extension
         not informed and save on class.
@@ -64,7 +81,7 @@ class Renamer:
         return filename, extension
 
     @classmethod
-    def get_name(cls, directory_path, filename, extension):
+    def get_name(cls, directory_path: str, filename: str, extension: str | None) -> tuple[str, str | None]:
         """
         Method to get the new generated name.
         This class should raise BlockingIOError when a custom error should happen that will be
@@ -73,7 +90,7 @@ class Renamer:
         raise NotImplementedError("Method get_name must be overwrite on child class.")
 
     @classmethod
-    def process(cls, **kwargs):
+    def process(cls, **kwargs: Any) -> bool:
         """
         Method used to run this class on Processor`s Pipeline for Files.
         This method and to_processor() is not need to rename files outside a pipeline.
@@ -96,9 +113,9 @@ class Renamer:
         This processors return boolean to indicate that process was ran successfully.
         """
         # Get default values from keywords arguments
-        object_to_process = kwargs.pop('object_to_process')
-        path_attribute = kwargs.pop('path_attribute', 'path')
-        reserved_names = kwargs.pop('reserved_names', None)
+        object_to_process: BaseFile = kwargs.pop('object_to_process')
+        path_attribute: str = kwargs.pop('path_attribute', 'path')
+        reserved_names: list | None = kwargs.pop('reserved_names', None)
 
         # Override current reserved names if list of new one provided.
         if reserved_names:
@@ -108,7 +125,7 @@ class Renamer:
         # Prepare filename from File's object
         filename, extension = cls.prepare_filename(object_to_process.filename, object_to_process.extension)
 
-        # Save current file system handler
+        # Save current file system filez
         class_file_system_handler = cls.file_system_handler
 
         # Get new name
@@ -134,7 +151,7 @@ class Renamer:
         # Set new name at File's object.
         # The File class should set the old name at File`s cache/history automatically,
         # filename and extension should be property functions.
-        object_to_process.complete_filename = (new_filename, extension)
+        object_to_process.complete_filename_as_tuple = (new_filename, extension)
 
         return True
 
@@ -147,7 +164,7 @@ class Renamer:
         return filename + extension in cls.reserved_names
 
     @classmethod
-    def add_reserved_name(cls, value: Union[str, list]):
+    def add_reserved_name(cls, value: str | list) -> None:
         """
         Method to update list of reserved names allowing append of multiple values with list.
         This method accept string or list to be added to reserved_names.
@@ -159,21 +176,29 @@ class Renamer:
             cls.reserved_names += value
 
     @classmethod
-    def clean_reserved_names(cls):
+    def clean_reserved_names(cls) -> None:
         """
         Method to reset the `reserved_names` attribute to a empty list.
         """
         cls.reserved_names = []
+
+    @classmethod
+    def register_error(cls, error: Exception) -> None:
+        """
+        Method to log error in system. It could be override to register error in list or distinct output.
+        """
+        # Log error message
+        logging.error(str(error))
 
 
 class WindowsRenamer(Renamer):
     """
     Class following Windows style of renaming existing file to be used on Renamer pipelines.
     """
-    enumeration_pattern = re.compile(r' ?\([0-9]+\)$|\[[0-9]+\]$|$')
+    enumeration_pattern: Pattern = re.compile(r' ?\([0-9]+\)$|\[[0-9]+\]$|$')
 
     @classmethod
-    def get_name(cls, directory_path, filename, extension):
+    def get_name(cls, directory_path: str, filename: str, extension: str | None) -> tuple[str, str | None]:
         """
         Method to get the new generated name.
         If there is a duplicated name the new name will follow
@@ -182,7 +207,7 @@ class WindowsRenamer(Renamer):
         # Prepare filename and extension removing enumeration from filename
         # and setting up a empty string is extension is None
         filename = cls.enumeration_pattern.sub('', filename)
-        formatted_extension = f'.{extension}' if extension else ''
+        formatted_extension: str = f'.{extension}' if extension else ''
 
         i = 0
         while (
@@ -199,10 +224,10 @@ class LinuxRenamer(Renamer):
     """
     Class following Linux style of renaming existing file to be used on Renamer pipelines.
     """
-    enumeration_pattern = re.compile(r'( +)?\- +[0-9]+$|$')
+    enumeration_pattern: Pattern = re.compile(r'( +)?\- +[0-9]+$|$')
 
     @classmethod
-    def get_name(cls, directory_path, filename, extension):
+    def get_name(cls, directory_path: str, filename: str, extension: str | None) -> tuple[str, str | None]:
         """
         Method to get the new generated name.
         If there is a duplicated name the new name will follow
@@ -211,7 +236,7 @@ class LinuxRenamer(Renamer):
         # Prepare filename and extension removing enumeration from filename
         # and setting up a empty string is extension is None
         filename = cls.enumeration_pattern.sub('', filename)
-        formatted_extension = f'.{extension}' if extension else ''
+        formatted_extension: str = f'.{extension}' if extension else ''
 
         i = 0
         while (
@@ -227,13 +252,13 @@ class LinuxRenamer(Renamer):
 class UniqueRenamer(Renamer):
 
     @classmethod
-    def get_name(cls, directory_path, filename, extension):
+    def get_name(cls, directory_path: str, filename: str, extension: str | None) -> tuple[str, str | None]:
         """
         Method to get the new generated name. The new name will be the UUID version 4.
         This method will throw a BlockingIOError if there is more then
         100 tries to generate a unique UUID4.
         """
-        formatted_extension = f'.{extension}' if extension else ''
+        formatted_extension: str = f'.{extension}' if extension else ''
 
         #Generate Unique filename
         filename = str(uuid4())
@@ -248,6 +273,6 @@ class UniqueRenamer(Renamer):
             filename = str(uuid4())
 
         if i == 100:
-            raise BlockingIOError("Too many files being handler simultaneous!")
+            raise BlockingIOError("Too many files being filez simultaneous!")
 
         return filename, extension

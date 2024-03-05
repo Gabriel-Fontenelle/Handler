@@ -1743,7 +1743,7 @@ image/jpeg				jpe jpeg jpg
 image/ktx				ktx
 # image/naplps
 image/photoshop				psd
-image/png				png
+image/png				png apng
 image/prs.btif				btif
 # image/prs.ptiraw
 # image/pwg-raster
@@ -1883,7 +1883,7 @@ text/calendar				ics ifb
 text/css				css
 text/csv				csv
 text/csv-schema				csv
-text/checksum               md5 sha256 sha512
+text/checksum               crc md5 sha256 sha512
 # text/directory
 # text/dns
 # text/ecmascript

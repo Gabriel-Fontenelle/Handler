@@ -18,19 +18,24 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Should there be a need for contact the electronic mail
-`handler <at> gabrielfontenelle.com` can be used.
+`filez <at> gabrielfontenelle.com` can be used.
 """
 
 # Python internals
-import hashlib
+from __future__ import annotations
 
-# core modules
+import hashlib
+from typing import Any, Type, TYPE_CHECKING, Iterator, Sequence
+
 from zlib import crc32
 
-from handler.pipelines import Pipeline
-
+# core modules
+from ..pipelines import Pipeline
 # modules
 from ..storage import Storage
+
+if TYPE_CHECKING:
+    from ..file import BaseFile
 
 __all__ = [
     'Hasher',
@@ -45,75 +50,76 @@ class Hasher:
     Base class to be inherent to define class to be used on Hasher pipelines.
     """
 
-    file_system_handler = Storage
+    file_system_handler: Type[Storage] = Storage
     """
     File System Handler currently in use by class.
     """
+    hasher_name: str
     hasher_name = None
     """
     Name of hasher algorithm and also its extension abbreviation.
     """
-    hash_objects = {}
+    hash_objects: dict = {}
     """
     Cache of hashes for given objects' ids.
     """
-    hash_digested_values = {}
+    hash_digested_values: dict = {}
     """
     Cache of digested hashes for given objects filename.
     """
 
     @classmethod
-    def check_hash(cls, **kwargs):
+    def check_hash(cls, **kwargs: Any) -> bool:
         """
         Method to verify integrity of file checking if hash save in file object is the same
         that is generated from file content. File content can be from File System, Memory or Stream
         so it is susceptible to data corruption.
         """
-        object_to_process = kwargs.pop('object_to_process')
-        hex_value = kwargs.pop('compare_to_hex', None) or object_to_process.hashes[cls.hasher_name][0]
+        object_to_process: BaseFile = kwargs.pop('object_to_process')
+        hex_value: str = kwargs.pop('compare_to_hex', None) or object_to_process.hashes[cls.hasher_name][0]
 
-        hash_instance = cls.instantiate_hash()
+        hash_instance: Any = cls.instantiate_hash()
 
-        cls.generate_hash(hash_instance=hash_instance, content_iterator=object_to_process.content)
+        cls.generate_hash(hash_instance=hash_instance, content_iterator=object_to_process.content_as_iterator)
 
-        digested_hex_value = cls.digest_hex_hash(hash_instance=hash_instance)
+        digested_hex_value: str = cls.digest_hex_hash(hash_instance=hash_instance)
 
         return digested_hex_value == hex_value
 
     @classmethod
-    def digest_hash(cls, hash_instance):
+    def digest_hash(cls, hash_instance: Any) -> str:
         """
         Method to digest the hash generated at hash_instance.
         """
         return hash_instance.digest()
 
     @classmethod
-    def digest_hex_hash(cls, hash_instance):
+    def digest_hex_hash(cls, hash_instance: Any) -> str:
         """
         Method to digest the hash generated at hash_instance.
         """
         return hash_instance.hexdigest()
 
     @classmethod
-    def get_hash_objects(cls):
+    def get_hash_objects(cls) -> dict:
         """
         Method to get the `hash_object` filtering the `hasher_name` considering that `hash_objects` is a dictionary
         shared between all classes that inherent from `Hasher`.
         """
-        hash_object = cls.hash_objects.get(cls.hasher_name, {})
+        hash_object: dict = cls.hash_objects.get(cls.hasher_name, {})
         cls.hash_objects[cls.hasher_name] = hash_object
 
         return hash_object
 
     @classmethod
-    def get_hash_instance(cls, file_id):
+    def get_hash_instance(cls, file_id: str) -> Any:
         """
         Method to get the cached instantiate hash object for the given file id.
         """
         try:
             return cls.hash_objects[cls.hasher_name][file_id]
         except KeyError:
-            h = cls.instantiate_hash()
+            h: Any = cls.instantiate_hash()
             if cls.hasher_name in cls.hash_objects:
                 cls.hash_objects[cls.hasher_name][file_id] = h
             else:
@@ -122,7 +128,7 @@ class Hasher:
             return h
 
     @classmethod
-    def update_hash(cls, hash_instance, content):
+    def update_hash(cls, hash_instance: Any, content: str | bytes) -> None:
         """
         Method to update content in hash_instance to generate the hash. We convert all content to bytes to
         generate a hash of it.
@@ -133,14 +139,14 @@ class Hasher:
         hash_instance.update(content)
 
     @classmethod
-    def instantiate_hash(cls):
+    def instantiate_hash(cls) -> Any:
         """
         Method to instantiate the hash generator to be used digesting the hash.
         """
         raise NotImplementedError("Method instantiate_hash must be overwrite on child class.")
 
     @classmethod
-    def generate_hash(cls, hash_instance, content_iterator):
+    def generate_hash(cls, hash_instance: Any, content_iterator: Iterator[Sequence[object]]) -> None:
         """
         Method to update the hash to be generated from content in blocks using a normalized content that can be
         iterated regardless from its source (e.g. file system, memory, stream).
@@ -149,31 +155,31 @@ class Hasher:
             cls.update_hash(hash_instance, block)
 
     @classmethod
-    def create_hash_file(cls, object_to_process, digested_hex_value):
+    def create_hash_file(cls, object_to_process: BaseFile, digested_hex_value: str) -> BaseFile:
         """
         Method to create a file structured for the hash based on same class as object_to_process
         """
 
         # Add hash to file
-        hash_file = object_to_process.__class__(
-            path=f"{cls.file_system_handler.sanitize_path(object_to_process.path)}{object_to_process.filename}"
-                 f".{cls.hasher_name}",
+        hash_file: BaseFile = object_to_process.__class__(
+            path=f"{cls.file_system_handler.sanitize_path(object_to_process.save_to)}"
+                 f"{cls.file_system_handler.sep}{object_to_process.complete_filename}.{cls.hasher_name}",
             extract_data_pipeline=Pipeline(
-                'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
-                'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
+                'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
             ),
             file_system_handler=object_to_process.storage
         )
-        # Set-up metadata checksum as boolean to indicate whether the source
+        # Set up metadata checksum as boolean to indicate whether the source
         # of the hash is a CHECKSUM.hasher_name file (contains multiple files) or not.
         hash_file.meta.checksum = False
 
-        # Set-up metadata loaded as boolean to indicate whether the source
+        # Set up metadata loaded as boolean to indicate whether the source
         # of the hash was loaded from a file or not.
         hash_file.meta.loaded = False
 
         # Generate content for file
-        content = "# Generated by Handler\r\n"
+        content: str = "# Generated by Handler\r\n"
         content += f"{digested_hex_value} {object_to_process.filename}\r\n"
         hash_file.content = content
 
@@ -183,22 +189,28 @@ class Hasher:
         return hash_file
 
     @classmethod
-    def load_from_file(cls, directory_path, filename, extension, full_check=False):
+    def load_from_file(
+        cls,
+        directory_path: str,
+        filename: str,
+        extension: str | None,
+        full_check: bool = False
+    ) -> tuple[str, str]:
         """
         Method to find and load the hash value from a file named <filename>.<hasher name> or CHECKSUM.<hasher name>
         or <directory_path>.<hasher_name>.
         Both names will be used if `full_check` is True, else only <filename>.<hasher name> will be searched.
         """
         extension = f'.{extension}' if extension else ''
-        full_name = filename + extension
+        full_name: str = filename + extension
 
         # Load and cache dictionary
-        hash_digested = cls.hash_digested_values.get(cls.hasher_name, {})
+        hash_digested: dict = cls.hash_digested_values.get(cls.hasher_name, {})
         if not hash_digested:
             # Add missing hasher_name dictionary
             cls.hash_digested_values[cls.hasher_name] = hash_digested
 
-        hash_directories = hash_digested.get(full_name, {})
+        hash_directories: dict = hash_digested.get(full_name, {})
         if not hash_directories:
             cls.hash_digested_values[cls.hasher_name][full_name] = hash_directories
 
@@ -206,7 +218,7 @@ class Hasher:
         if directory_path in hash_directories:
             return hash_directories[directory_path]
 
-        files_to_check = [
+        files_to_check: list[str] = [
             # Check checksum files that contain the full name of file plus `cls.hasher_name`
             full_name + '.' + cls.hasher_name,
             # Check checksum files that removed the extension from filename plus `cls.hasher_name`.
@@ -233,7 +245,7 @@ class Hasher:
                         # Get hash from line and return it.
                         # It's assuming that first argument until first white space if the hash and second
                         # is the filename.
-                        hashed_value = line.lstrip().split(maxsplit=1)[0]
+                        hashed_value: str = line.lstrip().split(maxsplit=1)[0]
 
                         # Add hash to cache
                         hash_directories[directory_path] = hashed_value
@@ -243,7 +255,7 @@ class Hasher:
         raise FileNotFoundError(f"{full_name} not found!")
 
     @classmethod
-    def process(cls, **kwargs):
+    def process(cls, **kwargs: Any) -> bool:
         """
         Method used to run this class on Processor's Pipeline for Hash.
         This method and to_processor() is not need to generate hash outside a pipelines.
@@ -258,9 +270,9 @@ class Hasher:
 
         This processors return boolean to indicate that process was ran successfully.
         """
-        object_to_process = kwargs.get('object_to_process')
-        try_loading_from_file = kwargs.get('try_loading_from_file', False)
-        full_check = kwargs.get('full_check', False)
+        object_to_process: BaseFile = kwargs.get('object_to_process')
+        try_loading_from_file: bool = kwargs.get('try_loading_from_file', False)
+        full_check: bool = kwargs.get('full_check', False)
 
         # Check if there is already a hash previously loaded on file,
         # so that we don't try to digest it again.
@@ -271,31 +283,38 @@ class Hasher:
                 if cls.process_from_file(full_check=full_check, **kwargs):
                     return True
 
-            file_id = id(object_to_process)
+            file_id: str = str(id(object_to_process))
 
             # Check if there is already a hash previously generated in cache.
             if file_id not in cls.get_hash_objects():
+                # Check if there is a content loaded for file before generating a new one
+                content = object_to_process.content_as_iterator
+                if content is None:
+                    return False
+
                 # Get hash_instance
-                hash_instance = cls.get_hash_instance(file_id)
+                hash_instance: Any = cls.get_hash_instance(file_id)
 
                 # Generate hash
-                cls.generate_hash(hash_instance=hash_instance, content_iterator=object_to_process.content)
+                cls.generate_hash(hash_instance=hash_instance, content_iterator=content)
 
             else:
                 hash_instance = cls.get_hash_objects()[file_id]
 
             # Digest hash
-            digested_hex_value = cls.digest_hex_hash(hash_instance=hash_instance)
+            digested_hex_value: str = cls.digest_hex_hash(hash_instance=hash_instance)
 
             # Add hash to file
-            hash_file = cls.create_hash_file(object_to_process, digested_hex_value)
+            hash_file: BaseFile = cls.create_hash_file(object_to_process, digested_hex_value)
 
-            object_to_process.hashes[cls.hasher_name] = digested_hex_value, hash_file, cls
+            object_to_process.hashes[cls.hasher_name] = (
+                digested_hex_value, hash_file, cls
+            )
 
         return True
 
     @classmethod
-    def process_from_file(cls, **kwargs) -> bool:
+    def process_from_file(cls, **kwargs: Any) -> bool:
         """
         Method to try to process the hash from a hash's file instead of generating one.
         It will return False if no hash was found in files.
@@ -303,15 +322,20 @@ class Hasher:
         Specifying the keyword argument `full_check` as True will make the processor to verify the hash value in file
         CHECKSUM.<cls.hasher_name>, if there is any in the same directory as the file to be processed.
         """
-        object_to_process = kwargs.pop('object_to_process')
-        full_check = kwargs.pop('full_check', True)
+        object_to_process: BaseFile = kwargs.pop('object_to_process')
+        full_check: bool = kwargs.pop('full_check', True)
 
-        # Save current file system handler
-        class_file_system_handler = cls.file_system_handler
+        # Save current file system filez
+        class_file_system_handler: Type[Storage] = cls.file_system_handler
 
         cls.file_system_handler = object_to_process.storage
-        path = cls.file_system_handler.sanitize_path(object_to_process.path)
-        directory_path = cls.file_system_handler.get_directory_from_path(path)
+
+        # Don't proceed if no path was setted.
+        if not object_to_process.path:
+            return False
+
+        path: str = cls.file_system_handler.sanitize_path(object_to_process.path)
+        directory_path: str = cls.file_system_handler.get_directory_from_path(path)
 
         try:
             hex_value, hash_filename = cls.load_from_file(
@@ -326,15 +350,15 @@ class Hasher:
             # Restore File System attribute to original.
             cls.file_system_handler = class_file_system_handler
 
-        file_system = object_to_process.storage
+        file_system: Type[Storage] = object_to_process.storage
 
         # Add hash to file. The content will be obtained from file pointer.
-        hash_file = object_to_process.__class__(
+        hash_file: BaseFile = object_to_process.__class__(
             path=f"{file_system.join(directory_path, hash_filename)}",
             extract_data_pipeline=Pipeline(
-                'handler.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
-                'handler.pipelines.extractor.MimeTypeFromFilenameExtractor',
-                'handler.pipelines.extractor.FileSystemDataExtractor'
+                'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
+                'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
+                'filez.pipelines.extractor.FileSystemDataExtractor'
             ),
             file_system_handler=file_system
         )
@@ -361,13 +385,13 @@ class MD5Hasher(Hasher):
     Class specifying algorithm MD5 to be used on Hasher pipelines.
     """
 
-    hasher_name = 'md5'
+    hasher_name: str = 'md5'
     """
     Name of hasher algorithm and also its extension abbreviation.
     """
 
     @classmethod
-    def instantiate_hash(cls):
+    def instantiate_hash(cls) -> hashlib.md5:
         """
         Method to instantiate the hash generator to be used digesting the hash.
         """
@@ -379,13 +403,13 @@ class SHA256Hasher(Hasher):
     Class specifying algorithm SHA256 to be used on Hasher pipelines.
     """
 
-    hasher_name = 'sha256'
+    hasher_name: str = 'sha256'
     """
     Name of hasher algorithm and also its extension abbreviation.
     """
 
     @classmethod
-    def instantiate_hash(cls):
+    def instantiate_hash(cls) -> hashlib.sha256:
         """
         Method to instantiate the hash generator to be used digesting the hash.
         """
@@ -397,20 +421,20 @@ class CRC32Hasher(Hasher):
     Class specifying algorithm CRC32 to be used on Hasher pipelines.
     """
 
-    hasher_name = 'crc32'
+    hasher_name: str = 'crc32'
     """
     Name of hasher algorithm and also its extension abbreviation.
     """
 
     @classmethod
-    def instantiate_hash(cls):
+    def instantiate_hash(cls) -> dict[str, str]:
         """
         Method to instantiate the hash generator to be used digesting the hash.
         """
-        return {'crc32': 0}
+        return {'crc32': "0"}
 
     @classmethod
-    def digest_hash(cls, hash_instance):
+    def digest_hash(cls, hash_instance: dict[str, Any]) -> str:
         """
         Method to digest the hash generated at hash_instance.
         As CRC32 don't work as hashlib we used the instantiate_hash to start a dictionary
@@ -419,14 +443,14 @@ class CRC32Hasher(Hasher):
         return hash_instance['crc32']
 
     @classmethod
-    def digest_hex_hash(cls, hash_instance):
+    def digest_hex_hash(cls, hash_instance: dict[str, Any]) -> str:
         """
         Method to digest the hash generated at hash_instance.
         """
         return hash_instance['crc32']
 
     @classmethod
-    def update_hash(cls, hash_instance, content):
+    def update_hash(cls, hash_instance: dict[str, Any], content: bytes | str) -> None:
         """
         Method to update content in hash_instance to generate the hash. We convert all content to bytes to
         generate a hash of it.
@@ -434,4 +458,4 @@ class CRC32Hasher(Hasher):
         if isinstance(content, str):
             content = content.encode('utf8')
 
-        hash_instance['crc32'] = crc32(content, hash_instance['crc32'])
+        hash_instance['crc32'] = str(crc32(content, hash_instance['crc32']))
