@@ -390,7 +390,7 @@ class FilePacket:
     """
 
     # Pipelines
-    extract_data_pipeline: Pipeline = Pipeline(
+    unpack_data_pipeline: Pipeline = Pipeline(
         'filez.pipelines.extractor.SevenZipCompressedFilesFromPackageExtractor',
         'filez.pipelines.extractor.RarCompressedFilesFromPackageExtractor',
         'filez.pipelines.extractor.TarCompressedFilesFromPackageExtractor',
