@@ -51,18 +51,13 @@ class Extractor:
         Method used to run this class on Processor`s Pipeline for Extracting info from Data.
         This method and to_processor() is not need to extract info outside a pipeline.
         This process method is created exclusively to pipeline for objects inherent from BaseFile.
+
+        This method can throw ValueError and IOError when trying to extract data from content.
+        The `Pipeline.run` method will catch those errors.
         """
         object_to_process: BaseFile = kwargs.pop('object_to_process')
         overrider: bool = kwargs.pop('overrider', False)
 
-        try:
-            cls.extract(file_object=object_to_process, overrider=overrider, **kwargs)
-        except (ValueError, IOError) as e:
-            if not hasattr(cls, 'errors'):
-                setattr(cls, 'errors', [e])
-            elif isinstance(cls.errors, list):
-                cls.errors.append(e)
-
-            return False
+        cls.extract(file_object=object_to_process, overrider=overrider, **kwargs)
 
         return True

@@ -99,6 +99,8 @@ class StaticRender:
         Method used to run this class on Processor`s Pipeline for Rendering images from Data.
         This process method is created exclusively to pipeline for objects inherent from BaseFile.
 
+        This method can throw ValueError and IOError when trying to render the content. The `Pipeline.run` method will
+        catch those errors.
         """
         object_to_process: BaseFile = kwargs.pop('object_to_process', None)
         try:
@@ -108,16 +110,8 @@ class StaticRender:
             # Render the static image for the FileThumbnail.
             cls.render(file_object=object_to_process, **kwargs)
 
-        except (ValueError, IOError) as e:
-            if not hasattr(cls, 'errors'):
-                setattr(cls, 'errors', [e])
-            elif isinstance(cls.errors, list):
-                cls.errors.append(e)
-
-            return False
-
         except ValidationError:
-            # Don't register validation error because it is a expected error case the extension is
+            # We consume and don't register validation error because it is a expected error case the extension is
             # not compatible with the method.
             return False
 
