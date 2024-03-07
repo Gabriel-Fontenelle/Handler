@@ -34,10 +34,12 @@ from .content import FilePacket, FileContent
 from .hash import FileHashes
 from .meta import FileMetadata
 from .name import FileNaming
+from .options import FileOption
 from .state import FileState
 from .thumbnail import FileThumbnail
 from ..exception import (
     ImproperlyConfiguredFile,
+    ImproperlyConfiguredPipeline,
     NoInternalContentError,
     OperationNotAllowed,
     ReservedFilenameError,
@@ -228,11 +230,19 @@ class BaseFile:
     """
     Controller for the thumbnail representation of file. 
     """
+    option: Type[FileOption] = FileOption
+    """
+    Controller for the general options of files.
+    """
 
     # Common Exceptions shortcut
     ImproperlyConfiguredFile: Type[Exception] = ImproperlyConfiguredFile
     """
     Exception to throw when a required configuration is missing or misplaced.
+    """
+    ImproperlyConfiguredPipeline: Type[Exception] = ImproperlyConfiguredPipeline
+    """
+    Exception to throw when a required configuration is missing or misplaced for pipelines.
     """
     ValidationError: Type[Exception] = ValidationError
     """
@@ -251,6 +261,10 @@ class BaseFile:
     """
     Exception to throw when a file is trying to be renamed, but there is already another file with the filename 
     reserved. 
+    """
+    SerializerError: Type[Exception] = SerializerError
+    """
+    Exception to throw when an error occur when serializing or deserializing an file.
     """
 
     @classmethod
@@ -888,7 +902,7 @@ class BaseFile:
         # Set up its processing state to False
         self._state.processing = False
 
-    def save(self, **options: bool) -> None:
+    def save(self) -> None:
         """
         Method to save file to file system. In this method we do some validation and verify if file can be saved
         following some options informed through parameter `options`.
@@ -915,19 +929,19 @@ class BaseFile:
         self.validate()
 
         # Extract options like `overwrite=bool` file, `save_hashes=False`.
-        overwrite: bool = options.pop('overwrite', False)
-        save_hashes: bool = options.pop('save_hashes', False)
-        allow_search_hashes: bool = options.pop('allow_search_hashes', True)
-        allow_update: bool = options.pop('allow_update', True)
-        allow_rename: bool = options.pop('allow_rename', False)
-        allow_extension_change: bool = options.pop('allow_extension_change', True)
-        create_backup: bool = options.pop('create_backup', False)
+        allow_overwrite: bool = getattr(self.options, 'allow_overwrite', False)
+        save_hashes: bool = getattr(self.options, 'save_hashes', False)
+        allow_search_hashes: bool = getattr(self.options, 'allow_search_hashes', True)
+        allow_update: bool = getattr(self.options, 'allow_update', True)
+        allow_rename: bool = getattr(self.options, 'allow_rename', False)
+        allow_extension_change: bool = getattr(self.options, 'allow_extension_change', True)
+        create_backup: bool = getattr(self.options, 'create_backup', False)
 
         # If overwrite is False and file exists a new filename must be created before renaming.
         file_exists: bool = self.storage.exists(self.sanitize_path)
 
         # Verify which actions are allowed to perform while saving.
-        if self._state.adding and file_exists and not overwrite:
+        if self._state.adding and file_exists and not allow_overwrite:
             raise self.OperationNotAllowed("Saving a new file is not allowed when there is a existing one in path "
                                            "and `overwrite` is set to `False`!")
 
@@ -935,7 +949,7 @@ class BaseFile:
             raise self.OperationNotAllowed("Update a file content is not allowed when there is a existing one in path "
                                            "and `allow_update` and `create_backup` are set to `False`!")
 
-        if self._state.renaming and file_exists and not (allow_rename or overwrite):
+        if self._state.renaming and file_exists and not (allow_rename or allow_overwrite):
             raise self.OperationNotAllowed("Renaming a file is not allowed when there is a existing one in path "
                                            "and `allow_rename` and `overwrite` is set to `False`!")
 
