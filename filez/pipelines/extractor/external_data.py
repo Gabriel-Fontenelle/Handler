@@ -486,7 +486,9 @@ class MetadataExtractor(Extractor):
                 # In order to avoid wrong extension being settled is recommended to use an Extractor of
                 # `FilenameFromURLExtractor` and `FilenameFromMetadataExtractor` before this processor.
                 if 'stream' not in mimetype:
-                    possible_extension: str | None = file_object.mime_type_handler.guess_extension_from_mimetype(mimetype)
+                    possible_extension: str | None = file_object.mime_type_handler.guess_extension_from_mimetype(
+                        mimetype
+                    )
 
                     if possible_extension:
                         file_object.extension = possible_extension
