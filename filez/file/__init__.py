@@ -136,11 +136,11 @@ class BaseFile:
     """
 
     # Initializer data
-    _keyword_arguments: dict[str, Any]
-    _keyword_arguments = None
+    _pipelines_override_keyword_arguments: dict[str, Any] | list[tuple[dict[str, Any], str] | dict[str, Any]]
+    _pipelines_override_keyword_arguments = None
     """
-    Additional attributes data passed to `__init__` method. This information is important to be able to 
-    reload data from disk correctly.
+    Attributes for overriding pipelines kwargs passed to `__init__` method. This information is important to be able to 
+    reload data from disk correctly when custom override is provided.
     """
 
     # Handler
@@ -343,7 +343,9 @@ class BaseFile:
         run_extractor: bool = additional_kwargs.pop('run_extractor', True)
 
         # Set up keyword arguments to be used in processor.
-        self._keyword_arguments = additional_kwargs
+        # pipelines_override_kwargs: dict[str, Any] = {}
+        # pipelines_override_kwargs: list[tuple[dict[str, Any], str]] = [({}, )]
+        self._pipelines_override_keyword_arguments = additional_kwargs.pop('pipelines_override_kwargs', {})
 
         # Process extractor pipeline. We only run the pipeline if the criterion below is accomplished:
         # It should not come from the serializer (don't have version)
@@ -741,6 +743,32 @@ class BaseFile:
 
         return self._thumbnail.preview
 
+    def _get_kwargs_for_pipeline(self, pipeline_name: str):
+        """
+        Method to return the parameters for overriding of pipeline arguments.
+        This method will return all parameters that match the `pipeline_name` and those that don't specify a pipeline.
+        """
+        if isinstance(self._pipelines_override_keyword_arguments, dict):
+            return self._pipelines_override_keyword_arguments
+
+        elif isinstance(self._pipelines_override_keyword_arguments, list):
+            parameters: dict[str, Any] = {}
+
+            for element in self._pipelines_override_keyword_arguments:
+                if isinstance(element, tuple):
+                    if element[1] == pipeline_name:
+                        parameters = {**parameters, **element[0]}
+
+                elif isinstance(element, dict):
+                    parameters = {**parameters, **element)
+
+                else:
+                    raise ImproperlyConfiguredFile("")
+
+            return parameters
+
+        raise ImproperlyConfiguredFile("")
+
     def add_valid_filename(self, complete_filename: str, enforce_mimetype: bool = False) -> bool:
         """
         Method to add filename and extension to file only if it has a valid extension.
@@ -864,7 +892,10 @@ class BaseFile:
             self._content_files.reset()
 
             # Extract data from content
-            self._content_files.extract_data_pipeline.run(object_to_process=self)
+            self._content_files.unpack_data_pipeline.run(
+                object_to_process=self,
+                self._get_kwargs_for_pipeline('unpack_data_pipeline')
+            )
 
             # Mark as concluded the was_listed option
             self._actions.listed()
@@ -885,7 +916,7 @@ class BaseFile:
         )
 
         # Run the pipeline.
-        pipeline.run(object_to_process=self, overrider=True, **self._keyword_arguments)
+        pipeline.run(object_to_process=self, overrider=True, **self._pipelines_override_keyword_arguments)
 
         # Set up its processing state to False
         self._state.processing = False
@@ -896,7 +927,7 @@ class BaseFile:
         not overwrite data already loaded.
         """
         # Call pipeline with keyword_arguments saved in file object
-        self.extract_data_pipeline.run(object_to_process=self, **self._keyword_arguments)
+        self.extract_data_pipeline.run(object_to_process=self, **self._get_kwargs_for_pipeline('extract_data_pipeline'))
 
         # Mark the file object as run its pipeline for extraction.
         # Set up its processing state to False
