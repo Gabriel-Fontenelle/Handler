@@ -623,7 +623,7 @@ class BaseFile:
             self._content_files.reset()
 
             # Extract data from content
-            self._content_files.extract_data_pipeline.run(object_to_process=self)
+            self._content_files.unpack_data_pipeline.run(object_to_process=self)
 
             # Mark as concluded the was_listed option
             self._actions.listed()
@@ -853,9 +853,9 @@ class BaseFile:
             # Define directory location for extraction of content from path.
             destination = destination or self.storage.join(self.save_to, self.filename)
 
-            # Directly run extractor pipeline by passing method `run`.
+            # Directly run extractor pipeline by-passing method `run`.
             # The method decompress in extractor determine if this package is extractable.
-            for processor in self._content_files.extract_data_pipeline:
+            for processor in self._content_files.unpack_data_pipeline:
                 try:
                     if processor.decompress(file_object=self, decompress_to=destination, overrider=force):
                         return True
