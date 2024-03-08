@@ -1,6 +1,6 @@
-# Handler
+# FileZ
 
-Handler is a Python package initially created to handle files, and files from remote resources (downloads), for use in 
+FileZ is a Python package initially created to handle files, and files from remote resources (downloads), for use in 
 a personal project that automatically crawl and download multimedia content. It evolved from a simple structure 
 paradigm to an orient-object one, as a mean to show some colleagues the advantages in maintainability this paradigm 
 brings. 
