@@ -267,13 +267,13 @@ class HashFileExtractor(Extractor):
         full_check: bool = kwargs.pop('full_check', True)
 
         for processor in file_object.hasher_pipeline:
-            hasher: Any = processor.classname
+            hasher: str = processor.hasher_name
 
             if hasher in file_object.hashes and file_object.hashes[hasher] and not overrider:
                 continue
 
             # Extract from hash file and save to hasher if hash file content found.
-            hasher.process_from_file(object_to_process=file_object, full_check=full_check)
+            processor.process_from_file(object_to_process=file_object, full_check=full_check)
 
 
 class MimeTypeFromFilenameExtractor(Extractor):
