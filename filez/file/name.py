@@ -140,12 +140,14 @@ class FileNaming:
                 # The pipeline will update `complete_filename` of file to reflect new one. We shouldn`t change `path`
                 # of file; `complete_filename` will add the new filename to `history` and remove the old one from
                 # `reserved_filenames`.
-                # Set path_attribute and reserved_names in processors before running the pipeline.
-                for processor in self.related_file_object.rename_pipeline:
-                    processor.parameters['path_attribute'] = 'save_to',
-                    processor.parameters['reserved_names'] = reserved_names,
-
-                self.related_file_object.rename_pipeline.run(object_to_process=self.related_file_object)
+                # Inform `path_attribute` and `reserved_names` to pipeline.
+                self.related_file_object.rename_pipeline.run(
+                    object_to_process=self.related_file_object,
+                    **{
+                        **self.related_file_object._get_kwargs_for_pipeline("rename_pipeline"),
+                        "path_attribute": "save_to",
+                        "reserved_names": reserved_names
+                    })
 
                 # Rename hash_files if there is any. This method not save the hash files giving the responsibility to
                 # `save` method.
