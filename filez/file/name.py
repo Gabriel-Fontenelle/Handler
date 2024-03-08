@@ -163,9 +163,9 @@ class FileNaming:
         # `self.reserved_filenames`.
         if complete_filename not in self.reserved_index:
             # Pass reference of dict `save_to` to index of reserved names.
-            self.reserved_index[complete_filename] = {self: self.reserved_filenames[save_to]}
+            self.reserved_index[complete_filename] = {self.related_file_object: self.reserved_filenames[save_to]}
         else:
-            self.reserved_index[complete_filename][self] = self.reserved_filenames[save_to]
+            self.reserved_index[complete_filename][self.related_file_object] = self.reserved_filenames[save_to]
 
     def clean_history(self) -> None:
         """
