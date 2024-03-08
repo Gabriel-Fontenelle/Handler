@@ -229,7 +229,7 @@ class FileSystemDataExtractor(Extractor):
             mode += 'b'
 
         # Get buffer io
-        buffer: BytesIO | StringIO = file_object.storage.open_file(file_object.path, mode=mode)
+        buffer: BytesIO | StringIO | IO = file_object.storage.open_file(file_object.path, mode=mode)
 
         # Set content with buffer, as content is a property it will validate the buffer and
         # add it as a generator allowing to just loop through chunks of content.

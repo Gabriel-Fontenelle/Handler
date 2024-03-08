@@ -45,7 +45,7 @@ class FileNaming:
     avoiding overwriting a new file that has the same name as the current file in given directory.
     {<directory>: {<current_filename>: <base_file_object>}}
     """
-    reserved_index: dict[str, dict[BaseFile, dict[str, BaseFile]]] = {}
+    reserved_index: dict[str, dict[FileNaming, dict[str, BaseFile]]] = {}
     """
     Dict of reference of reserved filenames so that a filename can be easily removed from `reserved_filenames` dict.
     {<filename>: {<base_file_object>: <reference to reserved_index[filename][base_file_object]>}}}
