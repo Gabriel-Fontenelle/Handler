@@ -766,11 +766,14 @@ class BaseFile:
                     parameters = {**parameters, **element}
 
                 else:
-                    raise ImproperlyConfiguredFile("")
+                    raise ImproperlyConfiguredFile("Each element of `_pipelines_override_keyword_arguments` should be"
+                                                   " a dictionary or a tuple.")
 
             return parameters
 
-        raise ImproperlyConfiguredFile("")
+        raise ImproperlyConfiguredFile(
+            f"Instance of type {type(self._pipelines_override_keyword_arguments)} not allowed."
+            "Allowed types: dict[str, Any] | list[tuple[dict[str, Any], str] | dict[str, Any]]")
 
     def add_valid_filename(self, complete_filename: str, enforce_mimetype: bool = False) -> bool:
         """
@@ -802,7 +805,11 @@ class BaseFile:
 
             # Use first class Renamer declared in pipeline because `prepare_filename` is a class method from base
             # Renamer class, and we don't require any other specialized methods from Renamer children.
-            self.complete_filename_as_tuple = self.rename_pipeline[0].prepare_filename(
+            processor: object = self.rename_pipeline[0]
+            if not hasattr(processor, 'prepare_filename'):
+                raise ImproperlyConfiguredPipeline("The rename pipeline first processor class don't implement the "
+                                                   "method `prepare_filename`.")
+            self.complete_filename_as_tuple = processor.prepare_filename(
                 complete_filename,
                 possible_extension
             )
@@ -828,12 +835,14 @@ class BaseFile:
         if not files:
             raise ValueError("There must be at least one file to be compared in `BaseFile.compare_to` method.")
 
-        # Set the objects_to_compare parameter in processors
-        for processor in self.compare_pipeline:
-            processor.parameters['objects_to_compare'] = files
-
         # Run pipeline passing objects to be compared
-        self.compare_pipeline.run(object_to_process=self)
+        self.compare_pipeline.run(
+            object_to_process=self,
+            **{
+                **self._get_kwargs_for_pipeline('compare_pipeline'),
+                "objects_to_compare": files
+            }
+        )
 
         result: None | bool = self.compare_pipeline.last_result
 
@@ -879,10 +888,13 @@ class BaseFile:
             try_loading_from_file: bool = False if self._state.changing or force else self._actions.was_saved
 
             # Reset `try_loading_from_file` in pipeline.
-            for processor in self.hasher_pipeline:
-                processor.parameters['try_loading_from_file'] = try_loading_from_file
-
-            self.hasher_pipeline.run(object_to_process=self)
+            self.hasher_pipeline.run(
+                object_to_process=self,
+                **{
+                    **self._get_kwargs_for_pipeline('hasher_pipeline'),
+                    "try_loading_from_file": try_loading_from_file
+                }
+            )
 
             self._actions.hashed()
 
@@ -897,7 +909,7 @@ class BaseFile:
             # Extract data from content
             self._content_files.unpack_data_pipeline.run(
                 object_to_process=self,
-                self._get_kwargs_for_pipeline('unpack_data_pipeline')
+                **self._get_kwargs_for_pipeline('unpack_data_pipeline')
             )
 
             # Mark as concluded the was_listed option
@@ -911,7 +923,7 @@ class BaseFile:
         Both the content and metadata will be reloaded from disk.
         """
         # Set-up pipeline to extract data from.
-        pipeline = Pipeline(
+        pipeline: Pipeline = Pipeline(
             'filez.pipelines.extractor.FilenameAndExtensionFromPathExtractor',
             'filez.pipelines.extractor.MimeTypeFromFilenameExtractor',
             'filez.pipelines.extractor.FileSystemDataExtractor',
@@ -919,7 +931,7 @@ class BaseFile:
         )
 
         # Run the pipeline.
-        pipeline.run(object_to_process=self, overrider=True, **self._pipelines_override_keyword_arguments)
+        pipeline.run(object_to_process=self, **{**self._get_kwargs_for_pipeline(), "overrider": True})
 
         # Set up its processing state to False
         self._state.processing = False

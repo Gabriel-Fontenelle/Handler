@@ -56,7 +56,8 @@ class Extractor:
         The `Pipeline.run` method will catch those errors.
         """
         object_to_process: BaseFile = kwargs.pop('object_to_process')
-        overrider: bool = kwargs.pop('overrider', False)
+        # Pipeline argument has priority for overrider configuration.
+        overrider: bool = kwargs.pop('overrider', object_to_process.option.allow_override)
 
         cls.extract(file_object=object_to_process, overrider=overrider, **kwargs)
 
