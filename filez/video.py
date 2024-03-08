@@ -33,6 +33,8 @@ if TYPE_CHECKING:
     from numpy import ndarray
     from io import BytesIO
 
+    from .pipelines.extractor.package import PackageExtractor
+
 __all__ = [
     "VideoEngine",
     "MoviePyVideo",
@@ -54,7 +56,7 @@ class VideoEngine:
     Attribute where the current video metadata is stored.
     """
 
-    def __init__(self, buffer: BytesIO) -> None:
+    def __init__(self, buffer: BytesIO | PackageExtractor.ContentBuffer) -> None:
         """
         Method to instantiate the current class using a buffer for the image content as a source
         for manipulation by the class to be used.

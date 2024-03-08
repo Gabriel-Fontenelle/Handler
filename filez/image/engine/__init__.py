@@ -25,7 +25,10 @@ from __future__ import annotations
 import base64
 import warnings
 from io import BytesIO, StringIO
-from typing import Any, Type
+from typing import Any, Type, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ...pipelines.extractor.package import PackageExtractor
 
 __all__ = [
     "ImageEngine",
@@ -52,15 +55,16 @@ class ImageEngine:
     Attribute used to store image metadata if available.
     """
 
-    def __init__(self, buffer: StringIO | BytesIO) -> None:
+    def __init__(self, buffer: StringIO | BytesIO | PackageExtractor.ContentBuffer | None) -> None:
         """
         Method to instantiate the current class using a buffer for the image content as a source
         for manipulation by the class to be used.
         """
-        self.source_buffer = buffer
+        if buffer is not None:
+            self.source_buffer = buffer
 
-        if buffer:
-            self.prepare_image()
+            if buffer:
+                self.prepare_image()
 
     def append_to_sequence(self, images: list[Any], **kwargs: Any) -> None:
         """
@@ -91,6 +95,9 @@ class ImageEngine:
         """
         if not hasattr(cls, 'class_image'):
             raise NotImplementedError(f"The current class {cls.__name__} don`t implement the attribute `class_image`.")
+
+        if cls.class_image is None:
+            raise NotImplementedError("The attribute `class_image` should be override in child class.")
 
         return cls.create_from_image(image=cls.class_image())
 

@@ -34,7 +34,7 @@ from .content import FilePacket, FileContent
 from .hash import FileHashes
 from .meta import FileMetadata
 from .name import FileNaming
-from .options import FileOption
+from .option import FileOption
 from .state import FileState
 from .thumbnail import FileThumbnail
 from ..exception import (
@@ -43,6 +43,7 @@ from ..exception import (
     NoInternalContentError,
     OperationNotAllowed,
     ReservedFilenameError,
+    SerializerError,
     ValidationError,
 )
 from ..handler import URI
@@ -55,6 +56,8 @@ if TYPE_CHECKING:
     from ..serializer import PickleSerializer
     from ..mimetype import BaseMimeTyper
     from ..storage import Storage
+    from ..pipelines.extractor.package import PackageExtractor
+
 
 __all__ = [
     'BaseFile',
@@ -550,7 +553,7 @@ class BaseFile:
             self._actions.to_list()
 
     @property
-    def content_as_iterator(self) -> Iterator[Sequence[object]] | None:
+    def content_as_iterator(self) -> Iterator[Sequence[bytes | str]] | None:
         """
         Method to return as an attribute the content that was previous loaded as a buffer.
         """
@@ -560,7 +563,7 @@ class BaseFile:
         return iter(self._content.content_as_buffer)
 
     @property
-    def content_as_buffer(self) -> BytesIO | StringIO | None:
+    def content_as_buffer(self) -> BytesIO | StringIO | PackageExtractor.ContentBuffer | None:
         """
         Method to return the current content as buffer to be used for extraction or other code
         that require IO objects.
@@ -571,7 +574,7 @@ class BaseFile:
         return self._content.content_as_buffer
 
     @content_as_buffer.setter
-    def content_as_buffer(self, value: BytesIO | StringIO) -> None:
+    def content_as_buffer(self, value: BytesIO | StringIO | PackageExtractor.ContentBuffer) -> None:
         if isinstance(value, (str, bytes)):
             raise ValueError("The method `content_as_buffer` should not be used for setter of `str` or `bytes`."
                              "Use `content` instead.")
@@ -743,7 +746,7 @@ class BaseFile:
 
         return self._thumbnail.preview
 
-    def _get_kwargs_for_pipeline(self, pipeline_name: str):
+    def _get_kwargs_for_pipeline(self, pipeline_name: str | None = None) -> dict[str, Any]:
         """
         Method to return the parameters for overriding of pipeline arguments.
         This method will return all parameters that match the `pipeline_name` and those that don't specify a pipeline.
@@ -760,7 +763,7 @@ class BaseFile:
                         parameters = {**parameters, **element[0]}
 
                 elif isinstance(element, dict):
-                    parameters = {**parameters, **element)
+                    parameters = {**parameters, **element}
 
                 else:
                     raise ImproperlyConfiguredFile("")

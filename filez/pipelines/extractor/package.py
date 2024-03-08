@@ -402,7 +402,12 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
                     # Instantiate the buffer of inner content
                     compressed: TarFile = self.compressor(fileobj=self.source_file_object.content_as_buffer)
 
-                    self.buffer: IO = compressed.extractfile(member=self.filename)
+                    content = compressed.extractfile(member=self.filename)
+
+                    if content is None:
+                        self.buffer = BytesIO(b"")
+                    else:
+                        self.buffer = content
 
                 return self.buffer.read(*args, **kwargs)
 
@@ -419,7 +424,7 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
 
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
-            with cls.compressor(fileobj=file_object.content_as_buffer) as compressed_file:
+            with cls.compressor(fileobj=file_object.content_as_buffer) as compressed_file: # type: ignore
 
                 # targets as None will extract all data, overwriting existing ones.
                 targets: list | None = None
@@ -463,7 +468,7 @@ class TarCompressedFilesFromPackageExtractor(PackageExtractor):
 
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
-            with cls.compressor(fileobj=file_object.content_as_buffer) as compressed_object:
+            with cls.compressor(fileobj=file_object.content_as_buffer) as compressed_object: # type: ignore
 
                 for internal_file in compressed_object.getmembers():
                     # Skip directories
@@ -587,7 +592,7 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
 
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
-            with cls.compressor(file=file_object.content_as_buffer) as compressed_file:
+            with cls.compressor(file=file_object.content_as_buffer) as compressed_file: # type: ignore
 
                 # targets as None will extract all data, overwriting existing ones.
                 targets: list | None = None
@@ -631,7 +636,7 @@ class ZipCompressedFilesFromPackageExtractor(PackageExtractor):
 
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
-            with cls.compressor(file=file_object.content_as_buffer) as compressed_object:
+            with cls.compressor(file=file_object.content_as_buffer) as compressed_object: # type: ignore
 
                 for internal_file in compressed_object.infolist():
                     # Skip directories and symbolic link
@@ -902,9 +907,15 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
                 """
                 if not hasattr(self, "buffer"):
                     # Instantiate the buffer of inner content
-                    compressed: SevenZipFile = cls.compressor(file=self.source_file_object.content_as_buffer)
+                    compressed: SevenZipFile = cls.compressor(file=self.source_file_object.content_as_buffer) # type: ignore
 
-                    self.buffer = next(iter(compressed.read(targets=[self.filename]).values()))
+                    # Case the packed file don't have content it will return None
+                    content = compressed.read(targets=[self.filename])
+
+                    if content is None:
+                        self.buffer = BytesIO(b"")
+                    else:
+                        self.buffer = next(iter(content.values()))
 
                 return self.buffer.read(*args, **kwargs)
 
@@ -921,7 +932,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
 
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
-            with cls.compressor(file=file_object.content_as_buffer) as compressed_file:
+            with cls.compressor(file=file_object.content_as_buffer) as compressed_file: # type: ignore
 
                 # targets as None will extract all data, overwriting existing ones.
                 targets: list[str] | None = None
@@ -967,7 +978,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
 
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
-            with cls.compressor(file=file_object.content_as_buffer) as compressed_object:
+            with cls.compressor(file=file_object.content_as_buffer) as compressed_object: # type: ignore
 
                 for internal_file in compressed_object.list():
                     # Skip directories

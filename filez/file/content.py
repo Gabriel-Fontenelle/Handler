@@ -32,6 +32,7 @@ from ..pipelines.renamer import UniqueRenamer
 
 if TYPE_CHECKING:
     from . import BaseFile
+    from ..pipelines.extractor.package import PackageExtractor
 
 
 __all__ = [
@@ -51,7 +52,7 @@ class FileContent:
     """
 
     # Buffer handles
-    buffer: BytesIO | StringIO
+    buffer: BytesIO | StringIO | IO
     buffer = None
     """
     Stream for file`s content.
@@ -104,7 +105,7 @@ class FileContent:
 
     def __init__(
         self,
-        raw_value: str | bytes | BytesIO | StringIO,
+        raw_value: str | bytes | BytesIO | StringIO | PackageExtractor.ContentBuffer,
         force: bool = False,
         **kwargs: Any
     ) -> None:
@@ -134,7 +135,10 @@ class FileContent:
         elif isinstance(raw_value, bytes):
             raw_value = BytesIO(raw_value)
         elif isinstance(raw_value, IOBase):
-            if not hasattr(raw_value, "mode") and not isinstance(raw_value, (StringIO, BytesIO)):
+            if (
+                not hasattr(raw_value, "mode")
+                and not isinstance(raw_value, (StringIO, BytesIO, PackageExtractor.ContentBuffer))
+            ):
                 raise ValueError(f"The value specified for content of type {type(raw_value)} don't have the attribute"
                                  f"mode that allow for identification of type of content: binary or text.")
         else:
@@ -319,22 +323,27 @@ class FileContent:
             return self.buffer
 
     @property
-    def content_as_bytes(self) -> bytes:
+    def content_as_bytes(self) -> bytes | None:
         """
         Method to obtain the content as bytes.
         """
         content = self.content.encode("uft-8") if isinstance(self.content, str) else self.content
 
-        return bytes(content)
+        return content
 
     @property
-    def content_as_base64(self) -> bytes:
+    def content_as_base64(self) -> bytes | None:
         """
         Method to obtain the content as a base64 encoded, loading it in memory if it is allowed and is not
         loaded already.
         TODO: Change the code to work with BaseIO to avoid loading all content to memory for larger files.
         """
-        return b64encode(self.content_as_bytes)
+        content = self.content_as_bytes
+
+        if content is None:
+            return None
+
+        return b64encode(content)
 
     def reset(self) -> None:
         """

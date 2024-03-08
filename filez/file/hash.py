@@ -139,14 +139,29 @@ class FileHashes:
 
             # Load content from generator.
             # First we set up content of type binary or string.
-            content: str | bytes = b"" if hash_file.is_binary else ""
+            content: bytes | str
 
-            # Then we load content from generator using a loop.
-            for block in hash_file.content_as_iterator:
-                content += block
+            if hash_file.is_binary:
+                content = b""
 
-            # Change file`s filename inside content of hash file.
-            content = content.replace(f"{hash_file.filename}.{hasher_name}", f"{new_filename}.{hasher_name}")
+                # Then we load content from generator using a loop.
+                for block in hash_file.content_as_iterator:
+                    content += block
+
+                # Change file`s filename inside content of hash file.
+                content = content.replace(
+                    f"{hash_file.filename}.{hasher_name}".encode("uft-8"),
+                    f"{new_filename}.{hasher_name}".encode("uft-8")
+                )
+            else:
+                content = ""
+
+                # Then we load content from generator using a loop.
+                for block in hash_file.content_as_iterator:
+                    content += block
+
+                # Change file`s filename inside content of hash file.
+                content = content.replace(f"{hash_file.filename}.{hasher_name}", f"{new_filename}.{hasher_name}")
 
             # Set-up new content after renaming and specify that hash_file was not saved yet.
             hash_file.content = content
@@ -166,7 +181,7 @@ class FileHashes:
             # Compare content with hex_value
             result = processor.check_hash(object_to_process=self.related_file_object, compare_to_hex=hex_value)
 
-            if not result:
+            if result is False:
                 raise ValidationError(f"File {self.related_file_object} don`t pass the integrity check with "
                                       f"{hash_name}!")
 

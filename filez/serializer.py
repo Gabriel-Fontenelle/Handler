@@ -26,7 +26,7 @@ import inspect
 from datetime import time, datetime
 from importlib import import_module
 from io import IOBase
-from typing import Any, Type
+from typing import Any, Type, TYPE_CHECKING
 
 import pytz
 from dill import dumps, loads, HIGHEST_PROTOCOL
@@ -37,6 +37,10 @@ from json_tricks import (
 )
 
 from .storage import LinuxFileSystem
+
+if TYPE_CHECKING:
+    from .storage import Storage
+
 
 __all__ = [
     'PickleSerializer',
@@ -86,10 +90,10 @@ class JSONSerializer:
             Internal function to solve a problem with the original encoder where `obj.tzinfo.zone` results in attribute
             error.
             """
-            if primitives:
-                return obj.isoformat()
-
             if isinstance(obj, datetime):
+                if primitives:
+                    return obj.isoformat()
+
                 dct = hashodict([('__datetime__', None), ('year', obj.year), ('month', obj.month),
                                  ('day', obj.day), ('hour', obj.hour), ('minute', obj.minute),
                                  ('second', obj.second), ('microsecond', obj.microsecond)])
@@ -251,10 +255,12 @@ class JSONSerializer:
                 return dct
 
             if "__buffer__" in dct:
-                storage = json_class_hook(dct.get('storage'))
+                storage: Type[Storage] = json_class_hook(dct.get('storage'))
 
-                if storage.exists(dct.get("name")):
-                    return storage.open_file(file_path=dct.get("name"), mode=dct.get("mode"))
+                name: str | None = dct.get("name")
+
+                if name and storage.exists(name):
+                    return storage.open_file(path=name, mode=dct["mode"])
 
                 return None
 
@@ -283,7 +289,7 @@ class JSONSerializer:
 
             return dct
 
-        def fix_self_reference(instance: Any) -> dict:
+        def fix_self_reference(instance: Any) -> None:
             """
             Internal function to fix the references present in instance source that were not able to be
             converted in decoder to allow the deserialization to finish.

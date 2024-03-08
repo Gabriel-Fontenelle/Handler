@@ -72,8 +72,8 @@ class Comparer:
         This processor return boolean whether files are the same, different of others processors that return boolean
         to indicate that process was ran successfully.
         """
-        object_to_process = kwargs.pop('object_to_process')
-        objects_to_compare = kwargs.pop('objects_to_compare')
+        object_to_process: BaseFile = kwargs.pop('object_to_process')
+        objects_to_compare: list | tuple = kwargs.pop('objects_to_compare')
 
         if not objects_to_compare or not isinstance(objects_to_compare, (list, tuple)):
             raise ValueError("There must be at least one object to compare at `objects_to_compare`s kwargs for "

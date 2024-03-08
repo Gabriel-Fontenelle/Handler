@@ -24,12 +24,13 @@ from __future__ import annotations
 
 from importlib import import_module
 from inspect import isclass
-from typing import Any, TYPE_CHECKING, Iterator
+from typing import Any, TYPE_CHECKING, Iterator, Type
 
-from ..exception import ValidationError
+from ..exception import ValidationError, PipelineError, ImproperlyConfiguredFile
 
 if TYPE_CHECKING:
     from ..file import BaseFile
+    from ..file.option import FileOption
 
 __all__ = [
     'Processor',
@@ -134,11 +135,11 @@ class Pipeline:
         """
         Variable to register the last result obtained from pipeline.
         """
-        self.pipeline_processors: list[Processor] = []
+        self.pipeline_processors: list[object] = []
         """
         Variable to register the available processors for the current pipeline object.
         """
-        self.errors = []
+        self.errors: list = []
         """
         Variable to register the errors found by processors for the current pipeline object.
         """
@@ -149,7 +150,7 @@ class Pipeline:
 
         self.load_processor_candidates()
 
-    def __getitem__(self, item: int) -> Processor:
+    def __getitem__(self, item: int) -> object:
         """
         Method to allow extraction of processor class from pipeline_processors directly from Pipeline object.
         """
@@ -223,8 +224,8 @@ class Pipeline:
         its use when loading hashes from files.
         """
 
-        if not hasattr('option', object_to_process) or not isinstance(object_to_process.option, FileOption):
-            raise ImprorpelyConfiguredFile(f"Object {type(object_to_process)} don`t have a option attribute of instance"
+        if not hasattr(object_to_process, 'option') or not isinstance(object_to_process.option, FileOption):
+            raise ImproperlyConfiguredFile(f"Object {type(object_to_process)} don`t have a option attribute of instance"
                                            "FileOption to allow the pipeline to run properly.")
 
         pipeline_raises_exception = object_to_process.option.pipeline_raises_exception
