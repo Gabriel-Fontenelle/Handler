@@ -27,10 +27,11 @@ from inspect import isclass
 from typing import Any, TYPE_CHECKING, Iterator, Type
 
 from ..exception import ValidationError, PipelineError, ImproperlyConfiguredFile
+from ..file.option import FileOption
 
 if TYPE_CHECKING:
     from ..file import BaseFile
-    from ..file.option import FileOption
+
 
 __all__ = [
     'Processor',
@@ -102,7 +103,7 @@ class Processor:
         Static method to set attributes for object. Only attributes that don`t exists are set-up.
         This method returns the object as a design choice, as it could just changing its attributes through reference.
         """
-        for value, attribute in attributes.items():
+        for attribute, value in attributes.items():
             if not hasattr(object_to_set, attribute):
                 setattr(object_to_set, attribute, value)
 
@@ -210,7 +211,7 @@ class Pipeline:
 
             # Validate that all attributes and methods required for `run` exist in the class.
             # A ValidationError will be raised if there is a problem.
-            processor.validate_processor(processor_object)
+            processor.validate(processor_object)
 
             # Add the finished processor to the pipeline.
             self.pipeline_processors.append(processor_object)
@@ -224,7 +225,7 @@ class Pipeline:
         its use when loading hashes from files.
         """
 
-        if not hasattr(object_to_process, 'option') or not isinstance(object_to_process.option, FileOption):
+        if not hasattr(object_to_process, 'option') or not issubclass(object_to_process.option, FileOption):
             raise ImproperlyConfiguredFile(f"Object {type(object_to_process)} don`t have a option attribute of instance"
                                            "FileOption to allow the pipeline to run properly.")
 
