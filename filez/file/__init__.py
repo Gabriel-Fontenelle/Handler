@@ -975,13 +975,13 @@ class BaseFile:
         self.validate()
 
         # Extract options like `overwrite=bool` file, `save_hashes=False`.
-        allow_overwrite: bool = getattr(self.options, 'allow_overwrite', False)
-        save_hashes: bool = getattr(self.options, 'save_hashes', False)
-        allow_search_hashes: bool = getattr(self.options, 'allow_search_hashes', True)
-        allow_update: bool = getattr(self.options, 'allow_update', True)
-        allow_rename: bool = getattr(self.options, 'allow_rename', False)
-        allow_extension_change: bool = getattr(self.options, 'allow_extension_change', True)
-        create_backup: bool = getattr(self.options, 'create_backup', False)
+        allow_overwrite: bool = getattr(self.option, 'allow_overwrite', False)
+        save_hashes: bool = getattr(self.option, 'save_hashes', False)
+        allow_search_hashes: bool = getattr(self.option, 'allow_search_hashes', True)
+        allow_update: bool = getattr(self.option, 'allow_update', True)
+        allow_rename: bool = getattr(self.option, 'allow_rename', False)
+        allow_extension_change: bool = getattr(self.option, 'allow_extension_change', True)
+        create_backup: bool = getattr(self.option, 'create_backup', False)
 
         # If overwrite is False and file exists a new filename must be created before renaming.
         file_exists: bool = self.storage.exists(self.sanitize_path)
