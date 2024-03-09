@@ -288,7 +288,12 @@ class FileContent:
                 except StopIteration:
                     break
 
-        if self._cached_content is None:
+        if self._cached_content is None and not self.cache_content:
+            raise ImproperlyConfiguredFile(
+                f"The file {self.related_file_object} is not set-up to load to memory its content. "
+                "You should call `_content.content_as_buffer` instead of `_content.content`"
+            )
+        elif self._cached_content is None:
             raise EmptyContentError(f"No content was loaded for file {self.related_file_object.complete_filename}")
 
         # Content in case that it was loaded in memory. If not, it will be None and override below.
