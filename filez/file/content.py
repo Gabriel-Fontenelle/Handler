@@ -333,6 +333,7 @@ class FileContent:
     def content_as_bytes(self) -> bytes | None:
         """
         Method to obtain the content as bytes.
+        This method should not be used to convert a content buffered and not cached to byte.
         """
         content = self.content.encode("uft-8") if isinstance(self.content, str) else self.content
 
@@ -345,7 +346,12 @@ class FileContent:
         loaded already.
         TODO: Change the code to work with BaseIO to avoid loading all content to memory for larger files.
         """
-        content = self.content_as_bytes
+        try:
+            content = self.content_as_bytes
+        except (EmptyContentError, ImproperlyConfiguredFile):
+            if not self.cache_content:
+                # load content from buffer
+                content = self.content_as_buffer.read()
 
         if content is None:
             return None
