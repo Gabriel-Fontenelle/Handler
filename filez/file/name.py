@@ -45,7 +45,7 @@ class FileNaming:
     avoiding overwriting a new file that has the same name as the current file in given directory.
     {<directory>: {<current_filename>: <base_file_object>}}
     """
-    reserved_index: dict[str, dict[FileNaming, dict[str, BaseFile]]] = {}
+    reserved_index: dict[str, dict[BaseFile, dict[str, BaseFile]]] = {}
     """
     Dict of reference of reserved filenames so that a filename can be easily removed from `reserved_filenames` dict.
     {<filename>: {<base_file_object>: <reference to reserved_index[filename][base_file_object]>}}}
@@ -101,7 +101,7 @@ class FileNaming:
         """
         This method remove old filename from list of reserved filenames.
         """
-        dictionary_of_files: dict[FileBase, dict[str, BaseFile]] = self.reserved_index.get(old_filename, {})
+        dictionary_of_files: dict[BaseFile, dict[str, BaseFile]] = self.reserved_index.get(old_filename, {})
         reference: dict[str, BaseFile] | None  = dictionary_of_files.get(self.related_file_object, None)
 
         # Remove from `reserved_filename` and current `reserved_index`.
