@@ -269,6 +269,8 @@ class FileContent:
         Method to load in memory the content of the file.
         This method uses the buffer cached, if the file wasn't cached before this method will cache it, and load
         the data in memory from the cache returning the content.
+
+        This method will not cache the content in memory if `self.cache_content` is `False`.
         """
         old_cache_in_memory = self.cache_in_memory
         old_cache_in_file = self.cache_in_file
