@@ -22,8 +22,9 @@ Should there be a need for contact the electronic mail
 """
 from __future__ import annotations
 
+import inspect
 # first-party
-from datetime import datetime
+from datetime import datetime, time
 from io import BytesIO, StringIO
 from os import name
 from typing import Type, Any, Iterator, TYPE_CHECKING, Sequence
@@ -691,6 +692,53 @@ class BaseFile:
         # Validate if path is really a file.
         if self.storage.is_dir(self._path):
             raise ValueError("Attribute `path` informed for File cannot be a directory.")
+
+    @property
+    def pipelines(self) -> list[tuple[str, Pipeline]]:
+        """
+        Method to return a list of Pipelines available to the current object. Pipelines are instances that inherent
+        from Pipeline class.
+        """
+        def recursively_get_pipelines(source: list[tuple[str, Any]] = {}) -> list[tuple[str, Pipeline]]:
+            """
+            Inner function to recursively get attributes from __dict__ and verify if it has
+            instances of Pipeline.
+            """
+            if not source:
+                return []
+
+            pipelines = []
+            for attr, value in source:
+                # Avoid empty value and attributes that are "primitives".
+                if (
+                    attr == 'related_file_object'
+                    or not value
+                    or isinstance(value, (int, float, bytes, str, list, tuple, dict, datetime, time))
+                ):
+                    continue
+
+                if isinstance(value, Pipeline):
+                    pipelines.append((attr, value))
+                elif not (
+                    inspect.isclass(value)
+                    or inspect.isbuiltin(value)
+                    or inspect.ismethod(value)
+                    or inspect.isfunction(value)
+                    or callable(value)
+                    or inspect.isdatadescriptor(value)
+                ):
+                    pipelines += recursively_get_pipelines(inspect.getmembers_static(value))
+
+            return pipelines
+
+        return recursively_get_pipelines(inspect.getmembers_static(self))
+
+    @property
+    def pipelines_errors(self) -> list[tuple[str, list[Exception]]]:
+        """
+        Method to return the list of errors that occurred in all pipelines availables.
+        """
+        return [(name, pipeline.errors) for name, pipeline in self.pipelines if pipeline.errors]
 
     @property
     def save_to(self) -> str | None:
