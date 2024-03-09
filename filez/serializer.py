@@ -102,6 +102,9 @@ class JSONSerializer:
                     dct['tzinfo'] = getattr(obj.tzinfo, 'zone', None) or str(obj.tzinfo)
 
             elif isinstance(obj, time):
+                if primitives:
+                    return obj.isoformat()
+
                 dct = hashodict([('__time__', None), ('hour', obj.hour), ('minute', obj.minute),
                                  ('second', obj.second), ('microsecond', obj.microsecond)])
 
@@ -144,8 +147,8 @@ class JSONSerializer:
                 return hashodict(
                     [
                         ('__buffer__', None),
-                        ('name', obj.name),
-                        ('mode', obj.mode),
+                        ('name', getattr(obj, 'name', "")),
+                        ('mode', getattr(obj, 'mode', "")),
                         ('storage', json_class_encode(default_storage_class, primitives)),
                     ]
                 )
@@ -243,7 +246,7 @@ class JSONSerializer:
                 return dct
 
             if "__class__" in dct:
-                return getattr(import_module(dct.get('module')), dct.get('name'))
+                return getattr(import_module(dct['module']), dct['name'])
 
             return dct
 

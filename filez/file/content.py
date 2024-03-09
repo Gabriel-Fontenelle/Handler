@@ -481,7 +481,7 @@ class FilePacket:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
-        attributes = {"_internal_files", "extract_data_pipeline", "history"}
+        attributes = {"_internal_files", "unpack_data_pipeline", "history"}
 
         return {key: getattr(self, key) for key in attributes}
 
