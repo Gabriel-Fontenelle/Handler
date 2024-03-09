@@ -24,15 +24,15 @@ from __future__ import annotations
 
 from base64 import b64encode
 from io import StringIO, IOBase, BytesIO
-from typing import Iterator, Any, TYPE_CHECKING
+from typing import Iterator, Any, TYPE_CHECKING, IO
 
 from ..exception import SerializerError, EmptyContentError, ImproperlyConfiguredFile
 from ..pipelines import Pipeline
+from ..pipelines.extractor.package import PackageExtractor
 from ..pipelines.renamer import UniqueRenamer
 
 if TYPE_CHECKING:
     from . import BaseFile
-    from ..pipelines.extractor.package import PackageExtractor
 
 
 __all__ = [

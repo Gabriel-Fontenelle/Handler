@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from time import strptime, mktime
-from typing import Any, TYPE_CHECKING, Type
+from typing import Any, TYPE_CHECKING, Type, IO
 
 from .extractor import Extractor
 

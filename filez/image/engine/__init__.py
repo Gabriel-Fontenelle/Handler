@@ -63,8 +63,7 @@ class ImageEngine:
         if buffer is not None:
             self.source_buffer = buffer
 
-            if buffer:
-                self.prepare_image()
+            self.prepare_image()
 
     def append_to_sequence(self, images: list[Any], **kwargs: Any) -> None:
         """
