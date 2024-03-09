@@ -816,7 +816,7 @@ class BaseFile:
 
                 else:
                     raise ImproperlyConfiguredFile("Each element of `_pipelines_override_keyword_arguments` should be"
-                                                   " a dictionary or a tuple.")
+                                                   " either a dictionary or a tuple.")
 
             return parameters
 
