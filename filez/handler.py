@@ -125,7 +125,7 @@ class URI:
         return parse_qsl(value)
 
     @classmethod
-    def unparser_query(cls, value: str) -> str:
+    def unparser_query(cls, value: list) -> str:
         """
         Method to undo a parse resulted from using `cls.parse_query`.
         """
@@ -201,7 +201,7 @@ class URI:
         return cls.cache.get(value, None)
 
     @classmethod
-    def get_paths(cls, value: str, file_system: Type[Storage]) -> list[Path]:
+    def get_paths(cls, value: str, file_system: Type[Storage]) -> list[URI.Path]:
         """
         Method to return a list of paths found in URI.
         This method convert the URI to path keeping filename if there is any.
@@ -211,7 +211,7 @@ class URI:
         - directory (directory generate from url)
         - processed_uri (url registered at cache)
         """
-        paths: list[str] = []
+        paths: list[URI.Path] = []
 
         for uri in cls.separate_uris(value):
             # Remove fragments from URI
@@ -228,7 +228,7 @@ class URI:
         return paths
 
     @classmethod
-    def get_filenames(cls, value: str, file_system: Type[Storage]) -> list[Filename]:
+    def get_filenames(cls, value: str, file_system: Type[Storage]) -> list[URI.Filename]:
         """
         Method to return a list of filenames found in URI.
         This method try to find a filename in path if there is any.
@@ -238,14 +238,11 @@ class URI:
         - filename (filename generate from url)
         - processed_uri (url registered at cache)
         """
-        filenames: list[str] = []
+        filenames: list[URI.Filename] = []
 
         for uri in cls.separate_uris(value):
-            # Remove fragments from URI
-            processed_uri: str = cls.remove_fragments(uri)
-
-            # Remove scheme from URI
-            processed_uri: str = cls.uri_scheme.sub('', processed_uri)
+            # Remove fragments and scheme from URI
+            processed_uri: str = cls.uri_scheme.sub('', cls.remove_fragments(uri))
 
             if processed_uri not in cls.cache:
                 cls.process_path(processed_uri, file_system)

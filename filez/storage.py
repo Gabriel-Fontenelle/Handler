@@ -45,18 +45,18 @@ from os.path import (
 )
 from pathlib import (
     Path,
-    WindowsPath
+    WindowsPath,
+    PosixPath
 )
 # third-party
 from shutil import copyfile, rmtree
 from sys import version_info
-from typing import Any, TYPE_CHECKING, Generator, Iterator, Pattern
+from typing import Any, TYPE_CHECKING, Generator, Iterator, Pattern, IO
 
 from send2trash import send2trash
 
 if TYPE_CHECKING:
-    from io import BytesIO, StringIO, IOBase
-
+    from io import BytesIO, StringIO
 
 __all__ = [
     'Storage',
@@ -157,7 +157,7 @@ class Storage:
         return True
 
     @classmethod
-    def open_file(cls, path: str, mode: str = 'rb') -> StringIO | BytesIO:
+    def open_file(cls, path: str, mode: str = 'rb') -> StringIO | BytesIO | IO:
         """
         Method to return a buffer to a file. This method don't automatically closes file buffer.
         Override this method if that’s not appropriate for your storage.
@@ -165,7 +165,7 @@ class Storage:
         return open(path, mode=mode)
 
     @classmethod
-    def close_file(cls, file_buffer: IOBase) -> None:
+    def close_file(cls, file_buffer: StringIO | BytesIO | IO) -> None:
         """
         Method to close a buffer previously opened by open_file.
         Override this method if that’s not appropriate for your storage.
@@ -173,7 +173,7 @@ class Storage:
         return file_buffer.close()
 
     @classmethod
-    def save_file(cls, path: str, content: SupportsIter, **kwargs: Any) -> None:
+    def save_file(cls, path: str, content: Any, **kwargs: Any) -> None:
         """
         Method to save content on file.
         This method will throw an exception if content is not iterable.
@@ -194,7 +194,7 @@ class Storage:
                 os.fsync(file_pointer.fileno())
 
     @classmethod
-    def backup(cls, file_path_origin: str, force: str = False) -> bool:
+    def backup(cls, file_path_origin: str, force: bool = False) -> bool:
         """
         Method used to copy a file in the same path with .bak append to its name.
         This method only try to copy if file exists.
@@ -210,7 +210,7 @@ class Storage:
 
         i = 1
         while not force and cls.exists(file_path_destination):
-            file_path_destination = re.sub(cls.backup_extension, f".bak.{i}")
+            file_path_destination = re.sub(cls.backup_extension, f".bak.{i}", file_path_destination)
             i += 1
 
         return cls.copy(file_path_origin, file_path_destination, force=True)
@@ -389,7 +389,7 @@ class Storage:
         """
         
         # Fix directory without sep on end
-        fix: list = relative_to.rpartition(cls.sep)
+        fix: tuple = relative_to.rpartition(cls.sep)
         if '.' not in fix[2]:
             relative_to += cls.sep
 
@@ -536,7 +536,7 @@ class WindowsFileSystem(Storage):
     """
     Define the location of temporary content in filesystem.
     """
-    file_sequence_style: Pattern = (re.compile(r"(\ *\(\d+?\))?(\.[^.]*$)"), r" ({sequence})\2")
+    file_sequence_style: tuple[Pattern[str], str] = (re.compile(r"(\ *\(\d+?\))?(\.[^.]*$)"), r" ({sequence})\2")
     """
     Define the pattern to use to replace a sequence in the stylus of the filesystem.
     The first part identify the search and the second the replace value.
@@ -615,7 +615,7 @@ class LinuxFileSystem(Storage):
     """
     Define the location of temporary content in filesystem.
     """
-    file_sequence_style: Pattern = (re.compile(r"(\ *-\ *\d+?)?(\.[^.]*$)"), r" - {sequence}\2")
+    file_sequence_style: tuple[Pattern[str], str] = (re.compile(r"(\ *-\ *\d+?)?(\.[^.]*$)"), r" - {sequence}\2")
     """
     Define the pattern to use to replace a sequence in the stylus of the filesystem.
     The first part identify the search and the second the replace value.

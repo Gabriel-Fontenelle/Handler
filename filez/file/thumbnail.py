@@ -320,7 +320,8 @@ class FileThumbnail:
             getattr(self, f"render_{name}_pipeline").run(
                 object_to_process=file_object,
                 image_engine=self.image_engine,
-                video_engine=self.video_engine
+                video_engine=self.video_engine,
+                **file_object._get_kwargs_for_pipeline(f"render_{name}_pipeline")
             )
 
             # Check if animated image was generated
@@ -334,6 +335,8 @@ class FileThumbnail:
 
                     # Set state of related file as concluded.
                     getattr(self, f"_conclude_{name}_action")()
+
+                    return
 
                 to_be_processed.append(file_processed)
 

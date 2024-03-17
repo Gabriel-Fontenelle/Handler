@@ -111,6 +111,9 @@ class Renamer:
         code (multi process don't have this problem).
 
         This processors return boolean to indicate that process was ran successfully.
+
+        This method can throw BlockingIOError when trying to rename the file.
+        The `Pipeline.run` method will catch it.
         """
         # Get default values from keywords arguments
         object_to_process: BaseFile = kwargs.pop('object_to_process')
@@ -128,25 +131,20 @@ class Renamer:
         # Save current file system filez
         class_file_system_handler = cls.file_system_handler
 
-        # Get new name
+        # Overwrite File System attribute with File System of File only when running in pipeline.
+        # This will alter the File System for the class, any other call to this class will use the altered
+        # file system.
+        cls.file_system_handler = object_to_process.storage
+
+        # Get directory from object to be processed.
+        path = cls.file_system_handler.sanitize_path(getattr(object_to_process, path_attribute))
+
         # When is not possible to get new name by some problem either with file or filesystem
         # is expected BlockingIOError
-        try:
-            # Overwrite File System attribute with File System of File only when running in pipeline.
-            # This will alter the File System for the class, any other call to this class will use the altered
-            # file system.
-            cls.file_system_handler = object_to_process.storage
+        new_filename, extension = cls.get_name(path, filename, extension)
 
-            # Get directory from object to be processed.
-            path = cls.file_system_handler.sanitize_path(getattr(object_to_process, path_attribute))
-
-            new_filename, extension = cls.get_name(path, filename, extension)
-
-            # Restore File System attribute to original.
-            cls.file_system_handler = class_file_system_handler
-        except BlockingIOError as e:
-            cls.register_error(e)
-            return False
+        # Restore File System attribute to original.
+        cls.file_system_handler = class_file_system_handler
 
         # Set new name at File's object.
         # The File class should set the old name at File`s cache/history automatically,

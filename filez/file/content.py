@@ -24,10 +24,11 @@ from __future__ import annotations
 
 from base64 import b64encode
 from io import StringIO, IOBase, BytesIO
-from typing import Iterator, Any, TYPE_CHECKING
+from typing import Iterator, Any, TYPE_CHECKING, IO
 
 from ..exception import SerializerError, EmptyContentError, ImproperlyConfiguredFile
 from ..pipelines import Pipeline
+from ..pipelines.extractor.package import PackageExtractor
 from ..pipelines.renamer import UniqueRenamer
 
 if TYPE_CHECKING:
@@ -51,7 +52,7 @@ class FileContent:
     """
 
     # Buffer handles
-    buffer: BytesIO | StringIO
+    buffer: BytesIO | StringIO | IO
     buffer = None
     """
     Stream for file`s content.
@@ -104,7 +105,7 @@ class FileContent:
 
     def __init__(
         self,
-        raw_value: str | bytes | BytesIO | StringIO,
+        raw_value: str | bytes | BytesIO | StringIO | PackageExtractor.ContentBuffer,
         force: bool = False,
         **kwargs: Any
     ) -> None:
@@ -134,7 +135,10 @@ class FileContent:
         elif isinstance(raw_value, bytes):
             raw_value = BytesIO(raw_value)
         elif isinstance(raw_value, IOBase):
-            if not hasattr(raw_value, "mode") and not isinstance(raw_value, (StringIO, BytesIO)):
+            if (
+                not hasattr(raw_value, "mode")
+                and not isinstance(raw_value, (StringIO, BytesIO, PackageExtractor.ContentBuffer))
+            ):
                 raise ValueError(f"The value specified for content of type {type(raw_value)} don't have the attribute"
                                  f"mode that allow for identification of type of content: binary or text.")
         else:
@@ -265,6 +269,8 @@ class FileContent:
         Method to load in memory the content of the file.
         This method uses the buffer cached, if the file wasn't cached before this method will cache it, and load
         the data in memory from the cache returning the content.
+
+        This method will not cache the content in memory if `self.cache_content` is `False`.
         """
         old_cache_in_memory = self.cache_in_memory
         old_cache_in_file = self.cache_in_file
@@ -282,7 +288,12 @@ class FileContent:
                 except StopIteration:
                     break
 
-        if self._cached_content is None:
+        if self._cached_content is None and not self.cache_content:
+            raise ImproperlyConfiguredFile(
+                f"The file {self.related_file_object} is not set-up to load to memory its content. "
+                "You should call `_content.content_as_buffer` instead of `_content.content`"
+            )
+        elif self._cached_content is None:
             raise EmptyContentError(f"No content was loaded for file {self.related_file_object.complete_filename}")
 
         # Content in case that it was loaded in memory. If not, it will be None and override below.
@@ -319,22 +330,33 @@ class FileContent:
             return self.buffer
 
     @property
-    def content_as_bytes(self) -> bytes:
+    def content_as_bytes(self) -> bytes | None:
         """
         Method to obtain the content as bytes.
+        This method should not be used to convert a content buffered and not cached to byte.
         """
         content = self.content.encode("uft-8") if isinstance(self.content, str) else self.content
 
-        return bytes(content)
+        return content
 
     @property
-    def content_as_base64(self) -> bytes:
+    def content_as_base64(self) -> bytes | None:
         """
         Method to obtain the content as a base64 encoded, loading it in memory if it is allowed and is not
         loaded already.
         TODO: Change the code to work with BaseIO to avoid loading all content to memory for larger files.
         """
-        return b64encode(self.content_as_bytes)
+        try:
+            content = self.content_as_bytes
+        except (EmptyContentError, ImproperlyConfiguredFile):
+            if not self.cache_content:
+                # load content from buffer
+                content = self.content_as_buffer.read()
+
+        if content is None:
+            return None
+
+        return b64encode(content)
 
     def reset(self) -> None:
         """
@@ -390,7 +412,7 @@ class FilePacket:
     """
 
     # Pipelines
-    extract_data_pipeline: Pipeline = Pipeline(
+    unpack_data_pipeline: Pipeline = Pipeline(
         'filez.pipelines.extractor.SevenZipCompressedFilesFromPackageExtractor',
         'filez.pipelines.extractor.RarCompressedFilesFromPackageExtractor',
         'filez.pipelines.extractor.TarCompressedFilesFromPackageExtractor',
@@ -459,7 +481,7 @@ class FilePacket:
         """
         Method to allow dir and vars to work with the class simplifying the serialization of object.
         """
-        attributes = {"_internal_files", "extract_data_pipeline", "history"}
+        attributes = {"_internal_files", "unpack_data_pipeline", "history"}
 
         return {key: getattr(self, key) for key in attributes}
 

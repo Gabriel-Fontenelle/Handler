@@ -23,15 +23,22 @@ Should there be a need for contact the electronic mail
 from __future__ import annotations
 
 from io import BytesIO
-from typing import Any, Type, Iterator
-
-from PIL import Image as PillowImageClass, ImageChops, ImageSequence as PillowSequence
+from typing import Any, Type, Iterator, TYPE_CHECKING
 
 from . import ImageEngine
+from ...utils import LazyImportClass
+
+if TYPE_CHECKING:
+    from PIL import Image as PillowImageClass
+
 
 __all__ = [
     "PillowImage",
 ]
+
+
+PillowSequence = LazyImportClass('ImageSequence', from_module='PIL')
+"""Lazy import of ImageSequence class as alias"""
 
 
 class PillowImage(ImageEngine):
@@ -39,7 +46,7 @@ class PillowImage(ImageEngine):
     Class that standardized methods of Pillow library.
     """
 
-    class_image: Type[PillowImageClass] = PillowImageClass
+    class_image: Type[PillowImageClass] = LazyImportClass('Image', from_module='PIL')
     """
     Attribute used to store the class reference responsible to create an image.
     """
@@ -232,6 +239,8 @@ class PillowImage(ImageEngine):
         This method will trim the whole image based on first frame/size if image has sequence.
         """
         if color:
+            from PIL import ImageChops
+
             background = self.class_image.new(self.image.mode, self.image.size, color=color)
             bounding_border = ImageChops.difference(self.image, background).getbbox()
         elif self.has_transparency():

@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from time import strptime, mktime
-from typing import Any, TYPE_CHECKING, Type
+from typing import Any, TYPE_CHECKING, Type, IO
 
 from .extractor import Extractor
 
@@ -229,7 +229,7 @@ class FileSystemDataExtractor(Extractor):
             mode += 'b'
 
         # Get buffer io
-        buffer: BytesIO | StringIO = file_object.storage.open_file(file_object.path, mode=mode)
+        buffer: BytesIO | StringIO | IO = file_object.storage.open_file(file_object.path, mode=mode)
 
         # Set content with buffer, as content is a property it will validate the buffer and
         # add it as a generator allowing to just loop through chunks of content.
@@ -267,13 +267,13 @@ class HashFileExtractor(Extractor):
         full_check: bool = kwargs.pop('full_check', True)
 
         for processor in file_object.hasher_pipeline:
-            hasher: Any = processor.classname
+            hasher: str = processor.hasher_name
 
             if hasher in file_object.hashes and file_object.hashes[hasher] and not overrider:
                 continue
 
             # Extract from hash file and save to hasher if hash file content found.
-            hasher.process_from_file(object_to_process=file_object, full_check=full_check)
+            processor.process_from_file(object_to_process=file_object, full_check=full_check)
 
 
 class MimeTypeFromFilenameExtractor(Extractor):
@@ -486,7 +486,9 @@ class MetadataExtractor(Extractor):
                 # In order to avoid wrong extension being settled is recommended to use an Extractor of
                 # `FilenameFromURLExtractor` and `FilenameFromMetadataExtractor` before this processor.
                 if 'stream' not in mimetype:
-                    possible_extension: str | None = file_object.mime_type_handler.guess_extension_from_mimetype(mimetype)
+                    possible_extension: str | None = file_object.mime_type_handler.guess_extension_from_mimetype(
+                        mimetype
+                    )
 
                     if possible_extension:
                         file_object.extension = possible_extension

@@ -25,9 +25,6 @@ from __future__ import annotations
 from io import BytesIO
 from typing import Any, TYPE_CHECKING, Type
 
-import fitz
-from psd_tools import PSDImage
-
 from .static import StaticRender
 from .. import Pipeline
 from ...exception import RenderError
@@ -188,6 +185,9 @@ class DocumentAnimatedRender(AnimatedRender):
         if not buffer:
             raise RenderError("There is no content in buffer format available to render.")
 
+        # Local import to avoid longer time to load FileZ library.
+        import fitz
+
         # Use fitz from PyMuPDF to open the document.
         # Because BufferedReader (default return for file_system.open) is not accept
         # we need to consume to get its bytes as bytes are accepted as stream.
@@ -258,6 +258,9 @@ class PSDAnimatedRender(AnimatedRender):
 
         if not buffer:
             raise RenderError("There is no content in buffer format available to render.")
+
+        # Local import to avoid longer time to load FileZ library.
+        from psd_tools import PSDImage
 
         # Load PSD from buffer
         psd: PSDImage = PSDImage.open(fp=buffer)

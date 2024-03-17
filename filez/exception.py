@@ -24,6 +24,7 @@ Should there be a need for contact the electronic mail
 __all__ = [
 	'EmptyContentError',
 	'ImproperlyConfiguredFile',
+	'ImproperlyConfiguredPipeline',
 	'NoInternalContentError',
 	'OperationNotAllowed',
 	'ValidationError',
@@ -58,6 +59,12 @@ class ImproperlyConfiguredFile(Exception):
 	"""
 
 
+class ImproperlyConfiguredPipeline(Exception):
+	"""
+	Exception that defines error for when a Pipeline has a missing configuration or improper configured one.
+	"""
+
+
 class OperationNotAllowed(Exception):
 	"""
 	Exception that defines error for when a operation is not allowed for file.
@@ -77,6 +84,12 @@ class ReservedFilenameError(Exception):
 
 
 class RenderError(Exception):
+	"""
+	Exception that defines error for when trying to render a file.
+	"""
+
+
+class PipelineError(Exception):
 	"""
 	Exception that defines error for when trying to render a file.
 	"""

@@ -83,7 +83,7 @@ class FileMetadata:
     This is mostly used for thumbnail created with render and will be set up only in those files.
     """
 
-    extra_data: dict[str, Any]
+    extra_data: dict[str, str | bool | int | float]
     extra_data = None
 
     def __init__(self, **kwargs: Any) -> None:
@@ -100,26 +100,27 @@ class FileMetadata:
         """
         Method to set attributes that are additional to its own dict at `extra_data`.
         """
-        if name in self.__dict__:
+        # hasattr method will call getattr that will call `__getattr__`.
+        if hasattr(self, name):
             self.__dict__[name] = value
             return
 
-        if 'extra_data' not in self.__dict__:
+        if self.extra_data is None:
             self.__dict__['extra_data'] = {}
 
         self.__dict__['extra_data'][name] = value
 
-    def __getattr(self, name: str) -> Any:
+    def __getattr__(self, name: str) -> Any:
         """
         Method to get attributes that are additional to its own dict at `extra_data`.
         """
-        if name in self.__dict__:
-            return self.__dict__[name]
+        try:
+            return self.__getattribute__(name)
+        except AttributeError:
+            if 'extra_data' not in self.__dict__ or name not in self.__dict__['extra_data']:
+                raise AttributeError(f"{name} is not an attribute of {self}.")
 
-        if 'extra_data' not in self.__dict__:
-            raise AttributeError(f"{name} is not an attribute of {self}.")
-
-        return self.__dict__['extra_data'][name]
+            return self.__dict__['extra_data'][name]
 
     @property
     def __serialize__(self) -> dict[str, bool | dict]:

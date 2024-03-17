@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "FileZ"
-version = "0.9.0"
+version = "0.10.0"
 description = "Package for abstracting file system handler in an oriented-object style."
 authors = ["Gabriel <contato@gabrielfontenelle.com>"]
 license = "GNU GENERAL PUBLIC LICENSE v3"

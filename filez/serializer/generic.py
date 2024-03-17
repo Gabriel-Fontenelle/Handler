@@ -26,17 +26,17 @@ import inspect
 from datetime import time, datetime
 from importlib import import_module
 from io import IOBase
-from typing import Any, Type
+from typing import Any, Type, TYPE_CHECKING
 
 import pytz
 from dill import dumps, loads, HIGHEST_PROTOCOL
-from json_tricks import (
-    loads as json_loads,
-    dumps as json_dumps,
-    hashodict,
-)
 
-from .storage import LinuxFileSystem
+from ..storage import LinuxFileSystem
+
+if TYPE_CHECKING:
+    from .storage import Storage
+    from json_tricks import hashodict
+
 
 __all__ = [
     'PickleSerializer',
@@ -77,6 +77,7 @@ class JSONSerializer:
         encoded. Those internal functions will be applied for each list, tuple and dict elements automatically by
         `json.encoder`.
         """
+        from json_tricks import hashodict, dumps as json_dumps
 
         # List object to use as cache to allow retrieving ids already processed.
         cache: list = []
@@ -86,10 +87,10 @@ class JSONSerializer:
             Internal function to solve a problem with the original encoder where `obj.tzinfo.zone` results in attribute
             error.
             """
-            if primitives:
-                return obj.isoformat()
-
             if isinstance(obj, datetime):
+                if primitives:
+                    return obj.isoformat()
+
                 dct = hashodict([('__datetime__', None), ('year', obj.year), ('month', obj.month),
                                  ('day', obj.day), ('hour', obj.hour), ('minute', obj.minute),
                                  ('second', obj.second), ('microsecond', obj.microsecond)])
@@ -98,6 +99,9 @@ class JSONSerializer:
                     dct['tzinfo'] = getattr(obj.tzinfo, 'zone', None) or str(obj.tzinfo)
 
             elif isinstance(obj, time):
+                if primitives:
+                    return obj.isoformat()
+
                 dct = hashodict([('__time__', None), ('hour', obj.hour), ('minute', obj.minute),
                                  ('second', obj.second), ('microsecond', obj.microsecond)])
 
@@ -140,8 +144,8 @@ class JSONSerializer:
                 return hashodict(
                     [
                         ('__buffer__', None),
-                        ('name', obj.name),
-                        ('mode', obj.mode),
+                        ('name', getattr(obj, 'name', "")),
+                        ('mode', getattr(obj, 'mode', "")),
                         ('storage', json_class_encode(default_storage_class, primitives)),
                     ]
                 )
@@ -239,7 +243,7 @@ class JSONSerializer:
                 return dct
 
             if "__class__" in dct:
-                return getattr(import_module(dct.get('module')), dct.get('name'))
+                return getattr(import_module(dct['module']), dct['name'])
 
             return dct
 
@@ -251,10 +255,12 @@ class JSONSerializer:
                 return dct
 
             if "__buffer__" in dct:
-                storage = json_class_hook(dct.get('storage'))
+                storage: Type[Storage] = json_class_hook(dct.get('storage'))
 
-                if storage.exists(dct.get("name")):
-                    return storage.open_file(file_path=dct.get("name"), mode=dct.get("mode"))
+                name: str | None = dct.get("name")
+
+                if name and storage.exists(name):
+                    return storage.open_file(path=name, mode=dct["mode"])
 
                 return None
 
@@ -283,7 +289,7 @@ class JSONSerializer:
 
             return dct
 
-        def fix_self_reference(instance: Any) -> dict:
+        def fix_self_reference(instance: Any) -> None:
             """
             Internal function to fix the references present in instance source that were not able to be
             converted in decoder to allow the deserialization to finish.
@@ -319,6 +325,8 @@ class JSONSerializer:
 
                 elif hasattr(value, "__serialize__") and not callable(value) and id(value) not in cache["done"]:
                     fix_self_reference(value)
+
+        from json_tricks import loads as json_loads
 
         # Prepare content to be parsed
         deserialized_object: dict = json_loads(source, preserve_order=False, extra_obj_pairs_hooks=(

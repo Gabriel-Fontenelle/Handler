@@ -101,14 +101,13 @@ class FileNaming:
         """
         This method remove old filename from list of reserved filenames.
         """
-
-        files: dict[BaseFile, dict[str, BaseFile]] = self.reserved_index.get(old_filename, {})
-        reference: dict[str, BaseFile] | None  = files.get(self.related_file_object, None)
+        dictionary_of_files: dict[BaseFile, dict[str, BaseFile]] = self.reserved_index.get(old_filename, {})
+        reference: dict[str, BaseFile] | None  = dictionary_of_files.get(self.related_file_object, None)
 
         # Remove from `reserved_filename` and current `reserved_index`.
         if reference:
             del reference[old_filename]
-            del files[self.related_file_object]
+            del dictionary_of_files[self.related_file_object]
 
     def rename(self) -> None:
         """
@@ -141,12 +140,14 @@ class FileNaming:
                 # The pipeline will update `complete_filename` of file to reflect new one. We shouldn`t change `path`
                 # of file; `complete_filename` will add the new filename to `history` and remove the old one from
                 # `reserved_filenames`.
-                # Set path_attribute and reserved_names in processors before running the pipeline.
-                for processor in self.related_file_object.rename_pipeline:
-                    processor.parameters['path_attribute'] = 'save_to',
-                    processor.parameters['reserved_names'] = reserved_names,
-
-                self.related_file_object.rename_pipeline.run(object_to_process=self.related_file_object)
+                # Inform `path_attribute` and `reserved_names` to pipeline.
+                self.related_file_object.rename_pipeline.run(
+                    object_to_process=self.related_file_object,
+                    **{
+                        **self.related_file_object._get_kwargs_for_pipeline("rename_pipeline"),
+                        "path_attribute": "save_to",
+                        "reserved_names": reserved_names
+                    })
 
                 # Rename hash_files if there is any. This method not save the hash files giving the responsibility to
                 # `save` method.
@@ -162,9 +163,9 @@ class FileNaming:
         # `self.reserved_filenames`.
         if complete_filename not in self.reserved_index:
             # Pass reference of dict `save_to` to index of reserved names.
-            self.reserved_index[complete_filename] = {self: self.reserved_filenames[save_to]}
+            self.reserved_index[complete_filename] = {self.related_file_object: self.reserved_filenames[save_to]}
         else:
-            self.reserved_index[complete_filename][self] = self.reserved_filenames[save_to]
+            self.reserved_index[complete_filename][self.related_file_object] = self.reserved_filenames[save_to]
 
     def clean_history(self) -> None:
         """

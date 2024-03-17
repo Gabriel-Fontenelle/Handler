@@ -29,6 +29,7 @@ from typing import Any, Type, TYPE_CHECKING, Iterator, Sequence
 
 from zlib import crc32
 
+from ..exception import ImproperlyConfiguredFile
 # core modules
 from ..pipelines import Pipeline
 # modules
@@ -69,7 +70,7 @@ class Hasher:
     """
 
     @classmethod
-    def check_hash(cls, **kwargs: Any) -> bool:
+    def check_hash(cls, **kwargs: Any) -> bool | None:
         """
         Method to verify integrity of file checking if hash save in file object is the same
         that is generated from file content. File content can be from File System, Memory or Stream
@@ -80,11 +81,16 @@ class Hasher:
 
         hash_instance: Any = cls.instantiate_hash()
 
-        cls.generate_hash(hash_instance=hash_instance, content_iterator=object_to_process.content_as_iterator)
+        content_iterator: Iterator[Sequence[object]] | None = object_to_process.content_as_iterator
 
+        if content_iterator is None:
+            return None
+
+        cls.generate_hash(hash_instance=hash_instance, content_iterator=content_iterator)
         digested_hex_value: str = cls.digest_hex_hash(hash_instance=hash_instance)
 
         return digested_hex_value == hex_value
+
 
     @classmethod
     def digest_hash(cls, hash_instance: Any) -> str:
@@ -146,7 +152,7 @@ class Hasher:
         raise NotImplementedError("Method instantiate_hash must be overwrite on child class.")
 
     @classmethod
-    def generate_hash(cls, hash_instance: Any, content_iterator: Iterator[Sequence[object]]) -> None:
+    def generate_hash(cls, hash_instance: Any, content_iterator: Iterator[Sequence[bytes | str]]) -> None:
         """
         Method to update the hash to be generated from content in blocks using a normalized content that can be
         iterated regardless from its source (e.g. file system, memory, stream).
@@ -159,6 +165,9 @@ class Hasher:
         """
         Method to create a file structured for the hash based on same class as object_to_process
         """
+        if object_to_process.save_to is None or not object_to_process.complete_filename:
+            raise ImproperlyConfiguredFile("Generating a hash file for a file without a directory set at `save_to`"
+                                           " and without a `complete_filename` is not supported.")
 
         # Add hash to file
         hash_file: BaseFile = object_to_process.__class__(
@@ -270,7 +279,7 @@ class Hasher:
 
         This processors return boolean to indicate that process was ran successfully.
         """
-        object_to_process: BaseFile = kwargs.get('object_to_process')
+        object_to_process: BaseFile = kwargs['object_to_process']
         try_loading_from_file: bool = kwargs.get('try_loading_from_file', False)
         full_check: bool = kwargs.get('full_check', False)
 
@@ -391,7 +400,7 @@ class MD5Hasher(Hasher):
     """
 
     @classmethod
-    def instantiate_hash(cls) -> hashlib.md5:
+    def instantiate_hash(cls) -> Any:
         """
         Method to instantiate the hash generator to be used digesting the hash.
         """
@@ -409,7 +418,7 @@ class SHA256Hasher(Hasher):
     """
 
     @classmethod
-    def instantiate_hash(cls) -> hashlib.sha256:
+    def instantiate_hash(cls) -> Any:
         """
         Method to instantiate the hash generator to be used digesting the hash.
         """
