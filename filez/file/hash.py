@@ -40,7 +40,7 @@ class FileHashes:
     Class that store file instance digested hashes.
     """
 
-    _cache: dict[str, Any]
+    _cache: dict[str, tuple[str, BaseFile, Type[Hasher]]]
     """
     Descriptor to storage the digested hashes for the file instance.
     This must be instantiated at `__init__` class. 

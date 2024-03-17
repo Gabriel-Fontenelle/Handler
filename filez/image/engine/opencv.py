@@ -22,17 +22,23 @@ Should there be a need for contact the electronic mail
 """
 from __future__ import annotations
 
-from typing import Any
-
-import cv2
-import numpy as np
-from numpy import ndarray
+from typing import Any, TYPE_CHECKING
 
 from . import ImageEngine
+from ...utils import LazyImportClass
+
+if TYPE_CHECKING:
+    from numpy import ndarray
 
 __all__ = [
     "OpenCVImage",
 ]
+
+cv2 = LazyImportClass('cv2')
+"""Lazy import of cv2 module"""
+
+np = LazyImportClass('numpy')
+"""Lazy import of numpy module as alias np"""
 
 
 class OpenCVImage(ImageEngine):
@@ -179,4 +185,3 @@ class OpenCVImage(ImageEngine):
         if bounding_border:
             # bounding_border is equal to `x, y, w, h = bounding_border`
             self.image = self.image[bounding_border[1]:bounding_border[3], bounding_border[0]:bounding_border[2]]
-

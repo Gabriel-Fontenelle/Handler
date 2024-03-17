@@ -22,10 +22,9 @@ Should there be a need for contact the electronic mail
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Any
 
-if TYPE_CHECKING:
-    pass
+from ..exception import SerializerError
 
 __all__ = [
     "FileOption"

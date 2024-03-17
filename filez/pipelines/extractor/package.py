@@ -29,20 +29,20 @@ from tarfile import TarFile, TarError
 from typing import Any, TYPE_CHECKING, Type, IO
 from zipfile import BadZipFile, ZipFile
 
-from psd_tools import PSDImage
-from py7zr import SevenZipFile
-from py7zr.exceptions import Bad7zFile
 from rarfile import BadRarFile, RarFile, NotRarFile
 
 from .extractor import Extractor
 from .. import Pipeline
 from ..hasher import CRC32Hasher
 from ...exception import ValidationError
+from ...utils import LazyImportClass
 
 if TYPE_CHECKING:
 
     from ...file import BaseFile
     from ...storage import Storage
+    from psd_tools import PSDImage
+    from py7zr import SevenZipFile
 
 __all__ = [
     'PackageExtractor',
@@ -225,7 +225,7 @@ class PSDLayersFromPackageExtractor(PackageExtractor):
     """
     Attribute to store allowed extensions for use in `validator`.
     """
-    compressor: Type[PSDImage] = PSDImage
+    compressor: Type[PSDImage] = LazyImportClass('PSDImage', 'psd_tools')
     """
     Attribute to store the current class of compressor for use in `content_buffer` and `decompress` methods.
     """
@@ -313,7 +313,7 @@ class PSDLayersFromPackageExtractor(PackageExtractor):
 
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
-            compressed_object: PSDImage = PSDImage.open(fp=file_object.content_as_buffer)
+            compressed_object: PSDImage = cls.compressor.open(fp=file_object.content_as_buffer)
 
             for index, internal_file in enumerate(compressed_object):
                 filename: str = f"{index}-{internal_file.name or internal_file.layer_id}.psd"
@@ -885,7 +885,7 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
     """
     Attribute to store allowed extensions for use in `validator`.
     """
-    compressor: Type[SevenZipFile] = SevenZipFile
+    compressor: Type[SevenZipFile] = LazyImportClass('SevenZipFile', from_module='py7zr')
     """
     Attribute to store the current class of compressor for use in `content_buffer` and `decompress` methods.
     """
@@ -926,6 +926,8 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
         """
         Method to uncompress the content from a file_object.
         """
+        from py7zr.exceptions import Bad7zFile
+
         try:
             # We don't need to create the directory because the extractor will create it if not exists.
             extraction_path: str = kwargs.pop("decompress_to")
@@ -969,6 +971,8 @@ class SevenZipCompressedFilesFromPackageExtractor(PackageExtractor):
         """
         if not file_object.save_to:
             return False
+
+        from py7zr.exceptions import Bad7zFile
 
         try:
             cls.validate(file_object)

@@ -25,9 +25,6 @@ from __future__ import annotations
 from io import BytesIO, StringIO
 from typing import Any, TYPE_CHECKING, Type
 
-import fitz
-from psd_tools import PSDImage
-
 from .. import ValidationError, Pipeline
 from ...exception import RenderError
 
@@ -167,6 +164,9 @@ class DocumentFirstPageRender(StaticRender):
 
         buffer: BytesIO = BytesIO()
 
+        # Local import to avoid longer time to load FileZ library.
+        import fitz
+
         # We use fitz from PyMuPDF to open the document.
         # Because BufferedReader (default return for file_system.open) is not accept
         # we need to consume to get its bytes as bytes are accepted as stream.
@@ -260,6 +260,8 @@ class PSDRender(StaticRender):
         if not buffer_content:
             raise RenderError("There is no content in buffer format available to render.")
 
+        # Local import to avoid longer time to load FileZ library.
+        from psd_tools import PSDImage
         # Load PSD from buffer
         psd: PSDImage = PSDImage.open(fp=buffer_content)
 

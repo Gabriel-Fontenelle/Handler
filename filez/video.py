@@ -24,10 +24,6 @@ from __future__ import annotations
 
 from typing import Any, TYPE_CHECKING
 
-import cv2
-import imageio as iio
-from moviepy.editor import VideoClip
-
 if TYPE_CHECKING:
     from imageio.core.v3_plugin_api import PluginV3
     from numpy import ndarray
@@ -148,7 +144,9 @@ class MoviePyVideo(VideoEngine):
         formats: dict[str, str] = {
             "jpeg": ".jpg"
         }
-        success, buffer = cv2.imencode(formats[encode_format], self.video.get_frame(index))
+
+        from cv2 import imencode
+        success, buffer = imencode(formats[encode_format], self.video.get_frame(index))
 
         if not success:
             raise ValueError(f"Could not convert image to format {encode_format} in MoviePyVideo.get_frame_as_bytes.")
@@ -171,7 +169,10 @@ class MoviePyVideo(VideoEngine):
         """
         Method to prepare the video using the stored buffer as the source.
         """
-        video_array: PluginV3 = iio.imopen(self.source_buffer, io_mode="r")
+        from moviepy.editor import VideoClip
+        from imageio import imopen
+
+        video_array: PluginV3 = imopen(self.source_buffer, io_mode="r") # type: ignore
         self.metadata: dict[str, Any] = video_array.metadata()
 
         def make_frame(t):
@@ -192,11 +193,13 @@ class MoviePyVideo(VideoEngine):
 
         frame: int = 0
 
+        from cv2 import imshow, waitKey, destroyAllWindows
+
         while frame < total_frames:
-            cv2.imshow("Video", self.get_frame_image(frame))
+            imshow("Video", self.get_frame_image(frame))
             frame += 1
 
-            if cv2.waitKey(25) & 0xFF == ord('q'):
+            if waitKey(25) & 0xFF == ord('q'):
                 break
 
-        cv2.destroyAllWindows()
+        destroyAllWindows()

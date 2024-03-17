@@ -25,9 +25,6 @@ from __future__ import annotations
 from io import StringIO
 from typing import TYPE_CHECKING, Any
 
-import fitz
-from tinytag import TinyTag
-
 from .extractor import Extractor
 from ...image import WandImage
 from ...video import MoviePyVideo
@@ -146,6 +143,9 @@ class DocumentMetadataFromContentExtractor(Extractor):
         buffer = file_object.content_as_buffer
 
         if buffer:
+            # Local import to avoid longer time to load FileZ library.
+            import fitz
+
             # We don't need to reset the buffer before calling it, because it will be reset
             # if already cached. The next time property buffer is called it will reset again.
             # We use fitz (PyMuPDF) to open the document.
@@ -183,6 +183,9 @@ class AudioMetadataFromContentExtractor(Extractor):
             raise ValueError(
                 "Length for file's object must set before calling `AudioMetadataFromContentExtractor.extract`!"
             )
+
+        # Local import to avoid longer time to load FileZ library.
+        from tinytag import TinyTag
 
         # We don't need to reset the buffer before calling it, because it will be reset
         # if already cached. The next time property buffer is called it will reset again.

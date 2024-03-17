@@ -25,13 +25,9 @@ from __future__ import annotations
 
 from typing import Any, Type
 
-from wand.color import Color
-# Third-party
-from wand.display import display as wand_display
-from wand.image import Image as WandImageClass
-
 # modules
 from . import ImageEngine
+from ...utils import LazyImportClass
 
 __all__ = [
     "WandImage"
@@ -44,7 +40,8 @@ class WandImage(ImageEngine):
     This class depends on Wand being installed in the system.
     """
 
-    class_image: Type[type] = WandImageClass
+    class_image: Type = LazyImportClass("Image", from_module="wand.image")
+
     """
     Attribute used to store the class reference responsible to create an image.
     """
@@ -139,6 +136,8 @@ class WandImage(ImageEngine):
         """
         Method to display the image for debugging purposes.
         """
+        from wand.display import display as wand_display
+
         if self.has_sequence():
             for image in self.image.sequence:
                 wand_display(self.class_image(image))
@@ -151,6 +150,8 @@ class WandImage(ImageEngine):
         The parameter color is used to indicate the color to trim else it will use transparency.
         This method will trim the whole image based on first frame/size if image has sequence.
         """
+        from wand.color import Color
+
         if color:
             color = Color(f"rgb({color[0]}, {color[1]}, {color[2]})")
 
