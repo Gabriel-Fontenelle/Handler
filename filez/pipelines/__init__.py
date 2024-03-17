@@ -112,18 +112,22 @@ class Processor:
 class Pipeline:
     """
     Class to initiate a pipelines with given processors to be run.
+    The processors to be run will only be evaluated at running time when `__serialize__` or `run` are called.
     """
     processor: Type[Processor] = Processor
 
     def __init__(self, *processors_candidate: Any, **kwargs: Any) -> None:
         """
-        This method can receive multiples
         This method can receive a single path to a class in string format that implement methods
         for processing the pipeline or a list, or tuple, of class` paths and parameters that will be passed to those
-         class.
-        objects
-        or a tuple with classname, verbose_name
-        and stopper configuration.
+        class.
+
+        Examples:
+            Pipeline(
+                "module.class",
+                ("module.class", **kwargs),
+                Object(),
+            )
         """
         if not processors_candidate and "processors_candidate" not in kwargs:
             raise ValueError("A processor candidate must be informed for pipeline to be initialized")
@@ -149,18 +153,22 @@ class Pipeline:
         Variable to register the original input that instantiate the Pipeline`s object.
         """
 
-        self.load_processor_candidates()
-
     def __getitem__(self, item: int) -> object:
         """
         Method to allow extraction of processor class from pipeline_processors directly from Pipeline object.
         """
+        if not self.pipeline_processors:
+            self.load_processor_candidates()
+
         return self.pipeline_processors[item]
 
     def __iter__(self) -> Iterator:
         """
         Method to allow direct usage of `pipeline_processors` in loops from Pipeline object.
         """
+        if not self.pipeline_processors:
+            self.load_processor_candidates()
+
         return iter(self.pipeline_processors)
 
     @property
@@ -170,7 +178,12 @@ class Pipeline:
 
         This method only return processors_candidate because the pipeline should be clean before serializing and reset
         before being used from a deserialization.
+
+        This method evaluate the processors.
         """
+        if not self.pipeline_processors:
+            self.load_processor_candidates()
+
         return {
             "processor": self.processor,
             "processors_candidate": self.processors_candidate
@@ -223,6 +236,8 @@ class Pipeline:
 
         Not all pipelines are required to run this method, as example, Hasher Pipeline avoid
         its use when loading hashes from files.
+
+        This method evaluate the processors.
         """
 
         if not hasattr(object_to_process, 'option') or not issubclass(object_to_process.option, FileOption):
@@ -235,6 +250,9 @@ class Pipeline:
         ran: int = 0
         result: bool | None = None
         errors_found: list = []
+
+        if not self.pipeline_processors:
+            self.load_processor_candidates()
 
         # Using iter here allow for override of __iter__ to affect the running process.
         for processor in self.__iter__():
