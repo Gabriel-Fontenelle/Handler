@@ -233,7 +233,8 @@ class BaseFile:
     """
     Controller for the thumbnail representation of file. 
     """
-    option: Type[FileOption] = FileOption
+    _option: FileOption
+    _option = None
     """
     Controller for the general options of files.
     """
@@ -336,11 +337,16 @@ class BaseFile:
             # Instantiate the history list calling the clean_history method.
             self._naming.clean_history()
 
+        # Set up resources used for generating thumbnail and animated preview.
         if not self._thumbnail:
             self._thumbnail = FileThumbnail()
             self._thumbnail.related_file_object = self
             # Instantiate the history dictionary calling the clean_history method.
             self._thumbnail.clean_history()
+
+        # Set up resource for handling options/settings.
+        if not self._option:
+            self._option = FileOption()
 
         # Get option to run pipeline.
         run_extractor: bool = additional_kwargs.pop('run_extractor', True)
@@ -458,7 +464,7 @@ class BaseFile:
             "_naming",
             "_content_files",
             "_thumbnail",
-            "option",
+            "_option",
             "__version__"
         }
 
@@ -1015,13 +1021,13 @@ class BaseFile:
         self.validate()
 
         # Extract options like `overwrite=bool` file, `save_hashes=False`.
-        allow_overwrite: bool = getattr(self.option, 'allow_overwrite', False)
-        save_hashes: bool = getattr(self.option, 'save_hashes', False)
-        allow_search_hashes: bool = getattr(self.option, 'allow_search_hashes', True)
-        allow_update: bool = getattr(self.option, 'allow_update', True)
-        allow_rename: bool = getattr(self.option, 'allow_rename', False)
-        allow_extension_change: bool = getattr(self.option, 'allow_extension_change', True)
-        create_backup: bool = getattr(self.option, 'create_backup', False)
+        allow_overwrite: bool = getattr(self._option, 'allow_overwrite', False)
+        save_hashes: bool = getattr(self._option, 'save_hashes', False)
+        allow_search_hashes: bool = getattr(self._option, 'allow_search_hashes', True)
+        allow_update: bool = getattr(self._option, 'allow_update', True)
+        allow_rename: bool = getattr(self._option, 'allow_rename', False)
+        allow_extension_change: bool = getattr(self._option, 'allow_extension_change', True)
+        create_backup: bool = getattr(self._option, 'create_backup', False)
 
         # If overwrite is False and file exists a new filename must be created before renaming.
         file_exists: bool = self.storage.exists(self.sanitize_path)

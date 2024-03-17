@@ -240,11 +240,11 @@ class Pipeline:
         This method evaluate the processors.
         """
 
-        if not hasattr(object_to_process, 'option') or not issubclass(object_to_process.option, FileOption):
+        if not hasattr(object_to_process, '_option') or not issubclass(object_to_process._option.__class__, FileOption):
             raise ImproperlyConfiguredFile(f"Object {type(object_to_process)} don`t have a option attribute of instance"
                                            "FileOption to allow the pipeline to run properly.")
 
-        pipeline_raises_exception = object_to_process.option.pipeline_raises_exception
+        pipeline_raises_exception = object_to_process._option.pipeline_raises_exception
 
         # For each processor
         ran: int = 0
